@@ -150,10 +150,6 @@ kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px s
 
 /* ---------- pane ---------- */
 .pane{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--sheet)}
-.banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:16px 24px 0;padding:12px 12px 12px 16px;border-radius:10px;background:var(--cloth-soft);color:var(--cloth-ink)}
-.banner p{margin:0;flex:1 1 320px;min-width:0}
-.banner p small{display:block;color:var(--ink-2);font-size:12.5px;margin-top:2px}
-.banner .btn{border-color:transparent}
 .phead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 16px;padding:20px 24px 14px;border-bottom:1px solid var(--rule)}
 .phead .ttl{flex:1 1 280px;min-width:0}
 .crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-height:20px;margin-bottom:4px;color:var(--ink-3);font-size:12.5px}
@@ -172,6 +168,19 @@ kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px s
 .empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--ink-3);pointer-events:none}
 .empty h3{margin:0 0 4px;font:500 20px/1.2 var(--f-display);color:var(--ink-2)}
 .empty p{margin:0;max-width:42ch}
+.empty .watermark{display:block;width:112px;height:112px;margin:0 auto 20px;stroke:none;color:var(--cloth);opacity:.14}
+.empty .watermark rect{fill:currentColor}
+.empty .watermark path{fill:var(--sheet)}
+.empty.blank-state h3{font-size:26px;margin-bottom:6px}
+.empty.blank-state p{margin-inline:auto}
+.empty .how{margin-top:12px;font-size:12.5px}
+.app.blank .phead,.app.blank #tree,.app.blank #views,.app.blank .side-h.lib{display:none}
+.app.blank .side-foot{margin-top:auto}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:disabled:hover{background:var(--sheet);filter:none}
+.btn.primary:disabled:hover{background:var(--cloth)}
+.search:has(input:disabled){opacity:.55}
+.dialog h2.problem{color:var(--danger)}
 
 .row{position:absolute;left:12px;right:12px;height:44px;display:flex;align-items:center;gap:10px;padding:0 6px 0 8px;border-radius:9px;user-select:none;-webkit-user-select:none}
 .row:hover{background:var(--hover)}
@@ -334,7 +343,6 @@ body.dragging .row.sel:hover{background:var(--select)}
   .app.nav-open .side{transform:none}
   .app.nav-open .navscrim{display:block;position:fixed;inset:0;z-index:39;background:var(--scrim)}
   .phead{padding:16px 16px 12px}
-  .banner{margin:12px 16px 0}
   .row,.grp{left:6px;right:6px}
   .ptitle,.ptitle-in{font-size:24px}
 }
@@ -372,9 +380,9 @@ body.dragging .row.sel:hover{background:var(--select)}
     </div>
   </header>
   <aside class="side" id="side" aria-label="Folders">
-    <div class="side-h">Folders</div>
+    <div class="side-h lib">Folders</div>
     <div class="tree" id="tree" role="tree"></div>
-    <div class="side-h">Inspect</div>
+    <div class="side-h lib">Inspect</div>
     <nav class="views" id="views"></nav>
     <div class="side-foot">
       <div class="side-h">This device</div>
@@ -386,7 +394,6 @@ body.dragging .row.sel:hover{background:var(--select)}
   </aside>
   <div class="navscrim" id="navScrim"></div>
   <main class="pane" id="pane">
-    <div id="banner"></div>
     <div class="phead" id="phead"></div>
     <div class="list" id="list" tabindex="0" aria-label="Folder contents">
       <div id="spacer"></div>
@@ -453,12 +460,12 @@ const I = {
 
 /* ---------- state ---------- */
 const S = {
-  root: null, fileName: null, isSample: true, dirty: false, persisted: true,
+  root: null, fileName: null, noFile: true, dirty: false, persisted: true,
   view: { kind: 'folder', id: null }, prevView: null, query: '', terms: [],
   rows: [], rowPos: new Map(),
   sel: new Set(), anchor: null, cursor: null,
   expanded: new Set(), clip: null, editing: null,
-  drag: null, drop: null, recent: [], bannerHidden: false,
+  drag: null, drop: null, recent: [],
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
 };
@@ -469,7 +476,7 @@ const nid = () => 'n' + (seq++);
 
 const el = {
   app: $('app'), tree: $('tree'), views: $('views'), phead: $('phead'), list: $('list'), rows: $('rows'),
-  spacer: $('spacer'), empty: $('empty'), listLine: $('listLine'), banner: $('banner'), selbar: $('selbar'),
+  spacer: $('spacer'), empty: $('empty'), listLine: $('listLine'), selbar: $('selbar'), exportBtn: $('exportBtn'),
   markbar: $('markbar'), toasts: $('toasts'), menu: $('menu'), modal: $('modal'), dialog: $('dialog'), q: $('q'), fileChip: $('fileChip'),
   ghost: $('ghost'), filedrop: $('filedrop'), fileIn: $('fileIn'), undo: $('undoBtn'), redo: $('redoBtn'),
 };
@@ -522,15 +529,40 @@ function describe(ids) {
 
 /* ---------- parse & export ---------- */
 function attrsOf(e) { const o = {}; if (!e) return o; for (const a of e.attributes) o[a.name.toUpperCase()] = a.value; return o; }
-function parseBookmarks(html) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const dl = doc.querySelector('dl');
-  if (!dl) throw new Error('No bookmarks found in this file. Choose the .html file you exported from your browser’s bookmark manager.');
+/* A file Bindery won't open. The title and message go straight into the error dialog. */
+class FileProblem extends Error { constructor(title, message) { super(message); this.title = title; } }
+const REEXPORT = 'Export your bookmarks from your browser again and open the new file.';
+const countTags = (text, re) => (text.match(re) || []).length;
+/* Checks the raw text before parsing, then checks the parse kept every folder and bookmark,
+   so a damaged file is refused instead of opening with entries silently missing. */
+function parseBookmarks(text, name = 'This file') {
+  const q = `“${name}”`;
+  const head = text.replace(/^﻿/, '').trimStart();
+  if (!head) throw new FileProblem(`${q} is empty`, `The file has no content, so it can’t be a bookmarks export. ${REEXPORT}`);
+  if (text.includes('\0') || countTags(text, /�/g) > Math.max(8, text.length / 200))
+    throw new FileProblem(`${q} isn’t a text file`, 'It looks like an image, archive or other binary file, or it’s damaged. Choose the .html file your browser exported.');
+  if (/^[{[]/.test(head))
+    throw new FileProblem(`${q} is a JSON file`, 'Bindery opens the .html file that browsers export, not a JSON backup. In Chrome or Edge, open the Bookmark Manager and choose Export bookmarks. In Firefox, open the Library and choose Export Bookmarks to HTML.');
+  const netscape = /^<!DOCTYPE\s+NETSCAPE-Bookmark-file-1\s*>/i.test(head);
+  const opens = countTags(text, /<dl[\s>]/gi), closes = countTags(text, /<\/dl\s*>/gi);
+  const anchors = countTags(text, /<a[\s>]/gi), heads = countTags(text, /<h3[\s>]/gi);
+  if (!netscape && (!opens || !(anchors + heads)))
+    throw new FileProblem(`${q} isn’t a bookmarks file`, 'It doesn’t contain the bookmark list that browser exports use. Choose the .html file you exported from your browser’s bookmark manager.');
+  if (!opens) throw new FileProblem(`${q} has no bookmark list`, `It starts like a bookmarks export, but the list of folders and bookmarks is missing. ${REEXPORT}`);
+  if (closes < opens) throw new FileProblem(`${q} looks cut off`, `${plural(opens - closes, 'folder')} ${opens - closes === 1 ? 'is' : 'are'} never closed, which usually means the file stopped partway through saving or copying. ${REEXPORT}`);
+  if (closes > opens) throw new FileProblem(`${q} is damaged`, `Its folder structure has ${plural(closes - opens, 'extra closing tag')}, so Bindery can’t tell which bookmarks belong in which folder. ${REEXPORT}`);
+  const doc = new DOMParser().parseFromString(text, 'text/html');
   const h1 = doc.querySelector('h1');
   const root = { id: nid(), type: 'folder', title: (h1?.textContent || 'Bookmarks').trim(), attrs: attrsOf(h1), children: [], root: true };
-  readDL(dl, root);
+  readDL(doc.querySelector('dl'), root);
+  let links = 0, folders = 0;
+  const walk = f => { for (const c of f.children) if (c.type === 'folder') { folders++; walk(c); } else links++; };
+  walk(root);
+  const lost = (anchors - links) + (heads - folders);
+  if (lost > 0) throw new FileProblem(`${q} is damaged`, `${plural(lost, 'entry', 'entries')} ${lost === 1 ? 'sits' : 'sit'} outside the folder structure, so opening it could lose ${lost === 1 ? 'it' : 'them'}. ${REEXPORT}`);
   return root;
 }
+const blankRoot = () => ({ id: nid(), type: 'folder', title: 'Bookmarks', attrs: {}, children: [], root: true });
 function readDL(dl, folder) {
   let last = null;
   for (const c of dl.children) {
@@ -1102,7 +1134,10 @@ function renderList() {
   if (S.drop?.zone === 'into' && S.drop.src === 'list') el.rows.querySelector(`.row[data-id="${S.drop.folder}"]`)?.classList.add('drop-into');
   // empty states
   let msg = '';
-  if (!rows.length) {
+  const blank = isBlank();
+  el.empty.classList.toggle('blank-state', blank);
+  if (blank) msg = blankHTML();
+  else if (!rows.length) {
     if (S.view.kind === 'folder') msg = `<div><h3>This folder is empty</h3><p>Drag bookmarks onto it, or cut them elsewhere and paste here with ${MOD}+V.</p></div>`;
     else if (S.view.kind === 'search') msg = `<div><h3>Nothing matches “${esc(S.query)}”</h3><p>Search looks at titles and addresses across every folder.</p></div>`;
     else if (S.view.kind === 'dupes') msg = `<div><h3>No duplicates by ${DUPE_MODES[S.dupeMode].tab.toLowerCase()}</h3><p>${S.dupeMode === 'url' ? 'Every address in this library is saved exactly once.' : S.dupeMode === 'name' ? 'Every bookmark has its own name.' : 'No bookmark is saved twice with the same name and address.'} Try matching by ${S.dupeMode === 'name' ? 'address' : 'name'} instead.</p></div>`;
@@ -1196,18 +1231,28 @@ function renderHead() {
   }
   el.phead.innerHTML = `<div class="ttl"><div class="crumbs">${crumbs}</div>${title}<div class="pmeta">${meta}</div></div><div class="pacts">${acts}</div>`;
 }
+/* With no file open, or a file with nothing in it, the workspace shows only the watermark. */
+const isBlank = () => S.noFile || !S.root.children.length;
 function renderTop() {
-  const name = S.isSample ? 'Sample library' : (S.fileName || 'Bookmarks');
-  el.fileChip.innerHTML = `<b title="${esc(name)}">${esc(name)}</b><span>${plural(stats.links, 'bookmark')}${S.dirty && !S.isSample ? ' · <span class="dirty">edited, not exported</span>' : ''}</span>`;
+  const blank = isBlank();
+  const name = S.noFile ? 'No file loaded' : (S.fileName || 'Bookmarks');
+  const sub = S.noFile ? 'Import a bookmarks file' : plural(stats.links, 'bookmark') + (S.dirty ? ' · <span class="dirty">edited, not exported</span>' : '');
+  el.fileChip.innerHTML = `<b title="${esc(name)}">${esc(name)}</b><span>${sub}</span>`;
   el.undo.disabled = !undoStack.length; el.redo.disabled = !redoStack.length;
   el.undo.title = undoStack.length ? `Undo ${lc1(undoStack.at(-1).label)} (${MOD}+Z)` : 'Nothing to undo';
   el.redo.title = redoStack.length ? `Redo ${lc1(redoStack.at(-1).label)} (${MOD}+Shift+Z)` : 'Nothing to redo';
+  el.exportBtn.disabled = blank;
+  el.exportBtn.title = S.noFile ? 'Import a bookmarks file first' : blank ? 'This file has nothing to export' : 'Save a bookmarks .html file you can import into Chrome';
+  el.q.disabled = blank;
+  el.app.classList.toggle('blank', blank);
 }
-function renderBanner() {
-  if (!S.isSample || S.bannerHidden) { el.banner.innerHTML = ''; return; }
-  el.banner.innerHTML = `<div class="banner"><p>You’re looking at a sample library. Import your own bookmarks file to edit it.
-    <small>In Chrome: open the Bookmark Manager (${isMac ? '⌘+Option+B' : 'Ctrl+Shift+O'}), click ⋮ at the top right, then Export bookmarks.</small></p>
-    <button class="btn primary" data-b="import">${I.import}Import bookmarks file</button><button class="icon-btn" data-b="hide" aria-label="Hide this note">${I.x}</button></div>`;
+const WATERMARK = '<svg class="watermark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14"/><path d="M21 0h22v52l-11-8.5L21 52z"/></svg>';
+function blankHTML() {
+  if (S.noFile) return `<div>${WATERMARK}<h3>No file loaded</h3><p>Import a bookmarks .html file, or drop one anywhere on this page.</p>
+    <p class="how">In Chrome, open the Bookmark Manager (${isMac ? '⌘+Option+B' : 'Ctrl+Shift+O'}), click ⋮ at the top right, then Export bookmarks.</p></div>`;
+  return `<div>${WATERMARK}<h3>“${esc(S.fileName || 'This file')}” is empty</h3><p>${undoStack.length
+    ? `Everything in it has been deleted. Press ${MOD}+Z to undo, or import another file.`
+    : 'It’s a bookmarks file with no bookmarks or folders in it. Import another file to start editing.'}</p></div>`;
 }
 function renderSelbar() {
   syncSideHighlight();
@@ -1226,14 +1271,14 @@ function renderSelbar() {
 function renderDevice() {
   const r = $('rememberBtn'), f = $('forgetBtn');
   r.setAttribute('aria-checked', String(S.remember));
-  f.disabled = S.isSample;
-  f.title = S.isSample ? 'Nothing to forget. The sample library isn’t saved.' : 'Remove your bookmarks from this browser and close them here';
-  $('deviceNote').textContent = S.isSample
+  f.disabled = S.noFile;
+  f.title = S.noFile ? 'Nothing to forget. No file is open.' : 'Remove your bookmarks from this browser and close them here';
+  $('deviceNote').textContent = S.noFile
     ? (S.remember ? 'Files you open are saved in this browser only. Nothing is uploaded.' : 'Files you open stay in this tab only. Closing it clears them.')
     : !S.remember ? 'Not saved. Closing this tab clears your bookmarks from Bindery.'
     : S.persisted ? 'Saved in this browser only. Nothing is uploaded.' : 'This browser didn’t save your file. Export to keep your edits.';
 }
-function renderAll() { renderTop(); renderBanner(); renderDevice(); renderTree(); renderViews(); renderHead(); renderList(); renderSelbar(); renderMarkbar(); }
+function renderAll() { renderTop(); renderDevice(); renderTree(); renderViews(); renderHead(); renderList(); renderSelbar(); renderMarkbar(); }
 function refresh() { buildRows(); renderAll(); }
 
 /* ---------- inline editing ---------- */
@@ -1511,21 +1556,29 @@ function toast(msg, { undo: withUndo = false, error = false, ms } = {}) {
 /* ---------- import / export ---------- */
 async function importFile(file) {
   if (!file) return;
-  if (S.dirty && !S.isSample) {
+  let text, root;
+  try { text = await file.text(); }
+  catch { showProblem(new FileProblem(`Bindery couldn’t read “${file.name}”`, 'Your browser couldn’t open the file. If it’s on a network or cloud drive, copy it to this computer and try again.')); return; }
+  try { root = parseBookmarks(text, file.name); }
+  catch (err) { showProblem(err instanceof FileProblem ? err : new FileProblem(`Bindery couldn’t open “${file.name}”`, `Something in the file stopped it from loading. ${REEXPORT}`)); return; }
+  if (S.dirty && !S.noFile) {
     const ok = await confirmDialog({ title: 'Open a different file?', body: `<p>Your edits to “${esc(S.fileName)}” haven’t been exported yet. Opening “${esc(file.name)}” replaces them.</p>`, ok: 'Open file', danger: true, focusOk: false });
     if (!ok) return;
   }
-  let text;
-  try { text = await file.text(); } catch { toast('That file couldn’t be read. Try exporting it again.', { error: true }); return; }
-  let root;
-  try { root = parseBookmarks(text); } catch (err) { toast(err.message, { error: true }); return; }
-  if (!root.children.length) { toast(`No bookmarks found in “${file.name}”. Choose the .html file exported from your browser’s bookmark manager.`, { error: true }); return; }
   loadRoot(root, file.name, false);
-  toast(`Opened ${file.name}: ${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')}`);
+  toast(root.children.length ? `Opened ${file.name}: ${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')}` : `Opened ${file.name}. It has no bookmarks or folders.`);
 }
-function loadRoot(root, name, isSample) {
+function showProblem(p) {
+  const kept = S.noFile ? 'Nothing was opened.' : `Nothing changed. “${esc(S.fileName || 'Your file')}” is still open.`;
+  return new Promise(res => {
+    openModal(`<h2 class="problem">${esc(p.title)}</h2><p>${esc(p.message)}</p><p class="note">${kept}</p><div class="actions"><button class="btn primary" data-m="ok">OK</button></div>`);
+    modalDone = res;
+    el.dialog.querySelector('[data-m="ok"]').focus();
+  });
+}
+function loadRoot(root, name, noFile) {
   if (S.editing) cancelEdit();
-  S.root = root; S.fileName = name; S.isSample = isSample; S.dirty = false;
+  S.root = root; S.fileName = name; S.noFile = noFile; S.dirty = false;
   undoStack = []; redoStack = []; S.clip = null; S.recent = [];
   reindex();
   S.expanded = new Set(root.children.filter(c => c.type === 'folder').map(c => c.id));
@@ -1538,9 +1591,10 @@ function loadRoot(root, name, isSample) {
 const exportName = () => { const d = new Date(); return `bookmarks_${d.getMonth() + 1}_${d.getDate()}_${String(d.getFullYear()).slice(2)}.html`; };
 async function doExport() {
   if (S.editing) commitEdit();
+  if (isBlank()) return;
   const name = exportName(), text = exportHTML(S.root);
   const done = () => {
-    if (!S.isSample) { S.dirty = false; renderTop(); persist(); }
+    if (!S.noFile) { S.dirty = false; renderTop(); persist(); }
     toast(`Exported ${name}. To bring it into Chrome, open the Bookmark Manager, click ⋮, then Import bookmarks.`, { ms: 9000 });
   };
   if (window.claude && typeof window.claude.use === 'function') {
@@ -1570,7 +1624,7 @@ function dropStored() { try { localStorage.removeItem(LS_SESSION); } catch {} }
 function persist(now) {
   clearTimeout(persistT);
   const run = () => {
-    if (S.isSample || !S.remember) { dropStored(); S.persisted = S.isSample; renderDevice(); return; }
+    if (S.noFile || !S.remember) { dropStored(); S.persisted = S.noFile; renderDevice(); return; }
     try {
       const data = JSON.stringify({ v: 1, root: S.root, fileName: S.fileName, dirty: S.dirty });
       if (data.length > 4.5e6) { S.persisted = false; dropStored(); }
@@ -1580,31 +1634,31 @@ function persist(now) {
   };
   now ? run() : (persistT = setTimeout(run, 600));
 }
-function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ bannerHidden: S.bannerHidden, dupeMode: S.dupeMode, layout: S.layout, remember: S.remember })); } catch {} }
+function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ dupeMode: S.dupeMode, layout: S.layout, remember: S.remember })); } catch {} }
 function setRemember(on) {
   if (S.editing) commitEdit();
   S.remember = on; saveUI(); persist(true);
   const name = S.fileName || 'your bookmarks';
-  if (on) toast(S.isSample ? 'Bindery will save the next file you open in this browser.' : S.persisted ? `Saved ${name} in this browser. It reopens on your next visit.` : 'This browser didn’t save your file. Export to keep your edits.', { error: !S.isSample && !S.persisted });
-  else toast(S.isSample ? 'Files you open won’t be saved in this browser.' : `Removed the saved copy of ${name}. It stays open until you close this tab.`, { ms: 6000 });
+  if (on) toast(S.noFile ? 'Bindery will save the next file you open in this browser.' : S.persisted ? `Saved ${name} in this browser. It reopens on your next visit.` : 'This browser didn’t save your file. Export to keep your edits.', { error: !S.noFile && !S.persisted });
+  else toast(S.noFile ? 'Files you open won’t be saved in this browser.' : `Removed the saved copy of ${name}. It stays open until you close this tab.`, { ms: 6000 });
 }
 async function requestForget() {
-  if (S.isSample) return;
+  if (S.noFile) return;
   if (S.editing) commitEdit();
   const name = S.fileName || 'your bookmarks';
-  let body = `<p>This removes the copy Bindery saved in this browser and closes “${esc(name)}” here. The next visit opens the sample library. Files on your computer aren’t touched.</p>`;
+  let body = `<p>This removes the copy Bindery saved in this browser and closes “${esc(name)}” here. The next visit starts with no file loaded. Files on your computer aren’t touched.</p>`;
   if (S.dirty) body += `<p class="warn">Your edits haven’t been exported. Export first if you want to keep them.</p>`;
   body += `<p class="note">Your browser can keep traces in its own files until they’re overwritten. To clear those too, delete this site’s data in your browser settings, or turn off “Remember my file” and use a private window.</p>`;
   const ok = await confirmDialog({ title: 'Forget your bookmarks on this device?', body, ok: 'Forget bookmarks', danger: true, focusOk: false });
   if (!ok) return;
   dropStored();
   S.marks.clear();
-  loadRoot(parseBookmarks(SAMPLE), null, true);
+  loadRoot(blankRoot(), null, true);
   el.toasts.innerHTML = '';
   toast('Forgot your bookmarks on this device.');
 }
 function restore() {
-  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); S.bannerHidden = !!ui.bannerHidden; if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; } catch {}
+  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; } catch {}
   if (!S.remember) { dropStored(); return false; }
   try {
     const raw = localStorage.getItem(LS_SESSION); if (!raw) return false;
@@ -1614,7 +1668,7 @@ function restore() {
     return true;
   } catch { return false; }
 }
-addEventListener('beforeunload', e => { if (S.dirty && !S.isSample && !S.persisted) { e.preventDefault(); e.returnValue = ''; } });
+addEventListener('beforeunload', e => { if (S.dirty && !S.noFile && !S.persisted) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------- drag & drop ---------- */
 let expandTimer = 0, expandFor = null;
@@ -1837,11 +1891,6 @@ el.phead.addEventListener('click', e => {
   else if (h === 'marks') { const r = e.target.closest('button').getBoundingClientRect(); marksMenu(r.right - 260, r.bottom + 6); }
 });
 el.phead.addEventListener('dblclick', e => { const t = e.target.closest('[data-rename]'); if (t) startEdit(t.dataset.rename, 'head'); });
-el.banner.addEventListener('click', e => {
-  const b = e.target.closest('[data-b]')?.dataset.b;
-  if (b === 'import') el.fileIn.click();
-  else if (b === 'hide') { S.bannerHidden = true; saveUI(); renderBanner(); renderList(); }
-});
 el.selbar.addEventListener('click', e => {
   const a = e.target.closest('[data-sa]')?.dataset.sa; if (!a) return;
   const ids = selIds();
@@ -1883,6 +1932,7 @@ document.addEventListener('keydown', e => {
   if (field) return;
   if (mod && lk === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && lk === 'y') { e.preventDefault(); redo(); return; }
+  if (isBlank()) { if (k === '?') { e.preventDefault(); openKeys(); } return; }
   if (mod && lk === 'a') { e.preventDefault(); selectAll(); return; }
   if (mod && lk === 'x') { if (S.sel.size) { e.preventDefault(); cut(selIds()); } return; }
   if (mod && lk === 'v') { if (S.clip) { e.preventDefault(); paste(); } return; }
@@ -1937,107 +1987,13 @@ el.undo.innerHTML = I.undo; el.redo.innerHTML = I.redo;
 $('importBtn').innerHTML = `${I.import}<span class="lbl-wide">Import</span>`;
 $('exportBtn').innerHTML = `${I.export}<span>Export</span>`;
 $('importBtn').title = 'Open a bookmarks .html file';
-$('exportBtn').title = 'Save a bookmarks .html file you can import into Chrome';
 $('keysBtn').innerHTML = `<span class="ficon plain" style="color:inherit">${I.keyboard}</span><span class="tname">Keyboard shortcuts</span><kbd>?</kbd>`;
 $('rememberBtn').innerHTML = `<span class="ficon plain" style="color:inherit">${I.device}</span><span class="tname">Remember my file</span><span class="switch" aria-hidden="true"></span>`;
 $('rememberBtn').title = 'Keep your bookmarks in this browser so they reopen on your next visit';
 $('forgetBtn').innerHTML = `<span class="ficon plain" style="color:inherit">${I.trash}</span><span class="tname">Forget on this device</span>`;
 
-/* ---------- sample library ---------- */
-const SAMPLE = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
-<TITLE>Bookmarks</TITLE>
-<H1>Bookmarks</H1>
-<DL><p>
-<DT><H3 ADD_DATE="1546300800" LAST_MODIFIED="1760000000" PERSONAL_TOOLBAR_FOLDER="true">Bookmarks bar</H3>
-<DL><p>
-<DT><A HREF="https://mail.google.com/mail/u/0/" ADD_DATE="1546300900">Gmail</A>
-<DT><A HREF="https://calendar.google.com/calendar/u/0/r" ADD_DATE="1546301000">Calendar</A>
-<DT><H3 ADD_DATE="1551398400" LAST_MODIFIED="1755000000">Daily</H3>
-<DL><p>
-<DT><A HREF="https://news.ycombinator.com/" ADD_DATE="1551398500">Hacker News</A>
-<DT><A HREF="https://www.theverge.com/" ADD_DATE="1551398600">The Verge</A>
-<DT><A HREF="https://www.bbc.com/news" ADD_DATE="1560000000">BBC News</A>
-<DT><A HREF="https://forecast.weather.gov/MapClick.php?lat=47.6062&lon=-122.3321" ADD_DATE="1600000000">7-day forecast for Seattle, WA</A>
-</DL><p>
-<DT><H3 ADD_DATE="1556668800" LAST_MODIFIED="1758000000">Dev</H3>
-<DL><p>
-<DT><H3 ADD_DATE="1556668900" LAST_MODIFIED="1750000000">Docs</H3>
-<DL><p>
-<DT><A HREF="https://react.dev/reference/react" ADD_DATE="1680000000">React Reference</A>
-<DT><A HREF="https://www.typescriptlang.org/docs/handbook/intro.html" ADD_DATE="1620000000">The TypeScript Handbook</A>
-<DT><A HREF="https://nodejs.org/docs/latest/api/" ADD_DATE="1590000000">Node.js Documentation</A>
-<DT><A HREF="https://docs.python.org/3/" ADD_DATE="1570000000">Python 3 Documentation</A>
-<DT><A HREF="https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout" ADD_DATE="1640000000">CSS grid layout - MDN</A>
-</DL><p>
-<DT><H3 ADD_DATE="1556669000" LAST_MODIFIED="1745000000">Tools</H3>
-<DL><p>
-<DT><A HREF="https://regex101.com/" ADD_DATE="1566000000">regex101: build, test, and debug regex</A>
-<DT><A HREF="https://crontab.guru/" ADD_DATE="1580000000">Crontab.guru - The cron schedule expression editor</A>
-<DT><A HREF="https://excalidraw.com/" ADD_DATE="1610000000">Excalidraw</A>
-<DT><A HREF="https://squoosh.app/" ADD_DATE="1612000000">Squoosh</A>
-<DT><A HREF="https://transform.tools/" ADD_DATE="1625000000">Transform</A>
-<DT><A HREF="javascript:(function(){document.designMode=document.designMode==='on'?'off':'on'})()" ADD_DATE="1630000000">Toggle design mode</A>
-</DL><p>
-<DT><A HREF="https://developer.mozilla.org/" ADD_DATE="1556669100">MDN Web Docs</A>
-<DT><A HREF="https://caniuse.com/" ADD_DATE="1556669200">Can I use... Support tables for HTML5, CSS3, etc</A>
-<DT><A HREF="https://github.com/notifications" ADD_DATE="1556669300">Notifications · GitHub</A>
-<DT><A HREF="http://www.developer.mozilla.org" ADD_DATE="1690000000">MDN</A>
-</DL><p>
-<DT><H3 ADD_DATE="1572566400" LAST_MODIFIED="1730000000">Design</H3>
-<DL><p>
-<DT><A HREF="https://fonts.google.com/" ADD_DATE="1572566500">Google Fonts</A>
-<DT><A HREF="https://typescale.com/" ADD_DATE="1580500000">Type Scale - A Visual Calculator</A>
-<DT><A HREF="https://coolors.co/" ADD_DATE="1581000000">Coolors - The super fast color palettes generator</A>
-<DT><A HREF="https://www.figma.com/files/recents-and-sharing" ADD_DATE="1600500000">Figma</A>
-<DT><A HREF="https://www.refactoringui.com/" ADD_DATE="1575000000">Refactoring UI</A>
-</DL><p>
-<DT><H3 ADD_DATE="1585699200" LAST_MODIFIED="1752000000">Reading list</H3>
-<DL><p>
-<DT><A HREF="https://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/" ADD_DATE="1585699300">Falsehoods Programmers Believe About Names</A>
-<DT><A HREF="https://www.joelonsoftware.com/2002/11/11/the-law-of-leaky-abstractions/" ADD_DATE="1590000500">The Law of Leaky Abstractions – Joel on Software</A>
-<DT><A HREF="https://mcfunley.com/choose-boring-technology" ADD_DATE="1600800000">Choose Boring Technology</A>
-<DT><A HREF="https://paulgraham.com/greatwork.html" ADD_DATE="1689000000">How to Do Great Work</A>
-<DT><A HREF="https://www.inkandswitch.com/local-first/" ADD_DATE="1700000000">Local-first software</A>
-</DL><p>
-<DT><H3 ADD_DATE="1704067200" LAST_MODIFIED="1712000000">Lisbon trip</H3>
-<DL><p>
-<DT><A HREF="https://www.visitportugal.com/en/destinos/lisboa" ADD_DATE="1704067300">Lisbon Region | visitportugal</A>
-<DT><A HREF="https://www.timeout.com/lisbon" ADD_DATE="1704500000">Time Out Lisbon</A>
-<DT><A HREF="https://www.metrolisboa.pt/en/" ADD_DATE="1705000000">Metropolitano de Lisboa</A>
-<DT><A HREF="https://www.google.com/maps/place/Alfama,+Lisbon,+Portugal" ADD_DATE="1704600000">Google Maps</A>
-</DL><p>
-<DT><H3 ADD_DATE="1500000000" LAST_MODIFIED="1500000000">Old stuff</H3>
-<DL><p>
-</DL><p>
-</DL><p>
-<DT><H3 ADD_DATE="1530000000" LAST_MODIFIED="1740000000">Recipes</H3>
-<DL><p>
-<DT><A HREF="https://www.seriouseats.com/" ADD_DATE="1530000100">Serious Eats</A>
-<DT><A HREF="https://cooking.nytimes.com/" ADD_DATE="1540000000">NYT Cooking</A>
-<DT><A HREF="https://www.budgetbytes.com/" ADD_DATE="1550000000">Budget Bytes</A>
-<DT><A HREF="https://www.kingarthurbaking.com/recipes" ADD_DATE="1600000000">Recipes | King Arthur Baking</A>
-</DL><p>
-<DT><H3 ADD_DATE="1580000000" LAST_MODIFIED="1735000000">Home</H3>
-<DL><p>
-<DT><A HREF="https://www.homedepot.com/" ADD_DATE="1580000100">The Home Depot</A>
-<DT><A HREF="https://www.ikea.com/us/en/" ADD_DATE="1590000000">IKEA US</A>
-<DT><H3 ADD_DATE="1650000000" LAST_MODIFIED="1650000000">Garden</H3>
-<DL><p>
-</DL><p>
-</DL><p>
-<DT><A HREF="https://en.wikipedia.org/wiki/Main_Page" ADD_DATE="1520000000">Wikipedia, the free encyclopedia</A>
-<DT><A HREF="https://news.ycombinator.com" ADD_DATE="1720000000">Hacker News</A>
-<DT><H3 ADD_DATE="1600000000" LAST_MODIFIED="1760000000">Mobile bookmarks</H3>
-<DL><p>
-<DT><A HREF="https://www.google.com/maps" ADD_DATE="1600000100">Google Maps</A>
-<DT><A HREF="https://forecast.weather.gov/MapClick.php?lat=47.6062&lon=-122.3321" ADD_DATE="1650000000">Seattle weather</A>
-<DT><A HREF="https://www.bbc.com/news/" ADD_DATE="1700000000">BBC News - Home</A>
-</DL><p>
-</DL><p>`;
-
 /* ---------- boot ---------- */
-if (!restore()) loadRoot(parseBookmarks(SAMPLE), null, true);
+if (!restore()) loadRoot(blankRoot(), null, true);
 else toast(`Picked up where you left off with ${S.fileName || 'your bookmarks'}.`);
 
 })();
