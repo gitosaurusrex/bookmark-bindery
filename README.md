@@ -1,7 +1,8 @@
 # Bookmark Bindery
 
-A single-page editor for browser bookmark exports (the `bookmarks_*.html` file Chrome, Edge, Firefox and Safari produce).
+A single-page editor for browser bookmark exports (the `bookmarks_*.html` file Chrome, Edge, Firefox and Safari produce). It starts empty: import a file, or drop one onto the page.
 
+- Checks each file before opening it, and refuses files that are cut off, damaged, binary, JSON backups or not bookmark exports, saying why
 - Browse the whole library as an expandable tree or one folder at a time
 - Rename, edit addresses, move (drag and drop, cut and paste, Move to…), group and delete, with undo
 - Find duplicates by address, name or both, and choose which copies to keep
