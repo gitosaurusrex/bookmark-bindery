@@ -135,6 +135,16 @@ kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px s
 .vrow .tname{flex:1}
 .side-foot{padding:10px 8px 14px;border-top:1px solid var(--rule);margin-top:10px}
 .side-foot .vrow{width:100%}
+.side-foot .side-h{padding:4px 12px 6px}
+.vrow:disabled{opacity:.4;cursor:default}
+.vrow:disabled:hover{background:transparent;color:var(--ink-2)}
+.vrow.danger{color:var(--danger)}
+.vrow.danger:hover:not(:disabled){background:var(--danger-soft);color:var(--danger)}
+.switch{position:relative;flex:none;width:28px;height:16px;border-radius:8px;border:1.5px solid var(--ink-3);transition:background .15s,border-color .15s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:9px;height:9px;border-radius:50%;background:var(--ink-3);transition:transform .15s,background .15s}
+.vrow[aria-checked="true"] .switch{background:var(--cloth);border-color:var(--cloth)}
+.vrow[aria-checked="true"] .switch::after{background:var(--on-cloth);transform:translateX(12px)}
+.dev-note{margin:2px 12px 10px;font-size:12px;line-height:1.4;color:var(--ink-3)}
 .dropline{position:absolute;height:2px;background:var(--cloth);border-radius:2px;pointer-events:none;z-index:3}
 .dropline::before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;border:2px solid var(--cloth);background:var(--sheet)}
 
@@ -366,7 +376,13 @@ body.dragging .row.sel:hover{background:var(--select)}
     <div class="tree" id="tree" role="tree"></div>
     <div class="side-h">Inspect</div>
     <nav class="views" id="views"></nav>
-    <div class="side-foot"><button class="vrow" id="keysBtn"></button></div>
+    <div class="side-foot">
+      <div class="side-h">This device</div>
+      <button class="vrow" id="rememberBtn" role="switch" aria-checked="true"></button>
+      <button class="vrow danger" id="forgetBtn"></button>
+      <p class="dev-note" id="deviceNote"></p>
+      <button class="vrow" id="keysBtn"></button>
+    </div>
   </aside>
   <div class="navscrim" id="navScrim"></div>
   <main class="pane" id="pane">
@@ -432,6 +448,7 @@ const I = {
   collapse: sv('<path d="m5 3 3 3 3-3M5 13l3-3 3 3"/>'),
   trim: sv('<path d="M6 13.5 2.8 10.3a1.2 1.2 0 0 1 0-1.7l6-6a1.2 1.2 0 0 1 1.7 0l3.2 3.2a1.2 1.2 0 0 1 0 1.7L8.5 13.5z"/><path d="M5.25 6.25 9.75 10.75M6 13.5h7.5"/>'),
   reveal: sv(`<path d="${FOLDER_D}"/><circle cx="8" cy="8.75" r="1.6"/>`),
+  device: sv('<rect x="2.75" y="3.25" width="10.5" height="7" rx="1"/><path d="M1.25 12.75h13.5"/>'),
 };
 
 /* ---------- state ---------- */
@@ -443,7 +460,7 @@ const S = {
   expanded: new Set(), clip: null, editing: null,
   drag: null, drop: null, recent: [], bannerHidden: false,
   dupeMode: 'url', marks: new Set(),
-  layout: 'tree', open: new Set(),
+  layout: 'tree', open: new Set(), remember: true,
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
 let undoStack = [], redoStack = [];
@@ -1206,7 +1223,17 @@ function renderSelbar() {
     <button data-sa="delete" class="danger">${I.trash}<span class="lbl">Delete</span></button>
     <button data-sa="clear" class="x" aria-label="Clear selection" title="Clear selection (Esc)">${I.x}</button>`;
 }
-function renderAll() { renderTop(); renderBanner(); renderTree(); renderViews(); renderHead(); renderList(); renderSelbar(); renderMarkbar(); }
+function renderDevice() {
+  const r = $('rememberBtn'), f = $('forgetBtn');
+  r.setAttribute('aria-checked', String(S.remember));
+  f.disabled = S.isSample;
+  f.title = S.isSample ? 'Nothing to forget. The sample library isn’t saved.' : 'Remove your bookmarks from this browser and close them here';
+  $('deviceNote').textContent = S.isSample
+    ? (S.remember ? 'Files you open are saved in this browser only. Nothing is uploaded.' : 'Files you open stay in this tab only. Closing it clears them.')
+    : !S.remember ? 'Not saved. Closing this tab clears your bookmarks from Bindery.'
+    : S.persisted ? 'Saved in this browser only. Nothing is uploaded.' : 'This browser didn’t save your file. Export to keep your edits.';
+}
+function renderAll() { renderTop(); renderBanner(); renderDevice(); renderTree(); renderViews(); renderHead(); renderList(); renderSelbar(); renderMarkbar(); }
 function refresh() { buildRows(); renderAll(); }
 
 /* ---------- inline editing ---------- */
@@ -1539,21 +1566,46 @@ async function doExport() {
 
 /* ---------- persistence (this browser only) ---------- */
 let persistT = 0;
+function dropStored() { try { localStorage.removeItem(LS_SESSION); } catch {} }
 function persist(now) {
   clearTimeout(persistT);
   const run = () => {
-    if (S.isSample) { try { localStorage.removeItem(LS_SESSION); } catch {} S.persisted = true; return; }
+    if (S.isSample || !S.remember) { dropStored(); S.persisted = S.isSample; renderDevice(); return; }
     try {
       const data = JSON.stringify({ v: 1, root: S.root, fileName: S.fileName, dirty: S.dirty });
-      if (data.length > 4.5e6) { S.persisted = false; return; }
-      localStorage.setItem(LS_SESSION, data); S.persisted = true;
+      if (data.length > 4.5e6) { S.persisted = false; dropStored(); }
+      else { localStorage.setItem(LS_SESSION, data); S.persisted = true; }
     } catch { S.persisted = false; }
+    renderDevice();
   };
   now ? run() : (persistT = setTimeout(run, 600));
 }
-function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ bannerHidden: S.bannerHidden, dupeMode: S.dupeMode, layout: S.layout })); } catch {} }
+function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ bannerHidden: S.bannerHidden, dupeMode: S.dupeMode, layout: S.layout, remember: S.remember })); } catch {} }
+function setRemember(on) {
+  if (S.editing) commitEdit();
+  S.remember = on; saveUI(); persist(true);
+  const name = S.fileName || 'your bookmarks';
+  if (on) toast(S.isSample ? 'Bindery will save the next file you open in this browser.' : S.persisted ? `Saved ${name} in this browser. It reopens on your next visit.` : 'This browser didn’t save your file. Export to keep your edits.', { error: !S.isSample && !S.persisted });
+  else toast(S.isSample ? 'Files you open won’t be saved in this browser.' : `Removed the saved copy of ${name}. It stays open until you close this tab.`, { ms: 6000 });
+}
+async function requestForget() {
+  if (S.isSample) return;
+  if (S.editing) commitEdit();
+  const name = S.fileName || 'your bookmarks';
+  let body = `<p>This removes the copy Bindery saved in this browser and closes “${esc(name)}” here. The next visit opens the sample library. Files on your computer aren’t touched.</p>`;
+  if (S.dirty) body += `<p class="warn">Your edits haven’t been exported. Export first if you want to keep them.</p>`;
+  body += `<p class="note">Your browser can keep traces in its own files until they’re overwritten. To clear those too, delete this site’s data in your browser settings, or turn off “Remember my file” and use a private window.</p>`;
+  const ok = await confirmDialog({ title: 'Forget your bookmarks on this device?', body, ok: 'Forget bookmarks', danger: true, focusOk: false });
+  if (!ok) return;
+  dropStored();
+  S.marks.clear();
+  loadRoot(parseBookmarks(SAMPLE), null, true);
+  el.toasts.innerHTML = '';
+  toast('Forgot your bookmarks on this device.');
+}
 function restore() {
-  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); S.bannerHidden = !!ui.bannerHidden; if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; } catch {}
+  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); S.bannerHidden = !!ui.bannerHidden; if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; } catch {}
+  if (!S.remember) { dropStored(); return false; }
   try {
     const raw = localStorage.getItem(LS_SESSION); if (!raw) return false;
     const d = JSON.parse(raw); if (!d?.root?.children) return false;
@@ -1810,6 +1862,8 @@ $('exportBtn').addEventListener('click', doExport);
 el.undo.addEventListener('click', undo);
 el.redo.addEventListener('click', redo);
 $('keysBtn').addEventListener('click', openKeys);
+$('rememberBtn').addEventListener('click', () => setRemember(!S.remember));
+$('forgetBtn').addEventListener('click', requestForget);
 $('navBtn').addEventListener('click', () => el.app.classList.toggle('nav-open'));
 $('navScrim').addEventListener('click', () => el.app.classList.remove('nav-open'));
 let qT = 0;
@@ -1885,6 +1939,9 @@ $('exportBtn').innerHTML = `${I.export}<span>Export</span>`;
 $('importBtn').title = 'Open a bookmarks .html file';
 $('exportBtn').title = 'Save a bookmarks .html file you can import into Chrome';
 $('keysBtn').innerHTML = `<span class="ficon plain" style="color:inherit">${I.keyboard}</span><span class="tname">Keyboard shortcuts</span><kbd>?</kbd>`;
+$('rememberBtn').innerHTML = `<span class="ficon plain" style="color:inherit">${I.device}</span><span class="tname">Remember my file</span><span class="switch" aria-hidden="true"></span>`;
+$('rememberBtn').title = 'Keep your bookmarks in this browser so they reopen on your next visit';
+$('forgetBtn').innerHTML = `<span class="ficon plain" style="color:inherit">${I.trash}</span><span class="tname">Forget on this device</span>`;
 
 /* ---------- sample library ---------- */
 const SAMPLE = `<!DOCTYPE NETSCAPE-Bookmark-file-1>

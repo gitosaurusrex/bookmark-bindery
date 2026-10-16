@@ -8,7 +8,14 @@ A single-page editor for browser bookmark exports (the `bookmarks_*.html` file C
 - Remove query strings from addresses
 - Export a Netscape-format bookmarks file that Chrome's Bookmark Manager can import
 
-Everything runs in the browser. The page makes no network requests apart from loading Google Fonts, and its Content Security Policy blocks any other connection. Your library is kept only in this browser's local storage.
+Everything runs in the browser. The page makes no network requests apart from loading Google Fonts, and its Content Security Policy blocks any other connection. Your library is kept only in this browser's local storage, so it reopens on your next visit.
+
+Under **This device** in the sidebar:
+
+- **Remember my file** (on by default): turn it off and Bindery deletes its saved copy and saves nothing until you turn it back on. Your file then lasts only as long as the tab.
+- **Forget on this device**: deletes the saved copy, closes your file and clears undo history. Files on your computer aren't touched.
+
+Your browser may keep traces in its own storage files after a delete until they're overwritten. To clear those as well, delete the site's data in your browser settings.
 
 ## Hosting
 
