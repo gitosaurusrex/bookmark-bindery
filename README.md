@@ -19,11 +19,13 @@ drag and drop, and export a clean file that Chrome imports straight back. No acc
 ## Why Bookmark Bindery
 
 - **See everything.** Browse the whole library as one expandable tree, or one folder at a time. Search titles and
-  addresses across every folder as you type.
+  addresses across every folder as you type, filter the folder list by name, and expand or collapse every folder at
+  once.
 - **Clear out duplicates safely.** Find copies by address, name or both. Choose which to keep, one by one or with "keep
   the oldest in each group", and check before anything is deleted.
 - **Reorganize fast.** Drag and drop, cut and paste, **Move to…**, group a selection into a new folder, sort by name,
-  date or site. There are keyboard shortcuts for all of it.
+  date or site. Or turn on **Keep everything A to Z**: every folder lists its subfolders first, then its bookmarks,
+  each A to Z, stays that way as you edit, and exports in that order. There are keyboard shortcuts for all of it.
 - **Undo anything.** Every change can be undone, up to 200 steps back.
 - **Refuses broken files.** Before opening a file, Bindery checks that it's complete. A file that's cut off, damaged,
   binary, a JSON backup or not a bookmarks export is turned away with a reason, instead of opening with bookmarks quietly
@@ -63,6 +65,8 @@ Everything Bindery can do:
 - Checks each file before opening it, and refuses files that are cut off, damaged, binary, JSON backups or not bookmark
   exports, saying why
 - Browse the whole library as an expandable tree or one folder at a time
+- Filter the sidebar's folder list by name (**F**), and expand or collapse all its folders at once
+- Keep every folder A to Z, folders first, in the app and in the exported file
 - Rename, edit addresses, move (drag and drop, cut and paste, Move to…), group and delete, with undo
 - Find duplicates by address, name or both, and choose which copies to keep
 - Remove query strings from addresses

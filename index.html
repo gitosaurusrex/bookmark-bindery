@@ -99,6 +99,7 @@ kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px s
 .btn.primary:hover{filter:brightness(1.08)}
 .btn.danger{background:var(--danger);border-color:transparent;color:var(--on-danger)}
 .btn.ghost{border-color:transparent;background:transparent}
+.btn.on,.btn.on:hover{background:var(--cloth-soft);border-color:transparent;color:var(--cloth-ink)}
 .btn.ghost:hover{background:var(--hover)}
 .btn svg{color:currentColor}
 .icon-btn{width:32px;height:32px;display:grid;place-items:center;border-radius:8px;border:0;background:transparent;color:var(--ink-2)}
@@ -145,6 +146,27 @@ kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px s
 .vrow[aria-checked="true"] .switch{background:var(--cloth);border-color:var(--cloth)}
 .vrow[aria-checked="true"] .switch::after{background:var(--on-cloth);transform:translateX(12px)}
 .dev-note{margin:2px 12px 10px;font-size:12px;line-height:1.4;color:var(--ink-3)}
+.side-hrow{display:flex;align-items:center;gap:8px;padding-right:12px;padding-block:10px 2px}
+.side-hrow>span:first-child{flex:1}
+.side-tools{display:flex;gap:1px;letter-spacing:0;text-transform:none;opacity:0;transition:opacity .15s}
+.side:hover .side-tools,.side:focus-within .side-tools,.side-tools.pinned{opacity:1}
+.side-tools .icon-btn{width:26px;height:26px;border-radius:6px;color:var(--ink-3)}
+.side-tools .icon-btn svg{width:14px;height:14px}
+.side-tools .icon-btn.on{color:var(--cloth);background:var(--cloth-soft)}
+.tfilter{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .18s ease,opacity .18s ease}
+.tfilter.open{grid-template-rows:1fr;opacity:1}
+.tfilter>div{overflow:hidden;min-height:0}
+.tf-box{display:flex;align-items:center;gap:6px;height:32px;margin:4px 11px 6px;padding:0 3px 0 9px;border-radius:8px;background:var(--sheet);border:1px solid var(--rule-2);color:var(--ink-3)}
+.tf-box:focus-within{border-color:var(--cloth);box-shadow:0 0 0 3px var(--cloth-soft)}
+.tf-box svg{width:14px;height:14px}
+.tf-box input{flex:1;min-width:0;border:0;background:transparent;outline:none;color:var(--ink);font-size:13px}
+.tf-box input::placeholder{color:var(--ink-3)}
+.tf-n{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tf-box .icon-btn{width:24px;height:24px;border-radius:6px}
+.tf-box .icon-btn svg{width:12px;height:12px}
+.trow.ctx .tname{color:var(--ink-3)}
+.trow mark{padding:0 1px}
+.tf-empty{margin:6px 12px;font-size:12.5px;color:var(--ink-3)}
 .dropline{position:absolute;height:2px;background:var(--cloth);border-radius:2px;pointer-events:none;z-index:3}
 .dropline::before{content:"";position:absolute;left:-3px;top:-3px;width:8px;height:8px;border-radius:50%;border:2px solid var(--cloth);background:var(--sheet)}
 
@@ -174,7 +196,7 @@ kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px s
 .empty.blank-state h3{font-size:26px;margin-bottom:6px}
 .empty.blank-state p{margin-inline:auto}
 .empty .how{margin-top:12px;font-size:12.5px}
-.app.blank .phead,.app.blank #tree,.app.blank #views,.app.blank .side-h.lib{display:none}
+.app.blank .phead,.app.blank #tree,.app.blank .tfilter,.app.blank #views,.app.blank .side-h.lib{display:none}
 .app.blank .side-foot{margin-top:auto}
 .btn:disabled{opacity:.45;cursor:default}
 .btn:disabled:hover{background:var(--sheet);filter:none}
@@ -280,7 +302,7 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 @keyframes rise{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
 
 /* ---------- menus & dialogs ---------- */
-.menu{position:fixed;z-index:50;min-width:220px;padding:5px;border-radius:11px;background:var(--sheet);border:1px solid var(--rule);box-shadow:var(--shadow)}
+.menu{position:fixed;z-index:50;min-width:220px;max-width:min(320px,calc(100vw - 16px));padding:5px;border-radius:11px;background:var(--sheet);border:1px solid var(--rule);box-shadow:var(--shadow)}
 .mi{display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 10px;border:0;border-radius:7px;background:transparent;text-align:left;color:var(--ink);text-decoration:none;font-size:13.5px}
 .mi svg{color:var(--ink-3)}
 .mi:hover,.mi:focus-visible{background:var(--hover);outline:none}
@@ -289,6 +311,12 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .mi.danger,.mi.danger svg{color:var(--danger)}
 .mi.danger:hover{background:var(--danger-soft)}
 .msep{height:1px;background:var(--rule);margin:5px 6px}
+.mlabel{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:6px 10px 3px}
+.mi.tall{height:auto;min-height:32px;padding:7px 10px;align-items:flex-start}
+.mi small{display:block;margin-top:1px;font-size:12px;line-height:1.35;color:var(--ink-3)}
+.mi .mcheck{width:16px;height:16px;flex:none;display:grid;place-items:center;border-radius:4px;border:1.5px solid var(--rule-2);margin-top:1px}
+.mi .mcheck svg{width:11px;height:11px;stroke-width:2.2;color:var(--on-cloth)}
+.mi[aria-checked="true"] .mcheck{background:var(--cloth);border-color:var(--cloth)}
 .scrim{position:fixed;inset:0;z-index:60;background:var(--scrim);display:grid;place-items:center;padding:16px;animation:fade .15s}
 .dialog{width:min(500px,100%);max-height:calc(100% - 32px);overflow:auto;background:var(--sheet);border-radius:14px;box-shadow:var(--shadow);padding:22px 22px 18px;animation:rise .18s ease-out}
 .dialog h2{margin:0 0 8px;font:500 23px/1.2 var(--f-display);letter-spacing:-.01em;text-wrap:balance}
@@ -358,6 +386,7 @@ body.dragging .row.sel:hover{background:var(--select)}
 }
 @media (hover:none){
   .check{opacity:1}
+  .side-tools{opacity:1}
   .acts{opacity:1;pointer-events:auto}
   .acts .a-edit,.acts .a-go,.acts .a-link{display:none}
   .date{display:none}
@@ -380,7 +409,8 @@ body.dragging .row.sel:hover{background:var(--select)}
     </div>
   </header>
   <aside class="side" id="side" aria-label="Folders">
-    <div class="side-h lib">Folders</div>
+    <div class="side-h lib side-hrow"><span>Folders</span><span class="side-tools" id="treeTools"></span></div>
+    <div class="tfilter" id="tfilter" inert><div><label class="tf-box"><span id="tfIco"></span><input id="tq" type="text" placeholder="Filter folders" autocomplete="off" spellcheck="false" aria-label="Filter folders"><span class="tf-n" id="tfn" aria-live="polite"></span><button class="icon-btn" id="tfClose" type="button" aria-label="Close the filter" title="Close the filter (Esc)"></button></label></div></div>
     <div class="tree" id="tree" role="tree"></div>
     <div class="side-h lib">Inspect</div>
     <nav class="views" id="views"></nav>
@@ -455,6 +485,8 @@ const I = {
   collapse: sv('<path d="m5 3 3 3 3-3M5 13l3-3 3 3"/>'),
   trim: sv('<path d="M6 13.5 2.8 10.3a1.2 1.2 0 0 1 0-1.7l6-6a1.2 1.2 0 0 1 1.7 0l3.2 3.2a1.2 1.2 0 0 1 0 1.7L8.5 13.5z"/><path d="M5.25 6.25 9.75 10.75M6 13.5h7.5"/>'),
   reveal: sv(`<path d="${FOLDER_D}"/><circle cx="8" cy="8.75" r="1.6"/>`),
+  filter: sv('<path d="M2.25 3.25h11.5l-4.5 5.5v4.25l-2.5 1.25V8.75z"/>'),
+  az: sv('<path d="M2 12.5 4.75 4l2.75 8.5M3 9.75h3.5"/><path d="M9.5 4h4.25L9.5 12.5h4.5"/>'),
   device: sv('<rect x="2.75" y="3.25" width="10.5" height="7" rx="1"/><path d="M1.25 12.75h13.5"/>'),
 };
 
@@ -468,6 +500,7 @@ const S = {
   drag: null, drop: null, recent: [],
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
+  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null,
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
 let undoStack = [], redoStack = [];
@@ -479,6 +512,7 @@ const el = {
   spacer: $('spacer'), empty: $('empty'), listLine: $('listLine'), selbar: $('selbar'), exportBtn: $('exportBtn'),
   markbar: $('markbar'), toasts: $('toasts'), menu: $('menu'), modal: $('modal'), dialog: $('dialog'), q: $('q'), fileChip: $('fileChip'),
   ghost: $('ghost'), filedrop: $('filedrop'), fileIn: $('fileIn'), undo: $('undoBtn'), redo: $('redoBtn'),
+  treeTools: $('treeTools'), tfilter: $('tfilter'), tq: $('tq'), tfn: $('tfn'),
 };
 
 /* ---------- small helpers ---------- */
@@ -506,6 +540,21 @@ function normUrl(u) {
   } catch { return u.trim(); }
 }
 const normName = t => String(t || '').normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
+const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+const byName = (a, b) => collator.compare(nameOf(a), nameOf(b));
+/* A to Z order: the bookmarks bar stays first, then folders, then bookmarks, each by name. */
+const azOrder = (a, b) => (isBar(b) - isBar(a)) || (a.type === b.type ? 0 : a.type === 'folder' ? -1 : 1) || byName(a, b);
+function sortChildren(f) {
+  const sorted = [...f.children].sort(azOrder);
+  const changed = sorted.some((c, i) => c !== f.children[i]);
+  if (changed) f.children = sorted;
+  return changed;
+}
+function sortAll(f) {
+  let changed = sortChildren(f);
+  for (const c of f.children) if (c.type === 'folder' && sortAll(c)) changed = true;
+  return changed;
+}
 const dateFmt = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 function fmtDate(v) {
   let n = Number(v); if (!n) return '';
@@ -687,6 +736,7 @@ function mutate(label, fn) {
   const snap = cloneTree(S.root);
   const chain = viewChain();
   if (fn() === false) return false;
+  if (S.autoSort) sortAll(S.root);
   undoStack.push({ root: snap, label }); if (undoStack.length > 200) undoStack.shift();
   redoStack = [];
   afterChange(chain);
@@ -710,15 +760,18 @@ function undo() {
   if (S.editing) cancelEdit();
   const e = undoStack.pop(); if (!e) return;
   const chain = viewChain();
-  redoStack.push({ root: S.root, label: e.label });
+  redoStack.push({ root: S.root, label: e.label, autoSortOn: e.autoSortOn });
+  // Undoing the step that switched on A to Z order switches it off, so the order you had comes back and stays.
+  if (e.autoSortOn) { S.autoSort = false; saveUI(); }
   S.root = e.root; afterChange(chain);
-  toast(`Undid ${lc1(e.label)}`);
+  toast(`Undid ${lc1(e.label)}${e.autoSortOn ? '. A to Z order is off.' : ''}`);
 }
 function redo() {
   if (S.editing) cancelEdit();
   const e = redoStack.pop(); if (!e) return;
   const chain = viewChain();
-  undoStack.push({ root: S.root, label: e.label });
+  undoStack.push({ root: S.root, label: e.label, autoSortOn: e.autoSortOn });
+  if (e.autoSortOn) { S.autoSort = true; saveUI(); }
   S.root = e.root; afterChange(chain);
   toast(`Redid ${lc1(e.label)}`);
 }
@@ -730,6 +783,7 @@ function moveItems(ids, targetId, beforeId, { quiet = false } = {}) {
   const target = node(targetId);
   const what = describe(ids);
   const crossFolder = ids.some(id => parentOf(id) !== target);
+  let reordered = false;
   const ok = mutate(`Move ${ids.length === 1 ? 'of ' + what : plural(ids.length, 'item')}`, () => {
     const parents = new Set(ids.map(id => parentOf(id))); parents.add(target);
     const before = sig(parents);
@@ -740,8 +794,11 @@ function moveItems(ids, targetId, beforeId, { quiet = false } = {}) {
     let at = ref ? target.children.findIndex(c => c.id === ref) : -1;
     if (at < 0) at = target.children.length;
     target.children.splice(at, 0, ...moving);
+    reordered = sig(parents) !== before;
+    if (S.autoSort) parents.forEach(sortChildren);
     if (sig(parents) === before) return false;
   });
+  if (!ok && reordered && S.autoSort) toast('A to Z order is on, so items can’t be rearranged by hand. Turn it off under Sort.', { ms: 6000 });
   if (ok) {
     S.recent = [targetId, ...S.recent.filter(x => x !== targetId)].slice(0, 4);
     if (!quiet && crossFolder) toast(`Moved ${what} to “${folderTitle(target)}”`, { undo: true });
@@ -752,6 +809,8 @@ function renameNode(id, title, url) {
   const n = node(id); if (!n) return;
   if (n.title === title && (url == null || url === n.url)) return;
   mutate(url != null && url !== n.url ? 'Edit of the bookmark' : 'Rename', () => { n.title = title; if (url != null) n.url = url; });
+  // With A to Z order on, a rename can move the item, so keep it in view.
+  if (S.autoSort && S.rowPos.has(id)) { ensureVisible(S.rowPos.get(id)); renderList(); }
 }
 function newFolder(parentId, at = 0) {
   const f = node(parentId); let nf;
@@ -795,7 +854,7 @@ function group(ids) {
 function sortFolder(id, mode) {
   const f = node(id);
   const key = {
-    name: (a, b) => nameOf(a).localeCompare(nameOf(b), undefined, { sensitivity: 'base', numeric: true }),
+    name: byName,
     newest: (a, b) => dateNum(b) - dateNum(a),
     oldest: (a, b) => dateNum(a) - dateNum(b),
     domain: (a, b) => (host(a.url) || '~').localeCompare(host(b.url) || '~') || nameOf(a).localeCompare(nameOf(b)),
@@ -806,6 +865,23 @@ function sortFolder(id, mode) {
   mutate('Sort', () => { f.children = sorted; });
   toast(`Sorted “${folderTitle(f)}”`, { undo: true });
 }
+/* A to Z order rewrites the library itself, so the export comes out sorted too. While it's on, every change is
+   re-sorted inside the same undo step. Undoing the step that turned it on turns it off again. */
+function setAutoSort(on) {
+  if (S.editing) commitEdit();
+  if (on === S.autoSort) return;
+  S.autoSort = on; saveUI();
+  if (!on) { renderHead(); toast('A to Z order is off. New and moved items stay where you put them.'); return; }
+  if (S.noFile) { renderHead(); return; }
+  if (sortLibrary(true)) toast('Sorted every folder A to Z, folders first. It stays that way as you edit, and exports in this order.', { undo: true, ms: 7500 });
+  else { renderHead(); toast('Everything is already A to Z, and it’ll stay that way as you edit.'); }
+}
+function sortLibrary(turnsOn) {
+  const ok = mutate('Sorting A to Z', () => sortAll(S.root) ? undefined : false);
+  if (ok && turnsOn) undoStack.at(-1).autoSortOn = true;
+  return ok;
+}
+function sortOnceAll() { if (sortLibrary(false)) toast('Sorted every folder A to Z, folders first', { undo: true }); else toast('Already in A to Z order.'); }
 async function requestDelete(ids) {
   ids = topLevel(ids); if (!ids.length) return;
   if (ids.includes(S.root.id)) return;
@@ -1061,12 +1137,13 @@ function iconHTML(n) {
   const h = host(n.url); const ch = ((h || n.title || '?').trim()[0] || '?').toUpperCase();
   return `<span class="ico mono" style="--h:${hue(h || n.title || '')}">${esc(ch)}</span>`;
 }
-function hl(text) {
+function markTerms(text, terms) {
   const s = esc(text);
-  if (S.view.kind !== 'search' || !S.terms.length) return s;
-  const re = new RegExp('(' + S.terms.map(t => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
+  if (!terms.length) return s;
+  const re = new RegExp('(' + terms.map(t => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
   return s.replace(re, '<mark>$1</mark>');
 }
+const hl = text => markTerms(text, S.view.kind === 'search' ? S.terms : []);
 function rowHTML(r, i) {
   const top = PAD + i * ROW;
   if (r.group) {
@@ -1158,21 +1235,69 @@ function markSel() {
 function renderTree() {
   if (S.editing?.where === 'tree' && S.editing.el?.isConnected) return;
   const cur = S.view.kind === 'folder' ? S.view.id : S.view.kind === 'tree' ? treeFolderOfCursor() : null;
+  // While filtering, show the folders whose names match plus the folders they sit in, all open.
+  const terms = treeTerms(), filtering = terms.length > 0, hits = new Set(), show = new Set();
+  if (filtering) {
+    const walk = n => {
+      let any = false;
+      for (const c of n.children) if (c.type === 'folder') {
+        const hit = terms.every(t => folderTitle(c).toLowerCase().includes(t));
+        if (hit) hits.add(c.id);
+        if (walk(c) || hit) { show.add(c.id); any = true; }
+      }
+      return any;
+    };
+    walk(S.root);
+  }
+  S.tfFirst = null;
   let h = '';
   const row = (n, d) => {
     const r = idx.get(n.id), isRoot = n === S.root;
-    const subs = n.children.some(c => c.type === 'folder');
-    const open = isRoot || S.expanded.has(n.id);
+    const kids = n.children.filter(c => c.type === 'folder' && (!filtering || show.has(c.id)));
+    const subs = !filtering && kids.length > 0;
+    const open = isRoot || filtering || S.expanded.has(n.id);
     const editing = S.editing?.where === 'tree' && S.editing.id === n.id;
-    h += `<div class="trow${n.id === cur ? ' on' : ''}${S.clip?.set.has(n.id) ? ' cut' : ''}" data-id="${n.id}" style="--d:${d}" ${isRoot || editing ? '' : 'draggable="true"'} role="treeitem" ${subs ? `aria-expanded="${open}"` : ''}>
+    if (hits.has(n.id)) S.tfFirst ??= n.id;
+    const ctx = filtering && !isRoot && !hits.has(n.id);
+    h += `<div class="trow${n.id === cur ? ' on' : ''}${S.clip?.set.has(n.id) ? ' cut' : ''}${ctx ? ' ctx' : ''}" data-id="${n.id}" style="--d:${d}" ${isRoot || editing ? '' : 'draggable="true"'} role="treeitem" ${subs ? `aria-expanded="${open}"` : ''}>
       ${isRoot ? '<span class="chev none"></span>' : `<button class="chev${subs ? '' : ' none'}${open ? ' open' : ''}" data-a="toggle" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'}">${I.chev}</button>`}
       <span class="ficon${isRoot ? ' plain' : ''}">${isRoot ? I.ribbon : isBar(n) ? I.bar : I.folder}</span>
-      ${editing ? `<input class="in-t" value="${esc(n.title)}" aria-label="Folder name" spellcheck="false">` : `<span class="tname">${esc(folderTitle(n))}</span>`}
+      ${editing ? `<input class="in-t" value="${esc(n.title)}" aria-label="Folder name" spellcheck="false">` : `<span class="tname">${isRoot ? esc(folderTitle(n)) : markTerms(folderTitle(n), terms)}</span>`}
       <span class="tcount">${r.links ? fmt(r.links) : ''}</span></div>`;
-    if (open) for (const c of n.children) if (c.type === 'folder') row(c, d + 1);
+    if (open) for (const c of kids) row(c, d + 1);
   };
   row(S.root, 0);
+  if (filtering && !hits.size) h += `<p class="tf-empty">No folder names contain “${esc(S.tfilter.trim())}”.</p>`;
   el.tree.innerHTML = h + '<div class="dropline" id="treeLine" hidden></div>';
+  el.tfn.textContent = filtering ? fmt(hits.size) : '';
+  el.tfn.title = filtering ? `${plural(hits.size, 'folder')} match` : '';
+}
+/* ---------- folder filter & sidebar tools ---------- */
+const treeTerms = () => S.tfilter.trim().toLowerCase().split(/\s+/).filter(Boolean);
+function renderTreeTools() {
+  el.treeTools.classList.toggle('pinned', S.tfOpen);
+  el.treeTools.innerHTML = `<button class="icon-btn${S.tfOpen ? ' on' : ''}" data-tt="filter" aria-expanded="${S.tfOpen}" aria-controls="tfilter" aria-label="Filter folders" title="Filter folders (F)">${I.filter}</button>
+    <button class="icon-btn" data-tt="expand" aria-label="Expand all folders" title="Expand all folders">${I.expand}</button>
+    <button class="icon-btn" data-tt="collapse" aria-label="Collapse all folders" title="Collapse all folders">${I.collapse}</button>`;
+}
+function setTreeFilterOpen(open) {
+  if (open && isBlank()) return;
+  S.tfOpen = open;
+  el.tfilter.classList.toggle('open', open); el.tfilter.inert = !open;
+  if (open) { el.app.classList.add('nav-open'); el.tq.focus(); el.tq.select(); }
+  else {
+    el.tq.value = ''; S.tfilter = '';
+    if (el.tfilter.contains(document.activeElement)) el.treeTools.querySelector('[data-tt="filter"]')?.focus({ preventScroll: true });
+  }
+  renderTreeTools(); renderTree();
+  if (!open) el.tree.querySelector('.trow.on')?.scrollIntoView({ block: 'nearest' });
+}
+function setAllExpanded(open) {
+  if (S.tfOpen) setTreeFilterOpen(false);
+  if (open) { for (const [id, r] of idx) if (r.node.type === 'folder' && r.node.children.some(c => c.type === 'folder')) S.expanded.add(id); }
+  else S.expanded.clear();
+  renderTree();
+  el.tree.scrollTop = 0;
 }
 function renderViews() {
   const v = S.view.kind;
@@ -1183,6 +1308,10 @@ function renderHead() {
   if (S.editing?.where === 'head' && S.editing.el?.isConnected) return;
   const v = S.view; let crumbs = '', title = '', meta = '', acts = '';
   const selAllBtn = `<button class="btn" data-h="selectall">${I.check}Select all</button>`;
+  const sortBtn = S.autoSort
+    ? `<button class="btn on" data-h="sort" aria-haspopup="menu" title="Every folder is kept A to Z, folders first">${I.az}A to Z</button>`
+    : `<button class="btn" data-h="sort" aria-haspopup="menu">${I.sort}Sort</button>`;
+  const azNote = S.autoSort ? ' <span class="dim">· A to Z, folders first</span>' : '';
   const layoutSeg = `<div class="seg" role="tablist" aria-label="Layout">
     <button role="tab" data-layout="tree" class="${v.kind === 'tree' ? 'on' : ''}" aria-selected="${v.kind === 'tree'}" title="See every folder at once (T)">${I.tree}Tree</button>
     <button role="tab" data-layout="folder" class="${v.kind === 'folder' ? 'on' : ''}" aria-selected="${v.kind === 'folder'}" title="One folder at a time (T)">${I.folder}Folder</button></div>`;
@@ -1195,15 +1324,16 @@ function renderHead() {
     const dl = n.children.filter(c => c.type === 'link').length, df = n.children.length - dl;
     meta = n.children.length ? [dl && plural(dl, 'bookmark'), df && plural(df, 'folder')].filter(Boolean).join(' · ') + (r.links > dl ? ` <span class="dim">· ${fmt(r.links)} bookmarks including subfolders</span>` : '') : 'Empty folder';
     if (n === S.root) meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· items here sit at the top level of the file</span>`;
+    meta += azNote;
     acts = (S.clip ? `<button class="btn primary" data-h="paste">${I.paste}Paste ${S.clip.ids.length} here</button>` : '') +
-      `<button class="btn" data-h="newfolder">${I.plus}New folder</button><button class="btn" data-h="sort" aria-haspopup="menu">${I.sort}Sort</button>` + layoutSeg;
+      `<button class="btn" data-h="newfolder">${I.plus}New folder</button>` + sortBtn + layoutSeg;
   } else if (v.kind === 'tree') {
     crumbs = '<span>Everything, as an outline</span>';
     title = `<h1 class="ptitle">${esc(folderTitle(S.root))}</h1>`;
     const openCount = [...S.open].filter(id => idx.has(id) && id !== S.root.id).length;
-    meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· ${openCount ? `${plural(openCount, 'folder')} open` : 'all folders closed'}</span>`;
+    meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· ${openCount ? `${plural(openCount, 'folder')} open` : 'all folders closed'}</span>${azNote}`;
     acts = (S.clip ? `<button class="btn primary" data-h="paste">${I.paste}Paste ${S.clip.ids.length}</button>` : '') +
-      `<button class="btn" data-h="newfolder">${I.plus}New folder</button>` +
+      `<button class="btn" data-h="newfolder">${I.plus}New folder</button>` + sortBtn +
       `<button class="icon-btn" data-h="expandall" aria-label="Expand all folders" title="Expand all folders">${I.expand}</button>` +
       `<button class="icon-btn" data-h="collapseall" aria-label="Collapse all folders" title="Collapse all folders">${I.collapse}</button>` + layoutSeg;
   } else if (v.kind === 'search') {
@@ -1336,6 +1466,8 @@ function rerenderAfterEdit(where) { if (where === 'list') renderList(); else if 
 function openMenu(x, y, items) {
   const m = el.menu;
   m.innerHTML = items.map((it, i) => it === 'sep' ? '<div class="msep"></div>'
+    : it.heading ? `<div class="mlabel">${esc(it.heading)}</div>`
+    : it.checked != null ? `<button class="mi${it.note ? ' tall' : ''}" role="menuitemcheckbox" aria-checked="${it.checked}" data-i="${i}"><i class="mcheck">${it.checked ? I.check : ''}</i><span>${esc(it.label)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span></button>`
     : it.href ? `<a class="mi" role="menuitem" href="${esc(it.href)}" target="_blank" rel="noopener noreferrer" data-i="${i}">${I[it.icon] || ''}<span>${esc(it.label)}</span></a>`
     : `<button class="mi${it.danger ? ' danger' : ''}" role="menuitem" data-i="${i}">${I[it.icon] || ''}<span>${esc(it.label)}</span>${it.kbd ? `<kbd>${esc(it.kbd)}</kbd>` : ''}</button>`).join('');
   m.hidden = false;
@@ -1403,13 +1535,17 @@ function treeMenu(id, x, y) {
   openMenu(x, y, items);
 }
 function sortMenu(x, y) {
-  const id = S.view.id;
-  openMenu(x, y, [
-    { label: 'By name, A to Z', icon: 'sort', run: () => sortFolder(id, 'name') },
-    { label: 'Newest first', icon: 'sort', run: () => sortFolder(id, 'newest') },
-    { label: 'Oldest first', icon: 'sort', run: () => sortFolder(id, 'oldest') },
-    { label: 'By website', icon: 'sort', run: () => sortFolder(id, 'domain') },
-  ]);
+  const items = [{ label: 'Keep everything A to Z', checked: S.autoSort, run: () => setAutoSort(!S.autoSort),
+    note: S.autoSort ? 'Folders first, then bookmarks, in every folder. Exports in this order.' : 'Sorts every folder now, folders first, and keeps it that way as you edit. Exports in this order.' }];
+  if (!S.autoSort && S.view.kind === 'folder') {
+    const id = S.view.id;
+    items.push('sep', { heading: 'Sort this folder once' },
+      { label: 'By name, A to Z', icon: 'sort', run: () => sortFolder(id, 'name') },
+      { label: 'Newest first', icon: 'sort', run: () => sortFolder(id, 'newest') },
+      { label: 'Oldest first', icon: 'sort', run: () => sortFolder(id, 'oldest') },
+      { label: 'By website', icon: 'sort', run: () => sortFolder(id, 'domain') });
+  } else if (!S.autoSort) items.push('sep', { label: 'Sort everything A to Z once', icon: 'sort', run: sortOnceAll });
+  openMenu(x, y, items);
 }
 /* The query string is everything from "?" up to "#" (a fragment, if any, is kept). */
 function splitQuery(u) {
@@ -1517,6 +1653,7 @@ function openKeys() {
     <dt>${k('←')}</dt><dd>Go up to the parent folder. In the tree: collapse, then jump to the parent.</dd>
     <dt>${k('T')}</dt><dd>Switch between the tree and one folder at a time</dd>
     <dt>${k('/')}</dt><dd>Search titles and addresses</dd>
+    <dt>${k('F')}</dt><dd>Filter the folder list in the sidebar by name</dd>
     <div class="h">Editing</div>
     <dt>${k('Enter')} ${k('F2')}</dt><dd>Rename. Press Tab to edit a bookmark’s address too.</dd>
     <dt>${k('N')}</dt><dd>New folder in the open folder</dd>
@@ -1566,7 +1703,9 @@ async function importFile(file) {
     if (!ok) return;
   }
   loadRoot(root, file.name, false);
-  toast(root.children.length ? `Opened ${file.name}: ${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')}` : `Opened ${file.name}. It has no bookmarks or folders.`);
+  // With A to Z order on, a new file is sorted as its first step, so one undo gives back the file's own order.
+  const sorted = S.autoSort && sortLibrary(true);
+  toast(root.children.length ? `Opened ${file.name}: ${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')}${sorted ? ', sorted A to Z' : ''}` : `Opened ${file.name}. It has no bookmarks or folders.`, { undo: sorted, ms: sorted ? 7500 : undefined });
 }
 function showProblem(p) {
   const kept = S.noFile ? 'Nothing was opened.' : `Nothing changed. “${esc(S.fileName || 'Your file')}” is still open.`;
@@ -1586,6 +1725,7 @@ function loadRoot(root, name, noFile) {
   clearSearchBox();
   S.open = new Set(bar ? [bar.id] : []);
   setView(S.layout === 'tree' ? { kind: 'tree' } : { kind: 'folder', id: bar ? bar.id : root.id });
+  if (S.tfOpen) setTreeFilterOpen(false);
   persist(true);
 }
 const exportName = () => { const d = new Date(); return `bookmarks_${d.getMonth() + 1}_${d.getDate()}_${String(d.getFullYear()).slice(2)}.html`; };
@@ -1634,7 +1774,7 @@ function persist(now) {
   };
   now ? run() : (persistT = setTimeout(run, 600));
 }
-function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ dupeMode: S.dupeMode, layout: S.layout, remember: S.remember })); } catch {} }
+function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ dupeMode: S.dupeMode, layout: S.layout, remember: S.remember, autoSort: S.autoSort })); } catch {} }
 function setRemember(on) {
   if (S.editing) commitEdit();
   S.remember = on; saveUI(); persist(true);
@@ -1658,13 +1798,14 @@ async function requestForget() {
   toast('Forgot your bookmarks on this device.');
 }
 function restore() {
-  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; } catch {}
+  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; S.autoSort = ui.autoSort === true; } catch {}
   if (!S.remember) { dropStored(); return false; }
   try {
     const raw = localStorage.getItem(LS_SESSION); if (!raw) return false;
     const d = JSON.parse(raw); if (!d?.root?.children) return false;
     loadRoot(reassignIds(d.root), d.fileName, false);
     S.dirty = !!d.dirty; renderTop();
+    if (S.autoSort) sortLibrary(true);
     return true;
   } catch { return false; }
 }
@@ -1873,6 +2014,19 @@ el.tree.addEventListener('contextmenu', e => {
   const tr = e.target.closest('.trow'); if (!tr) return;
   e.preventDefault(); treeMenu(tr.dataset.id, e.clientX, e.clientY);
 });
+el.treeTools.addEventListener('click', e => {
+  const t = e.target.closest('[data-tt]')?.dataset.tt; if (!t) return;
+  if (t === 'filter') setTreeFilterOpen(!S.tfOpen);
+  else setAllExpanded(t === 'expand');
+});
+el.tq.addEventListener('input', () => { S.tfilter = el.tq.value; renderTree(); el.tree.scrollTop = 0; });
+el.tq.addEventListener('keydown', e => {
+  e.stopPropagation();
+  if (e.key === 'Escape') { e.preventDefault(); if (el.tq.value) { el.tq.value = ''; S.tfilter = ''; renderTree(); } else setTreeFilterOpen(false); }
+  else if (e.key === 'Enter') { e.preventDefault(); if (S.tfFirst) openFolder(S.tfFirst); }
+});
+el.tfilter.addEventListener('focusout', e => { if (S.tfOpen && !el.tq.value && !el.tfilter.contains(e.relatedTarget) && !el.treeTools.contains(e.relatedTarget)) setTreeFilterOpen(false); });
+$('tfClose').addEventListener('click', e => { e.preventDefault(); setTreeFilterOpen(false); });
 el.views.addEventListener('click', e => {
   const b = e.target.closest('[data-view]'); if (!b) return;
   clearSearchBox(); setView({ kind: b.dataset.view });
@@ -1969,6 +2123,7 @@ document.addEventListener('keydown', e => {
     case 'n': if (S.view.kind === 'folder') { e.preventDefault(); newFolder(S.view.id, 0); }
       else if (S.view.kind === 'tree') { e.preventDefault(); const t = treeInsertPoint(); newFolder(t.folder, t.at); } break;
     case '/': e.preventDefault(); el.q.focus(); el.q.select(); break;
+    case 'f': e.preventDefault(); setTreeFilterOpen(true); break;
     case '?': e.preventDefault(); openKeys(); break;
     case 'Escape':
       if (S.clip) { S.clip = null; renderList(); renderTree(); renderHead(); }
@@ -1982,6 +2137,9 @@ document.addEventListener('keydown', e => {
 /* ---------- static chrome ---------- */
 $('brandMark').innerHTML = I.ribbon;
 $('searchIco').innerHTML = I.search;
+$('tfIco').innerHTML = I.filter;
+$('tfClose').innerHTML = I.x;
+renderTreeTools();
 $('navBtn').innerHTML = I.side;
 el.undo.innerHTML = I.undo; el.redo.innerHTML = I.redo;
 $('importBtn').innerHTML = `${I.import}<span class="lbl-wide">Import</span>`;
