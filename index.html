@@ -352,6 +352,14 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .keys .h{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
 @keyframes fade{from{opacity:0}}
 
+/* ---------- separators ---------- */
+.row.is-sep{height:44px}
+.sepline{flex:1;min-width:0;display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.sepline::before,.sepline::after{content:"";flex:1;height:0;border-top:1.5px dashed var(--rule-2)}
+.sepline::before{flex:0 0 18px}
+.ico.sepi{color:var(--ink-3)}
+.insp .hint.insp-sep{margin-top:16px;font-size:13px;line-height:1.5}
+
 /* ---------- tags ---------- */
 .ico.tagi{color:var(--manila);background:var(--manila-fill)}
 .ico.tagi svg{width:14px;height:14px}
@@ -736,7 +744,8 @@ const byOrd = (a, b) => idx.get(a).ord - idx.get(b).ord;
 const nowS = () => String(Math.floor(Date.now() / 1000));
 const isBar = n => n?.attrs?.PERSONAL_TOOLBAR_FOLDER === 'true';
 const folderTitle = n => n === S.root ? (n.title || 'Bookmarks') : (n.title || 'Untitled folder');
-const nameOf = n => n.type === 'folder' ? folderTitle(n) : (n.title || displayUrl(n.url) || 'Untitled');
+const nameOf = n => n.type === 'folder' ? folderTitle(n) : n.type === 'sep' ? 'Separator' : (n.title || displayUrl(n.url) || 'Untitled');
+const isSep = n => n?.type === 'sep';
 
 function host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } }
 function displayUrl(u) { return String(u || '').replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, ''); }
@@ -754,8 +763,16 @@ const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: tr
 const byName = (a, b) => collator.compare(nameOf(a), nameOf(b));
 /* A to Z order: the bookmarks bar stays first, then folders, then bookmarks, each by name. */
 const azOrder = (a, b) => (isBar(b) - isBar(a)) || (a.type === b.type ? 0 : a.type === 'folder' ? -1 : 1) || byName(a, b);
+/* Separators stay put, and each section between them is sorted on its own, the way Firefox sorts. */
+function bySections(list, cmp) {
+  const out = []; let part = [];
+  const flush = () => { out.push(...part.sort(cmp)); part = []; };
+  for (const c of list) { if (isSep(c)) { flush(); out.push(c); } else part.push(c); }
+  flush();
+  return out;
+}
 function sortChildren(f) {
-  const sorted = [...f.children].sort(azOrder);
+  const sorted = bySections(f.children, azOrder);
   const changed = sorted.some((c, i) => c !== f.children[i]);
   if (changed) f.children = sorted;
   return changed;
@@ -781,9 +798,10 @@ function topLevel(ids) {
 function pathText(id) { const a = ancestors(id); return a.length > 1 ? a.slice(1).map(folderTitle).join(' / ') : folderTitle(S.root); }
 function selIds() { return [...S.sel].filter(id => idx.has(id)).sort(byOrd); }
 function describe(ids) {
-  const f = ids.filter(id => node(id).type === 'folder').length, l = ids.length - f;
-  if (ids.length === 1) return `“${nameOf(node(ids[0]))}”`;
-  return [l && plural(l, 'bookmark'), f && plural(f, 'folder')].filter(Boolean).join(' and ');
+  const f = ids.filter(id => node(id).type === 'folder').length, sp = ids.filter(id => isSep(node(id))).length, l = ids.length - f - sp;
+  if (ids.length === 1) return isSep(node(ids[0])) ? 'a separator' : `“${nameOf(node(ids[0]))}”`;
+  const parts = [l && plural(l, 'bookmark'), f && plural(f, 'folder'), sp && plural(sp, 'separator')].filter(Boolean);
+  return parts.length > 2 ? parts.slice(0, -1).join(', ') + ' and ' + parts.at(-1) : parts.join(' and ');
 }
 
 /* ---------- parse & export ---------- */
@@ -815,7 +833,7 @@ function parseBookmarks(text, name = 'This file') {
   const root = { id: nid(), type: 'folder', title: (h1?.textContent || 'Bookmarks').trim(), attrs: attrsOf(h1), children: [], root: true };
   readDL(doc.querySelector('dl'), root);
   let links = 0, folders = 0;
-  const walk = f => { for (const c of f.children) if (c.type === 'folder') { folders++; walk(c); } else links++; };
+  const walk = f => { for (const c of f.children) if (c.type === 'folder') { folders++; walk(c); } else if (c.type === 'link') links++; };
   walk(root);
   const lost = (anchors - links) + (heads - folders);
   if (lost > 0) throw new FileProblem(`${q} is damaged`, `${plural(lost, 'entry', 'entries')} ${lost === 1 ? 'sits' : 'sit'} outside the folder structure, so opening it could lose ${lost === 1 ? 'it' : 'them'}. ${REEXPORT}`);
@@ -833,6 +851,7 @@ function readDL(dl, folder) {
       if (inner) readDL(inner, last && last.type === 'folder' ? last : folder);
     } else if (tag === 'DL') readDL(c, last && last.type === 'folder' && !last.children.length ? last : folder);
     else if (tag === 'P') readDL(c, folder);
+    else if (tag === 'HR') folder.children.push({ id: nid(), type: 'sep', title: '', attrs: attrsOf(c) });
   }
 }
 function readDT(dt, folder) {
@@ -843,6 +862,8 @@ function readDT(dt, folder) {
       const at = attrsOf(c); const url = at.HREF || ''; delete at.HREF;
       item = { id: nid(), type: 'link', title: c.textContent.trim(), url, attrs: at }; folder.children.push(item);
     } else if (c.tagName === 'DL' && item?.type === 'folder') readDL(c, item);
+    // <DT> is never closed in these files, so a separator after a bookmark lands inside its <DT>.
+    else if (c.tagName === 'HR') folder.children.push({ id: nid(), type: 'sep', title: '', attrs: attrsOf(c) });
   }
   return item;
 }
@@ -858,7 +879,8 @@ function exportHTML(root) {
         out.push(`${pad}<DT><H3${attrStr(c.attrs)}>${escText(c.title)}</H3>`);
         if (c.desc) out.push(`${pad}<DD>${escText(c.desc)}`);
         out.push(`${pad}<DL><p>`); walk(c, d + 1); out.push(`${pad}</DL><p>`);
-      } else {
+      } else if (c.type === 'sep') out.push(`${pad}<HR>`);
+      else {
         out.push(`${pad}<DT><A HREF="${escText(c.url)}"${attrStr(c.attrs)}>${escText(c.title)}</A>`);
         if (c.desc) out.push(`${pad}<DD>${escText(c.desc)}`);
       }
@@ -889,9 +911,10 @@ function reindex() {
       if (parent) st.folders++;
       for (const c of n.children) {
         const cr = walk(c, n, depth + 1);
-        if (c.type === 'folder') { r.folders += 1 + cr.folders; r.links += cr.links; } else r.links++;
+        if (c.type === 'folder') { r.folders += 1 + cr.folders; r.links += cr.links; } else if (c.type === 'link') r.links++;
       }
-    } else {
+    } else if (n.type === 'sep') st.seps = (st.seps || 0) + 1;
+    else {
       st.links++;
       const k = /^javascript:/i.test(n.url || '') ? '' : normUrl(n.url);
       const nm = normName(n.title);
@@ -949,7 +972,7 @@ function buildRows() {
     };
     walk(S.root);
   } else if (v.kind === 'all') {
-    const walk = n => { for (const c of n.children) c.type === 'link' ? rows.push({ id: c.id }) : walk(c); };
+    const walk = n => { for (const c of n.children) c.type === 'link' ? rows.push({ id: c.id }) : c.type === 'folder' && walk(c); };
     walk(S.root);
   } else if (v.kind === 'dupes') {
     const groups = [...dupeMaps[S.dupeMode].entries()].sort((a, b) => idx.get(a[1][0]).ord - idx.get(b[1][0]).ord);
@@ -1105,7 +1128,7 @@ function sortFolder(id, mode) {
     domain: (a, b) => (host(a.url) || '~').localeCompare(host(b.url) || '~') || nameOf(a).localeCompare(nameOf(b)),
   }[mode];
   const before = f.children.map(c => c.id).join();
-  const sorted = [...f.children].sort((a, b) => (a.type === b.type ? 0 : a.type === 'folder' ? -1 : 1) || (a.type === 'folder' && mode === 'domain' ? nameOf(a).localeCompare(nameOf(b)) : key(a, b)));
+  const sorted = bySections(f.children, (a, b) => (a.type === b.type ? 0 : a.type === 'folder' ? -1 : 1) || (a.type === 'folder' && mode === 'domain' ? nameOf(a).localeCompare(nameOf(b)) : key(a, b)));
   if (sorted.map(c => c.id).join() === before) { toast('Already in that order.'); return; }
   mutate('Sort', () => { f.children = sorted; });
   toast(`Sorted “${folderTitle(f)}”`, { undo: true });
@@ -1118,13 +1141,18 @@ function setAutoSort(on) {
   S.autoSort = on; saveUI();
   if (!on) { renderHead(); toast('A to Z order is off. New and moved items stay where you put them.'); return; }
   if (S.noFile) { renderHead(); return; }
-  if (sortLibrary(true)) toast('Sorted every folder A to Z, folders first. It stays that way as you edit, and exports in this order.', { undo: true, ms: 7500 });
+  if (sortLibrary(true, { always: true })) toast('Sorted every folder A to Z, folders first. It stays that way as you edit, and exports in this order.', { undo: true, ms: 7500 });
   else { renderHead(); toast('Everything is already A to Z, and it’ll stay that way as you edit.'); }
 }
-function sortLibrary(turnsOn) {
-  const ok = mutate('Sorting A to Z', () => sortAll(S.root) ? undefined : false);
+/* Returns whether anything moved. Turning the setting on (always) is recorded even when nothing moves, so undoing back
+   past it also turns the setting off and an unsorted older state never shows while it's on. */
+function sortLibrary(turnsOn, { always = false } = {}) {
+  let changed = false;
+  const wasDirty = S.dirty;
+  const ok = mutate('Sorting A to Z', () => { changed = sortAll(S.root); if (!changed && !always) return false; });
   if (ok && turnsOn) undoStack.at(-1).autoSortOn = true;
-  return ok;
+  if (ok && !changed) { S.dirty = wasDirty; renderTop(); persist(); }
+  return changed;
 }
 function sortOnceAll() { if (sortLibrary(false)) toast('Sorted every folder A to Z, folders first', { undo: true }); else toast('Already in A to Z order.'); }
 async function requestDelete(ids) {
@@ -1135,8 +1163,7 @@ async function requestDelete(ids) {
   const innerFolders = folders.reduce((s, id) => s + idx.get(id).folders, 0);
   const total = ids.length + innerLinks + innerFolders;
   if (total === 1) { doDelete(ids); return; }
-  const links = ids.length - folders.length;
-  const title = ids.length === 1 ? `Delete “${nameOf(node(ids[0]))}”?` : `Delete ${[links && plural(links, 'bookmark'), folders.length && plural(folders.length, 'folder')].filter(Boolean).join(' and ')}?`;
+  const title = ids.length === 1 ? `Delete “${nameOf(node(ids[0]))}”?` : `Delete ${describe(ids)}?`;
   let body = '';
   if (innerLinks + innerFolders) body += `<p>Everything inside ${folders.length === 1 ? 'the folder' : 'these folders'} goes too: ${[innerLinks && plural(innerLinks, 'bookmark'), innerFolders && plural(innerFolders, 'subfolder')].filter(Boolean).join(' and ')}.</p>`;
   body += `<p>You can undo this with ${MOD}+Z while this page stays open.</p>`;
@@ -1386,6 +1413,7 @@ function ensureVisible(i) {
 
 /* ---------- rendering ---------- */
 function iconHTML(n) {
+  if (isSep(n)) return `<span class="ico sepi">${I.dash}</span>`;
   if (n.type === 'folder') return `<span class="ico fold">${isBar(n) ? I.bar : n === S.root ? I.ribbon : I.folder}</span>`;
   const ic = n.attrs?.ICON;
   if (ic && /^data:image\//i.test(ic)) return `<span class="ico"><img src="${esc(ic)}" alt="" loading="lazy"></span>`;
@@ -1426,6 +1454,12 @@ function rowHTML(r, i) {
     twist = `<span class="tw" style="--d:${r.depth}"><span class="indent"></span>${isF
       ? `<button class="twist${open ? ' open' : ''}${kids ? '' : ' none'}" data-a="twist" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'}" title="${open ? 'Collapse' : 'Expand'} (Alt-click for all subfolders)">${I.chev}</button>`
       : '<span class="twist none"></span>'}</span>`;
+  }
+  if (isSep(n)) {
+    cls.push('is-sep');
+    return `<div class="${cls.join(' ').replace('is-link', '')}" data-id="${n.id}" style="top:${top}px" draggable="true" role="option" aria-selected="${S.sel.has(n.id)}" aria-label="Separator"${inTree ? ` aria-level="${r.depth + 1}"` : ''}>
+      <span class="check" data-a="check">${I.check}</span>${twist}<span class="sepline" aria-hidden="true"><span>Separator</span></span>
+      <div class="tail"><div class="acts"><button class="icon-btn a-more" data-a="more" aria-label="More actions">${I.more}</button></div></div></div>`;
   }
   const reviewing = S.view.kind === 'dupes', marked = reviewing && S.marks.has(n.id);
   if (marked) cls.push('marked');
@@ -1584,8 +1618,8 @@ function renderHead() {
     const editing = S.editing?.where === 'head' && S.editing.id === n.id;
     title = editing ? `<input class="ptitle-in in-t" value="${esc(n.title)}" aria-label="Folder name" spellcheck="false">${chipsHTML(n, true)}`
       : `<h1 class="ptitle"${n === S.root ? '' : ` data-rename="${n.id}" title="Double-click to rename"`}>${esc(folderTitle(n))}</h1>`;
-    const dl = n.children.filter(c => c.type === 'link').length, df = n.children.length - dl;
-    meta = n.children.length ? [dl && plural(dl, 'bookmark'), df && plural(df, 'folder')].filter(Boolean).join(' · ') + (r.links > dl ? ` <span class="dim">· ${fmt(r.links)} bookmarks including subfolders</span>` : '') : 'Empty folder';
+    const dl = n.children.filter(c => c.type === 'link').length, df = n.children.filter(c => c.type === 'folder').length;
+    meta = dl || df ? [dl && plural(dl, 'bookmark'), df && plural(df, 'folder')].filter(Boolean).join(' · ') + (r.links > dl ? ` <span class="dim">· ${fmt(r.links)} bookmarks including subfolders</span>` : '') : 'Empty folder';
     if (n === S.root) meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· items here sit at the top level of the file</span>`;
     meta += azNote;
     acts = (S.clip ? `<button class="btn primary" data-h="paste">${I.paste}Paste ${S.clip.ids.length} here</button>` : '') +
@@ -1711,7 +1745,7 @@ function refresh() { buildRows(); renderAll(); }
 /* ---------- inline editing ---------- */
 function startEdit(id, where) {
   if (S.editing) commitEdit();
-  const n = node(id); if (!n || n === S.root) return;
+  const n = node(id); if (!n || n === S.root || isSep(n)) return;
   let host;
   if (where === 'list') {
     const i = S.rowPos.get(id); if (i == null) return;
@@ -1808,6 +1842,11 @@ function rowMenu(id, x, y) {
     items.push({ label: many ? `Keep ${fmt(ids.length)} copies` : 'Keep', icon: 'check', kbd: 'K', run: () => setMarks(ids, false) });
     items.push({ label: many ? `Mark ${fmt(ids.length)} for deletion` : 'Mark for deletion', icon: 'trash', kbd: 'D', run: () => setMarks(ids, true) });
     items.push('sep');
+  }
+  if (!many && isSep(n)) {
+    items.push({ label: 'Move to…', icon: 'move', kbd: 'M', run: () => openMovePicker(ids) }, { label: 'Cut', icon: 'cut', kbd: `${MOD}+X`, run: () => cut(ids) }, 'sep',
+      { label: 'Delete separator', icon: 'trash', kbd: 'Del', danger: true, run: () => requestDelete(ids) });
+    openMenu(x, y, items); return;
   }
   if (!many) {
     items.push({ label: 'Edit details…', icon: 'pencil', kbd: 'E', run: () => openEditor(id) });
@@ -2131,6 +2170,9 @@ function inspHTML() {
       </div>`;
   }
   const n = isNew ? null : node(I_.for), isF = n?.type === 'folder';
+  if (isSep(n)) return `<div class="insp-h"><span class="insp-ico">${I.dash}</span><div class="insp-t"><b>Separator</b><small data-v="where"></small></div>${close}</div>
+    <div class="insp-b"><p class="hint insp-sep">A divider line between bookmarks, from Firefox. Firefox shows separators; Chrome leaves them out when it imports a file. Drag it, or use Move to…, to put it somewhere else.</p></div>
+    <div class="insp-f"><button class="btn ghost del" data-x="delete">${I.trash}Delete separator</button></div>`;
   const assist = !AI_URL ? 'none' : S.ai === 'on' ? 'on' : 'ask';
   const urlField = `<div class="field"><label for="iUrl">Address</label><input id="iUrl" data-f="url" class="url" type="text" inputmode="url" placeholder="https://example.com" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`;
   const nameField = `<div class="field"><label for="iName">Name</label><input id="iName" data-f="name" autocomplete="off" spellcheck="false" placeholder="${isNew && assist === 'on' ? 'Filled in from the page, or type your own' : isF ? 'Folder name' : 'Name'}"></div>`;
@@ -2163,6 +2205,7 @@ function fillInspector() {
   if (!isNew && !id && I_.many?.length) { fillMany(); return; }
   if (!isNew && !n) return;
   const q = s => box.querySelector(s);
+  if (isSep(n)) { q('[data-v="where"]').textContent = folderPath(parentOf(id).id); return; }
   const val = (f, v) => { const e = q(`[data-f="${f}"]`); if (e && document.activeElement !== e && e.value !== v) e.value = v; };
   const st = I_.st;
   if (isNew) { val('url', st.url); val('name', st.title); val('keyword', st.keyword); val('note', st.note); }
@@ -2463,7 +2506,20 @@ function addMenu(x, y) {
   openMenu(x, y, [
     { label: 'New bookmark', icon: 'bmplus', kbd: 'B', run: () => openNewBookmark() },
     { label: 'New folder', icon: 'group', kbd: 'N', run: newFolderHere },
+    { label: 'Separator', icon: 'dash', run: addSeparator },
   ]);
+}
+/* A separator after the selected item, or at the end of the open folder (the top level in the tree). */
+function addSeparator() {
+  const cur = S.cursor && S.sel.has(S.cursor) && idx.has(S.cursor) ? node(S.cursor) : null;
+  let folder, at;
+  if (cur) { const p = parentOf(cur.id); folder = p; at = p.children.indexOf(cur) + 1; }
+  else { folder = S.view.kind === 'folder' ? node(S.view.id) : S.root; at = folder.children.length; }
+  let sep;
+  if (!mutate('New separator', () => { sep = { id: nid(), type: 'sep', title: '', attrs: {} }; folder.children.splice(at, 0, sep); })) return;
+  if (S.view.kind === 'tree' && folder !== S.root) { S.open.add(folder.id); buildRows(); }
+  if (S.rowPos.has(sep.id)) { selectOnly(sep.id); ensureVisible(S.rowPos.get(sep.id)); renderList(); renderSelbar(); }
+  toast(`Added a separator to “${folderTitle(folder)}”. Firefox shows separators; Chrome leaves them out.`, { undo: true });
 }
 function newFolderHere() { if (S.view.kind === 'tree') { const t = treeInsertPoint(); newFolder(t.folder, t.at); } else if (S.view.kind === 'folder') newFolder(S.view.id, 0); }
 function addBookmark(st) {
@@ -2609,7 +2665,7 @@ function aiReview({ title, intro, rows, okLabel }) {
 /* ---------- folder name suggestions ----------
    Chips under the name field while a folder with something in it is renamed. Asking is always a tap on
    "Suggest names", so nothing is sent just because a name field opened. */
-const chipsOn = n => !!AI_URL && S.ai === 'on' && n?.type === 'folder' && n !== S.root && n.children.length > 0;
+const chipsOn = n => !!AI_URL && S.ai === 'on' && n?.type === 'folder' && n !== S.root && n.children.some(c => !isSep(c));
 const ASK_CHIP = `<button type="button" class="chip ask" data-chip="ask">${I.sparkles}Suggest names</button>`;
 function chipsHTML(n, head = false) { return chipsOn(n) ? `<div class="name-chips${head ? ' head' : ''}" role="group" aria-label="Name suggestions">${ASK_CHIP}</div>` : ''; }
 function cleanNames(data, current) {
@@ -2622,7 +2678,7 @@ async function askChips() {
   const ctrl = ed.chipCtrl = new AbortController();
   box.innerHTML = `<span class="chip busy">${I.sparkles}Thinking…</span>`;
   try {
-    const data = await aiFetch('name', { current: n.title, items: n.children.slice(0, AI_MAX.name).map(aiItem) }, ctrl.signal);
+    const data = await aiFetch('name', { current: n.title, items: n.children.filter(c => !isSep(c)).slice(0, AI_MAX.name).map(aiItem) }, ctrl.signal);
     if (S.editing !== ed) return;
     ed.chipNames = cleanNames(data, n.title);
     box.innerHTML = ed.chipNames.length ? ed.chipNames.map((x, i) => `<button type="button" class="chip" data-chip="${i}" title="Use this name">${esc(x)}</button>`).join('')
@@ -2656,7 +2712,7 @@ function aiName(id) {
 async function aiNameDialog(id) {
   const f = node(id); if (!f || f === S.root) return;
   if (!f.children.length) { toast(`“${folderTitle(f)}” is empty. Add some bookmarks first, then ask for a name.`); return; }
-  const sent = f.children.slice(0, AI_MAX.name);
+  const sent = f.children.filter(c => !isSep(c)).slice(0, AI_MAX.name);
   const data = await aiCall('name', { current: f.title, items: sent.map(aiItem) }, `Naming “${shortName(folderTitle(f), 40)}”`,
     `Sending the titles and addresses of the ${plural(sent.length, 'item')} inside it to Bindery Assist.`);
   if (!data || !node(id)) return;
@@ -3373,7 +3429,7 @@ let expandTimer = 0, expandFor = null;
 function beginDrag(e, ids) {
   S.drag = { ids };
   e.dataTransfer.effectAllowed = 'move';
-  try { e.dataTransfer.setData('text/plain', ids.map(id => node(id).url || folderTitle(node(id))).join('\n')); } catch {}
+  try { e.dataTransfer.setData('text/plain', ids.map(id => node(id).url || nameOf(node(id))).join('\n')); } catch {}
   const n = node(ids[0]);
   el.ghost.innerHTML = `${n.type === 'folder' && ids.length === 1 ? I.folder : I.ribbon}<span>${ids.length === 1 ? esc(nameOf(n)) : esc(describe(ids))}</span>`;
   try { e.dataTransfer.setDragImage(el.ghost, 14, 16); } catch {}
