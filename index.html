@@ -352,6 +352,28 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .keys .h{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
 @keyframes fade{from{opacity:0}}
 
+/* ---------- browsers ---------- */
+.targets{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 10px}
+.targets button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--rule-2);background:var(--sheet);text-align:left}
+.targets button:hover{background:var(--hover)}
+.targets button b{font-weight:600;font-size:14.5px}
+.targets button small{font-size:12.5px;color:var(--ink-3)}
+.targets button.on{border-color:var(--cloth);background:var(--cloth-soft);box-shadow:0 0 0 3px var(--cloth-soft)}
+.ffl{list-style:none;margin:6px 0 12px;padding:0;display:grid;gap:12px}
+.ffl li{display:flex;gap:10px;align-items:flex-start;color:var(--ink-2)}
+.ffl li>svg{flex:none;margin-top:2px;color:var(--ink-3)}
+.ffl li>span{display:block;min-width:0;line-height:1.5}
+.ffl .tagsas{display:flex;width:max-content;max-width:100%;margin-top:8px}
+.ffl small{display:block;margin-top:5px}
+.ffl label.cb{margin-top:7px}
+.ffl b{color:var(--ink);font-weight:600}
+.ffl.ok li>svg{color:var(--leaf)}
+.ffl.warn li>svg{color:var(--manila)}
+.ffl small{font-size:12px;color:var(--ink-3)}
+.dialog label.cb{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-2);cursor:pointer}
+.dialog label.cb input{margin:0;accent-color:var(--cloth)}
+@media (max-width:600px){ .targets{grid-template-columns:1fr} .tagsas{flex-wrap:wrap} }
+
 /* ---------- separators ---------- */
 .row.is-sep{height:44px}
 .sepline{flex:1;min-width:0;display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
@@ -717,6 +739,7 @@ const S = {
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
   autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null, insp: null, tagSort: 'count', tagIgnore: new Set(), tagAI: [],
+  source: 'other', exportPrefs: { target: 'other', tagsAs: 'none', dropPlace: true, ask: true },
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
 /* Tags, ignoring case: key → { name (the most used spelling), ids (in file order), spell: Map(spelling → count) }. */
@@ -1470,7 +1493,7 @@ function rowHTML(r, i) {
   else {
     let sub;
     if (isF) sub = rc.links || rc.folders ? [rc.links && plural(rc.links, 'bookmark'), rc.folders && plural(rc.folders, 'folder')].filter(Boolean).join(' · ') : 'Empty';
-    else sub = /^javascript:/i.test(n.url) ? '<span class="pill">Bookmarklet</span>' : hl(displayUrl(n.url));
+    else sub = /^javascript:/i.test(n.url) ? '<span class="pill">Bookmarklet</span>' : isPlace(n) ? `<span class="pill" title="Firefox’s own list. It only works in Firefox.">Firefox only</span> ${hl(n.url)}` : hl(displayUrl(n.url));
     main = `<div class="main"><div class="t">${hl(nameOf(n))}</div><div class="u">${sub}</div></div>`;
   }
   const where = S.view.kind !== 'folder' && !inTree ? `<div class="where" title="${esc(pathText(n.id))}">${esc(pathText(n.id))}</div>` : '';
@@ -3289,6 +3312,116 @@ function convertMenu(x, y) {
   ]);
 }
 
+/* ---------- browsers: what only Firefox understands ----------
+   Firefox files can hold tags, keywords, separators and "place:" items (Firefox's own queries, like Most Visited).
+   Opening such a file says so once, and exporting it asks which browser the file is for. Choosing another browser only
+   changes the exported file, never the library. The choice is remembered with the file (S.exportPrefs). */
+const isPlace = n => n?.type === 'link' && /^place:/i.test(n.url || '');
+const defaultExportPrefs = source => ({ target: source === 'firefox' ? 'firefox' : 'other', tagsAs: 'none', dropPlace: true, ask: true });
+function firefoxOnly() {
+  const r = { tagged: stats.tagged || 0, tags: stats.tags || 0, keywords: 0, seps: stats.seps || 0, place: [] };
+  for (const [id, x] of idx) { if (x.node.attrs?.SHORTCUTURL) r.keywords++; if (isPlace(x.node)) r.place.push(id); }
+  r.any = !!(r.tagged || r.keywords || r.seps || r.place.length);
+  return r;
+}
+/* A file looks like it came from Firefox when it has Firefox's folder markers or anything only Firefox writes. */
+function detectSource(root) {
+  if (/^bookmarks menu$/i.test(root.title || '')) return 'firefox';
+  let ff = false;
+  const walk = f => { for (const c of f.children) { if (ff) return; const a = c.attrs || {}; if (a.UNFILED_BOOKMARKS_FOLDER || a.TAGS || a.SHORTCUTURL || a.ICON_URI || a.LAST_CHARSET || isSep(c) || isPlace(c)) ff = true; else if (c.type === 'folder') walk(c); } };
+  walk(root);
+  return ff ? 'firefox' : 'other';
+}
+const ffList = (o, { verb = false } = {}) => [
+  o.tagged && `${plural(o.tags, 'tag')} on ${plural(o.tagged, 'bookmark')}`,
+  o.keywords && plural(o.keywords, 'keyword'),
+  o.seps && plural(o.seps, 'separator'),
+  o.place.length && `${plural(o.place.length, 'Firefox-only item')} (like “${esc(nameOf(node(o.place[0])))}”)`,
+].filter(Boolean);
+function firefoxNotice() {
+  const o = firefoxOnly(); if (!o.any) return;
+  const items = ffList(o);
+  openModal(`<h2>${S.source === 'firefox' ? 'This file is from Firefox' : 'This file has Firefox features'}</h2>
+    <p>It has ${items.length > 1 ? items.slice(0, -1).join(', ') + ' and ' + items.at(-1) : items[0]}. Bindery keeps all of it, shows it, and lets you edit it.</p>
+    <ul class="ffl">
+      ${o.tagged ? `<li>${I.tag}<span><b>Tags</b> are under Inspect → Tags, and in each bookmark’s details (E).</span></li>` : ''}
+      ${o.keywords ? `<li>${I.pencil}<span><b>Keywords</b> are in each bookmark’s details.</span></li>` : ''}
+      ${o.seps ? `<li>${I.dash}<span><b>Separators</b> show as dashed lines in your folders.</span></li>` : ''}
+      ${o.place.length ? `<li>${I.search}<span><b>Firefox-only items</b> are Firefox’s own lists, such as Most Visited. They only work in Firefox.</span></li>` : ''}
+    </ul>
+    <p class="note">When you export, Bindery asks which browser the file is for. Firefox gets everything back. Chrome, Edge and Safari don’t have these features, so Bindery says what they’d lose and offers ways to keep your tags.</p>
+    <div class="actions">${o.tagged ? `<button class="btn" data-ffn="tags">${I.tag}Show tags</button>` : ''}<button class="btn primary" data-m="ok">Got it</button></div>`);
+  el.dialog.querySelector('[data-ffn]')?.addEventListener('click', () => { closeModal(); clearSearchBox(); setView({ kind: 'tags' }); });
+  el.dialog.querySelector('[data-m="ok"]').focus();
+}
+/* The library as the chosen browser should get it. A copy is changed, never the library itself. */
+function exportRootFor(p) {
+  if (p.target === 'firefox') return S.root;
+  const root = cloneTree(S.root);
+  const strip = f => { f.children = f.children.filter(c => !isSep(c) && !(p.dropPlace && isPlace(c))); for (const c of f.children) if (c.type === 'folder') strip(c); };
+  strip(root);
+  if (p.tagsAs === 'titles') {
+    const walk = f => { for (const c of f.children) { if (c.type === 'folder') walk(c); else if (c.type === 'link') {
+      const low = (c.title || '').toLowerCase(), add = tagsOf(c).map(t => '#' + t.replace(/\s+/g, '-')).filter(h => !low.includes(h.toLowerCase()));
+      if (add.length) c.title = (c.title ? c.title + ' ' : '') + add.join(' ');
+    } } };
+    walk(root);
+  } else if (p.tagsAs === 'folders' && tagIdx.size) {
+    const top = { id: 'x-tags', type: 'folder', title: 'Tags', attrs: { ADD_DATE: nowS(), LAST_MODIFIED: nowS() }, children: [] };
+    for (const e of [...tagIdx.values()].sort((a, b) => collator.compare(a.name, b.name)))
+      top.children.push({ id: 'x', type: 'folder', title: e.name, attrs: { ADD_DATE: nowS() }, children: e.ids.filter(id => !(p.dropPlace && isPlace(node(id)))).map(id => cloneTree(node(id))) });
+    root.children.push(top);
+  }
+  return root;
+}
+const TARGETS = {
+  firefox: { name: 'Firefox', how: 'To bring it into Firefox, open the Library (Ctrl+Shift+O, or ⌘+Shift+O on a Mac), choose Import and Backup, then Import Bookmarks from HTML.' },
+  other: { name: 'Chrome, Edge or Safari', how: 'To bring it into Chrome, open the Bookmark Manager, click ⋮, then Import bookmarks. Edge and Safari have their own Import bookmarks commands.' },
+};
+/* Asks which browser the file is for. Resolves the chosen settings, or null. */
+function exportChoice() {
+  const o = firefoxOnly(), p = { ...S.exportPrefs };
+  return new Promise(res => {
+    const detail = () => p.target === 'firefox'
+      ? `<ul class="ffl ok">${ffList(o).map(x => `<li>${I.check}<span>${x}: kept</span></li>`).join('')}</ul>`
+      : `<ul class="ffl warn">
+          ${o.tagged ? `<li>${I.tag}<span><b>${plural(o.tags, 'tag')} on ${plural(o.tagged, 'bookmark')}.</b> These browsers have no tags. Keep them as:
+            <span class="seg tagsas" role="radiogroup" aria-label="Keep tags as">${[['none', 'Nothing'], ['folders', 'A Tags folder'], ['titles', '#tags in titles']].map(([v, l]) => `<button type="button" role="radio" data-tagsas="${v}" class="${p.tagsAs === v ? 'on' : ''}" aria-checked="${p.tagsAs === v}">${l}</button>`).join('')}</span>
+            <small>${p.tagsAs === 'folders' ? 'A “Tags” folder at the top, with a folder of copies for each tag.' : p.tagsAs === 'titles' ? 'Each title ends with its tags, like “Kyoto guide #japan #travel”.' : 'The tags are left behind.'}</small></span></li>` : ''}
+          ${o.keywords ? `<li>${I.pencil}<span><b>${plural(o.keywords, 'keyword')}</b> won’t work there.</span></li>` : ''}
+          ${o.seps ? `<li>${I.dash}<span><b>${plural(o.seps, 'separator')}</b> are left out of the file.</span></li>` : ''}
+          ${o.place.length ? `<li>${I.search}<span><b>${plural(o.place.length, 'Firefox-only item')}</b>, like “${esc(nameOf(node(o.place[0])))}”, only ${o.place.length === 1 ? 'works' : 'work'} in Firefox.
+            <label class="cb"><input type="checkbox" data-dropplace ${p.dropPlace ? 'checked' : ''}> Leave ${o.place.length === 1 ? 'it' : 'them'} out of the file</label></span></li>` : ''}
+        </ul>`;
+    const draw = () => {
+      el.dialog.querySelector('.ffd').innerHTML = detail();
+      el.dialog.querySelectorAll('[data-target]').forEach(b => { const on = b.dataset.target === p.target; b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+      el.dialog.querySelector('[data-ex="go"]').textContent = `Export for ${p.target === 'firefox' ? 'Firefox' : 'Chrome, Edge or Safari'}`;
+    };
+    openModal(`<div class="exd"><h2>Which browser is this file for?</h2>
+      <p>${S.source === 'firefox' ? 'This file came from Firefox. ' : ''}It has things only Firefox understands, so the file is a little different for each.</p>
+      <div class="targets" role="radiogroup" aria-label="Browser">
+        <button type="button" role="radio" data-target="firefox"><b>Firefox</b><small>Keeps tags, keywords and separators</small></button>
+        <button type="button" role="radio" data-target="other"><b>Chrome, Edge or Safari</b><small>No tags, keywords or separators</small></button>
+      </div>
+      <div class="ffd"></div>
+      <p class="note">Only the exported file changes. Your library in Bindery keeps everything.</p>
+      <label class="cb"><input type="checkbox" data-noask ${p.ask ? '' : 'checked'}> Don’t ask again for this file</label>
+      <div class="actions"><button class="btn" data-m="cancel">Cancel</button><button class="btn primary" data-ex="go"></button></div></div>`, 'wide');
+    const box = el.dialog.querySelector('.exd');
+    box.addEventListener('click', e => {
+      const t = e.target.closest('[data-target]'), ta = e.target.closest('[data-tagsas]');
+      if (t) { p.target = t.dataset.target; draw(); }
+      else if (ta) { p.tagsAs = ta.dataset.tagsas; draw(); }
+      else if (e.target.closest('[data-ex="go"]')) { p.ask = !el.dialog.querySelector('[data-noask]').checked; closeModal(p); }
+    });
+    box.addEventListener('change', e => { if (e.target.matches('[data-dropplace]')) p.dropPlace = e.target.checked; });
+    modalDone = v => res(v && typeof v === 'object' ? v : null);
+    draw();
+    el.dialog.querySelector(`[data-target="${p.target}"]`).focus();
+  });
+}
+
 /* ---------- toasts ---------- */
 function toast(msg, { undo: withUndo = false, error = false, ms, action } = {}) {
   const t = document.createElement('div');
@@ -3318,6 +3451,7 @@ async function importFile(file) {
   // With A to Z order on, a new file is sorted as its first step, so one undo gives back the file's own order.
   const sorted = S.autoSort && sortLibrary(true);
   toast(root.children.length ? `Opened ${file.name}: ${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')}${sorted ? ', sorted A to Z' : ''}` : `Opened ${file.name}. It has no bookmarks or folders.`, { undo: sorted, ms: sorted ? 7500 : undefined });
+  firefoxNotice();
 }
 function showProblem(p) {
   const kept = S.noFile ? 'Nothing was opened.' : `Nothing changed. “${esc(S.fileName || 'Your file')}” is still open.`;
@@ -3330,6 +3464,7 @@ function showProblem(p) {
 function loadRoot(root, name, noFile) {
   if (S.editing) cancelEdit();
   S.root = root; S.fileName = name; S.noFile = noFile; S.dirty = false;
+  S.source = noFile ? 'other' : detectSource(root); S.exportPrefs = defaultExportPrefs(S.source);
   undoStack = []; redoStack = []; S.clip = null; S.recent = []; S.tidy = null; S.tagAI = []; S.tagIgnore = new Set();
   abortInsp(); S.insp = null;
   reindex();
@@ -3342,13 +3477,20 @@ function loadRoot(root, name, noFile) {
   persist(true);
 }
 const exportName = () => { const d = new Date(); return `bookmarks_${d.getMonth() + 1}_${d.getDate()}_${String(d.getFullYear()).slice(2)}.html`; };
-async function doExport() {
+async function doExport({ choose = false } = {}) {
   if (S.editing) commitEdit();
   if (isBlank()) return;
-  const name = exportName(), text = exportHTML(S.root);
+  // Only a library with Firefox-only content needs a browser choice; it's asked unless "Don't ask again" was ticked.
+  let p = null;
+  if (firefoxOnly().any) {
+    if (S.exportPrefs.ask || choose) { p = await exportChoice(); if (!p) return; S.exportPrefs = p; persist(); }
+    else p = S.exportPrefs;
+  }
+  const target = p ? p.target : S.source === 'firefox' ? 'firefox' : 'other';
+  const name = exportName(), text = exportHTML(p ? exportRootFor(p) : S.root);
   const done = () => {
     if (!S.noFile) { S.dirty = false; renderTop(); persist(); }
-    toast(`Exported ${name}. To bring it into Chrome, open the Bookmark Manager, click ⋮, then Import bookmarks.`, { ms: 9000 });
+    toast(`Exported ${name}${p ? ` for ${TARGETS[target].name}` : ''}. ${TARGETS[target].how}`, { ms: 9000, action: p && !p.ask ? { label: 'Choose another browser', run: () => doExport({ choose: true }) } : undefined });
   };
   if (window.claude && typeof window.claude.use === 'function') {
     let dl = null;
@@ -3379,7 +3521,7 @@ function persist(now) {
   const run = () => {
     if (S.noFile || !S.remember) { dropStored(); S.persisted = S.noFile; renderDevice(); return; }
     try {
-      const data = JSON.stringify({ v: 1, root: S.root, fileName: S.fileName, dirty: S.dirty });
+      const data = JSON.stringify({ v: 1, root: S.root, fileName: S.fileName, dirty: S.dirty, source: S.source, exportPrefs: S.exportPrefs });
       if (data.length > 4.5e6) { S.persisted = false; dropStored(); }
       else { localStorage.setItem(LS_SESSION, data); S.persisted = true; }
     } catch { S.persisted = false; }
@@ -3418,6 +3560,8 @@ function restore() {
     const d = JSON.parse(raw); if (!d?.root?.children) return false;
     loadRoot(reassignIds(d.root), d.fileName, false);
     S.dirty = !!d.dirty; renderTop();
+    if (d.source === 'firefox' || d.source === 'other') S.source = d.source;
+    if (d.exportPrefs && typeof d.exportPrefs === 'object') S.exportPrefs = { ...defaultExportPrefs(S.source), ...d.exportPrefs };
     if (S.autoSort) sortLibrary(true);
     return true;
   } catch { return false; }
@@ -3706,7 +3850,7 @@ el.markbar.addEventListener('click', e => {
 });
 $('importBtn').addEventListener('click', () => el.fileIn.click());
 el.fileIn.addEventListener('change', () => { const f = el.fileIn.files[0]; el.fileIn.value = ''; importFile(f); });
-$('exportBtn').addEventListener('click', doExport);
+$('exportBtn').addEventListener('click', () => doExport());
 el.undo.addEventListener('click', undo);
 el.redo.addEventListener('click', redo);
 $('keysBtn').addEventListener('click', openKeys);
