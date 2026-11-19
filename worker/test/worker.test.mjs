@@ -42,9 +42,15 @@ test('tidy keeps only valid, unique bookmark numbers and merges same-named folde
   ] })
   const res = await handle(post('tidy', { items: items(5), folder: 'Other', existing: ['Recipes'] }), env)
   assert.equal(res.status, 200)
-  assert.deepEqual(await res.json(), { folders: [{ name: 'Recipes', items: [0, 1, 2] }, { name: 'Travel', items: [3] }] })
+  assert.deepEqual(await res.json(), { folders: [{ name: 'Recipes', items: [0, 1, 2] }] })
   assert.match(env.calls[0].opts.messages[1].content, /"Recipes"/)
   assert.equal(env.calls[0].opts.response_format.type, 'json_schema')
+})
+
+test('tidy drops new folders with a single bookmark, but keeps existing ones', async () => {
+  const env = fakeEnv({ folders: [{ name: 'Solo', items: [0] }, { name: 'Pair', items: [1, 2] }, { name: 'news', items: [3] }] })
+  const res = await handle(post('tidy', { items: items(5), existing: ['News'] }), env)
+  assert.deepEqual(await res.json(), { folders: [{ name: 'Pair', items: [1, 2] }, { name: 'news', items: [3] }] })
 })
 
 test('name drops duplicates and the current name, and keeps three', async () => {

@@ -70,7 +70,9 @@ const TASKS = {
       for (const i of f.items) if (Number.isInteger(i) && i >= 0 && i < items.length && !used.has(i)) { used.add(i); entry.items.push(i); }
       if (entry.items.length) byName.set(key, entry);
     }
-    return { folders: [...byName.values()].slice(0, 12) };
+    // A new folder for a single bookmark isn't tidying. Those bookmarks stay where they are.
+    const keep = new Set(existing.map(x => x.toLowerCase()));
+    return { folders: [...byName.values()].filter(f => f.items.length > 1 || keep.has(f.name.toLowerCase())).slice(0, 12) };
   },
 
   /* Suggests up to three names for a folder from what's inside it. */
