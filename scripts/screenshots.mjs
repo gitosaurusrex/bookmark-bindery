@@ -2,7 +2,9 @@
  * Takes the README screenshots in docs/screenshots/, light and dark, as WebP.
  *
  * Opens index.html in Chromium, imports the made-up library in
- * scripts/demo-bookmarks.html and captures the main views. Needs Node and
+ * scripts/demo-bookmarks.html and captures the main views, the details panel, and the Bindery
+ * Assist welcome sheet (which needs index.html to point at a Worker; nothing
+ * is sent, since the sheet only asks). Needs Node and
  * Playwright with Chromium installed:
  *
  *   node scripts/screenshots.mjs
@@ -67,6 +69,33 @@ const SHOTS = [
       await page.click('[data-view="dupes"]')
       await page.waitForSelector('#rows .grp')
       await page.locator('#rows .row [data-a="del"]').nth(1).click()
+    },
+  },
+  {
+    name: 'editor',
+    width: 1360,
+    height: 820,
+    prepare: async (page) => {
+      await openLibrary(page)
+      // The details panel for one bookmark, with a couple of tags and a note.
+      await page.locator('#rows .row.is-link', { hasText: 'Kyoto' }).first().click()
+      await page.keyboard.press('e')
+      await page.click('#insp [data-more="tags"]')
+      for (const tag of ['japan', 'travel']) { await page.keyboard.type(tag); await page.keyboard.press('Enter') }
+      await page.click('#insp [data-more="note"]')
+      await page.keyboard.type('Neighbourhoods, temples and day trips. Check the Arashiyama section before going.')
+      await page.locator('#list').focus()
+    },
+  },
+  {
+    name: 'assist',
+    width: 1280,
+    height: 900,
+    prepare: async (page) => {
+      await openLibrary(page)
+      // The Bindery Assist welcome sheet. It only appears where the page points at a Worker.
+      await page.click('#aiBtn')
+      await page.waitForSelector('.dialog.onboard')
     },
   },
   {

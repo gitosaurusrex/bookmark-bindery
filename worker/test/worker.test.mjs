@@ -166,3 +166,35 @@ test('place needs exactly one bookmark and at least two folders', async () => {
   assert.equal((await handle(post('place', { items: items(2), folders: ['a', 'b'] }), fakeEnv({}))).status, 400)
   assert.deepEqual(await (await handle(post('place', { items: items(1), folders: ['only'] }), fakeEnv({ folders: [0] }))).json(), { folders: [] })
 })
+
+/* ---------- describe: a short note for a bookmark ---------- */
+import { pageDescription, pageText } from '../src/index.js'
+
+test('describe gives the model the page description and text, and returns its note', async () => {
+  const web = fakeWeb({ 'https://soup.test/lentil': { body: `<html><head><title>Lentil soup | Soups</title><meta name="description" content="A hearty red lentil soup."><script>var x = "<p>nope</p>"</script></head>
+    <body><nav>Home Menu</nav><main><h1>Lentil soup</h1><p>Simmer red lentils with cumin &amp; lemon for 25 minutes.</p></main><footer>© Soups</footer></body></html>` } })
+  try {
+    const env = fakeEnv({ description: 'A 25-minute red lentil soup with cumin and lemon.' })
+    const out = await (await handle(post('describe', { url: 'https://soup.test/lentil', title: 'Lentil soup' }), env)).json()
+    assert.deepEqual(out, { description: 'A 25-minute red lentil soup with cumin and lemon.' })
+    const prompt = env.calls[0].opts.messages[1].content
+    assert.match(prompt, /describes itself as: A hearty red lentil soup\./)
+    assert.match(prompt, /Start of the page text: Lentil soup Simmer red lentils with cumin & lemon for 25 minutes\./)
+    assert.doesNotMatch(prompt, /nope|Home Menu|© Soups/)
+  } finally { web.restore() }
+})
+
+test('describe falls back to the page description when the model fails, and is empty for unreadable pages', async () => {
+  const web = fakeWeb({ 'https://a.test/': { body: '<meta property="og:description" content="Own words.">' }, 'https://b.test/': { body: 'x', type: 'image/png' } })
+  try {
+    assert.deepEqual(await (await handle(post('describe', { url: 'https://a.test/' }), fakeEnv('no json'))).json(), { description: 'Own words.' })
+    assert.deepEqual(await (await handle(post('describe', { url: 'https://b.test/' }), fakeEnv({ description: 'x' }))).json(), { description: '' })
+    assert.equal((await handle(post('describe', { url: 'http://10.0.0.1/' }), fakeEnv({}))).status, 400)
+  } finally { web.restore() }
+})
+
+test('pageText prefers <main>, then <article>, then <body>', () => {
+  assert.equal(pageText('<body><p>Body</p><article>Art</article></body>', 100), 'Art')
+  assert.equal(pageText('<body><p>Only &lt;body&gt;</p></body>', 100), 'Only <body>')
+  assert.equal(pageDescription('<meta name="twitter:description" content="T"><meta name="description" content="D">'), 'D')
+})

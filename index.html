@@ -352,16 +352,59 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .keys .h{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
 @keyframes fade{from{opacity:0}}
 
-/* ---------- new bookmark ---------- */
-.dialog.newbm{width:min(520px,100%)}
-.nb-top{display:flex;align-items:flex-end;gap:12px}
-.nb-top .field{flex:1;min-width:0}
-.nb-ico{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--paper);border:1px solid var(--rule)}
-.nb-ico .ico{width:26px;height:26px;font-size:13px}
-.nb-ico .ico img{width:20px;height:20px}
-.nb-ico .ico.blank{color:var(--ink-3)}
+/* ---------- bookmark editor ---------- */
+:root{--insp-w:372px}
+.app.insp-open{grid-template-columns:var(--side-w) minmax(0,1fr) var(--insp-w)}
+.insp{grid-column:3;grid-row:2;min-height:0;display:flex;flex-direction:column;background:var(--sheet);border-left:1px solid var(--rule)}
+.insp-h{display:flex;align-items:center;gap:10px;padding:14px 12px 12px 18px;border-bottom:1px solid var(--rule)}
+.insp-ico{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--paper);border:1px solid var(--rule);color:var(--ink-3)}
+.insp-ico .ico{width:26px;height:26px;font-size:13px}
+.insp-ico .ico img{width:20px;height:20px}
+.insp-ico .ico.blank{color:var(--ink-3)}
+.insp-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.insp-t b{font:500 19px/1.2 var(--f-display);letter-spacing:-.005em}
+.insp-t small{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insp-b{flex:1;min-height:0;overflow:auto;padding:2px 18px 18px}
+.insp-f{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--rule)}
+.insp-f .del{margin-right:auto;color:var(--danger);padding:0 8px}
+.insp-f .del:hover{background:var(--danger-soft)}
+.insp .hint{margin:4px 0 0;font-size:12px;color:var(--ink-3)}
+.insp .hint.warn,.insp-meta .warn{color:var(--manila)}
+.insp .nb-status{margin:8px 0 0}
+.flabel-row{display:flex;align-items:center;justify-content:space-between;min-height:24px}
+.insp-more{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px}
+.insp-more .chip{height:28px;padding:0 11px;box-shadow:none;color:var(--ink-2);font-size:12.5px}
+.insp-more .chip svg{color:var(--ink-3);width:12px;height:12px}
+.insp-meta{display:grid;gap:4px;margin-top:18px;padding-top:12px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-3)}
+.insp-empty{flex:1;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;color:var(--ink-3)}
+.insp-empty p{margin:0;max-width:26ch}
+.insp-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.chip.small{height:24px;padding:0 9px;font-size:12px}
+.chip.small svg{width:12px;height:12px}
+.tagbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:38px;padding:5px 6px;border-radius:9px;border:1px solid var(--rule-2);background:var(--sheet)}
+.tagbox:focus-within{border-color:var(--cloth);box-shadow:0 0 0 3px var(--cloth-soft)}
+.tagbox input{flex:1;min-width:96px;height:26px;padding:0 5px;border:0;outline:none;background:transparent;color:var(--ink)}
+.tg-list{display:contents}
+.tg{display:inline-flex;align-items:center;gap:2px;height:26px;padding:0 3px 0 10px;border-radius:13px;background:var(--cloth-soft);color:var(--cloth-ink);font-size:12.5px;font-weight:500}
+.tg button{width:20px;height:20px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:transparent;color:inherit}
+.tg button:hover{background:color-mix(in srgb,var(--cloth) 18%,transparent)}
+.tg button svg{width:11px;height:11px;stroke-width:2}
+.field>textarea{min-height:78px;resize:vertical;border-radius:9px;border:1px solid var(--rule-2);background:var(--sheet);padding:8px 11px;outline:none;color:var(--ink);font:inherit;line-height:1.45}
+.field>textarea:focus{border-color:var(--cloth);box-shadow:0 0 0 3px var(--cloth-soft)}
+.btn .caret{display:inline-grid;margin-left:-2px}
+.btn .caret svg{width:11px;height:11px;stroke-width:1.9;transform:rotate(90deg)}
+@media (max-width:1180px){
+  .app.insp-open{grid-template-columns:var(--side-w) minmax(0,1fr)}
+  .insp{position:fixed;z-index:38;top:0;right:0;bottom:0;width:min(384px,94vw);box-shadow:var(--shadow);animation:inspIn .2s ease-out}
+}
+@media (max-width:820px){ .app.insp-open{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:600px){
+  .insp{top:auto;left:0;width:auto;max-height:88vh;border-left:0;border-radius:18px 18px 0 0;animation:sheetUp .28s cubic-bezier(.2,.7,.2,1)}
+  .insp-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+}
+@keyframes inspIn{from{transform:translateX(28px);opacity:0}}
 .field{display:grid;gap:5px;margin-top:14px;min-width:0}
-.field>label,.field .flabel{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.field>label,.field .flabel,.flabel-row label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .field>input{height:38px;min-width:0;border-radius:9px;border:1px solid var(--rule-2);background:var(--sheet);padding:0 11px;outline:none;color:var(--ink)}
 .field>input:focus{border-color:var(--cloth);box-shadow:0 0 0 3px var(--cloth-soft)}
 .field>input.url{font:13px var(--f-mono)}
@@ -388,7 +431,6 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .linkish{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;padding:0;color:var(--cloth-ink);font-weight:500;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .linkish svg{width:13px;height:13px;color:var(--violet)}
 .dialog p.nb-assist{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:var(--paper);font-size:12.5px}
-.newbm .actions .btn.primary svg{color:currentColor}
 
 /* ---------- bindery assist ---------- */
 .vrow[data-view="tidy"] .ficon{color:var(--violet)}
@@ -568,6 +610,7 @@ body.dragging .row.sel:hover{background:var(--select)}
     </div>
     <div class="dock"><div id="toasts" style="display:flex;flex-direction:column;align-items:center;gap:8px"></div><div class="selbar markbar" id="markbar" hidden></div><div class="selbar" id="selbar" hidden></div></div>
   </main>
+  <aside class="insp" id="insp" aria-label="Details" hidden></aside>
 </div>
 <div class="menu" id="menu" role="menu" hidden></div>
 <div class="scrim" id="modal" hidden><div class="dialog" id="dialog" role="dialog" aria-modal="true"></div></div>
@@ -643,7 +686,7 @@ const S = {
   drag: null, drop: null, recent: [],
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
-  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null,
+  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null, insp: null,
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
 let undoStack = [], redoStack = [];
@@ -655,7 +698,7 @@ const el = {
   spacer: $('spacer'), empty: $('empty'), listLine: $('listLine'), selbar: $('selbar'), exportBtn: $('exportBtn'),
   markbar: $('markbar'), toasts: $('toasts'), menu: $('menu'), modal: $('modal'), dialog: $('dialog'), q: $('q'), fileChip: $('fileChip'),
   ghost: $('ghost'), filedrop: $('filedrop'), fileIn: $('fileIn'), undo: $('undoBtn'), redo: $('redoBtn'),
-  treeTools: $('treeTools'), tfilter: $('tfilter'), tq: $('tq'), tfn: $('tfn'),
+  insp: $('insp'), treeTools: $('treeTools'), tfilter: $('tfilter'), tq: $('tq'), tfn: $('tfn'),
 };
 
 /* ---------- small helpers ---------- */
@@ -1343,7 +1386,7 @@ function rowHTML(r, i) {
   }
   const where = S.view.kind !== 'folder' && !inTree ? `<div class="where" title="${esc(pathText(n.id))}">${esc(pathText(n.id))}</div>` : '';
   const acts = editing ? '' : `<div class="acts">
-      <button class="icon-btn a-edit" data-a="edit" aria-label="Rename" title="Rename (F2)">${I.pencil}</button>
+      <button class="icon-btn a-edit" data-a="edit" aria-label="Edit" title="Edit details (E)">${I.pencil}</button>
       ${isF ? (inTree ? '' : `<button class="icon-btn a-go" data-a="open" aria-label="Open folder" title="Open (→)">${I.chev}</button>`)
             : (/^https?:|^file:|^ftp:/i.test(n.url) ? `<a class="icon-btn a-link" data-a="link" href="${esc(n.url)}" target="_blank" rel="noopener noreferrer" aria-label="Open in new tab" title="Open in new tab">${I.external}</a>` : '')}
       <button class="icon-btn a-more" data-a="more" aria-label="More actions">${I.more}</button></div>`;
@@ -1470,6 +1513,7 @@ function renderHead() {
   if (S.editing?.where === 'head' && S.editing.el?.isConnected) return;
   const v = S.view; let crumbs = '', title = '', meta = '', acts = '';
   const selAllBtn = `<button class="btn" data-h="selectall">${I.check}Select all</button>`;
+  const addBtn = `<button class="btn" data-h="add" aria-haspopup="menu" title="New bookmark (B) or folder (N)">${I.plus}Add<span class="caret">${I.chev}</span></button>`;
   const sortBtn = S.autoSort
     ? `<button class="btn on" data-h="sort" aria-haspopup="menu" title="Every folder is kept A to Z, folders first">${I.az}A to Z</button>`
     : `<button class="btn" data-h="sort" aria-haspopup="menu">${I.sort}Sort</button>`;
@@ -1488,14 +1532,14 @@ function renderHead() {
     if (n === S.root) meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· items here sit at the top level of the file</span>`;
     meta += azNote;
     acts = (S.clip ? `<button class="btn primary" data-h="paste">${I.paste}Paste ${S.clip.ids.length} here</button>` : '') +
-      `<button class="btn" data-h="newfolder">${I.plus}New folder</button><button class="btn" data-h="newbookmark">${I.plus}New bookmark</button>` + sortBtn + layoutSeg;
+      addBtn + sortBtn + layoutSeg;
   } else if (v.kind === 'tree') {
     crumbs = '<span>Everything, as an outline</span>';
     title = `<h1 class="ptitle">${esc(folderTitle(S.root))}</h1>`;
     const openCount = [...S.open].filter(id => idx.has(id) && id !== S.root.id).length;
     meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· ${openCount ? `${plural(openCount, 'folder')} open` : 'all folders closed'}</span>${azNote}`;
     acts = (S.clip ? `<button class="btn primary" data-h="paste">${I.paste}Paste ${S.clip.ids.length}</button>` : '') +
-      `<button class="btn" data-h="newfolder">${I.plus}New folder</button><button class="btn" data-h="newbookmark">${I.plus}New bookmark</button>` + sortBtn +
+      addBtn + sortBtn +
       `<button class="icon-btn" data-h="expandall" aria-label="Expand all folders" title="Expand all folders">${I.expand}</button>` +
       `<button class="icon-btn" data-h="collapseall" aria-label="Collapse all folders" title="Collapse all folders">${I.collapse}</button>` + layoutSeg;
   } else if (v.kind === 'search') {
@@ -1559,6 +1603,7 @@ function blankHTML() {
 }
 function renderSelbar() {
   syncSideHighlight();
+  renderInspector();
   const n = S.sel.size;
   el.list.classList.toggle('selecting', n > 0);
   if (!n) { el.selbar.hidden = true; return; }
@@ -1694,7 +1739,8 @@ function rowMenu(id, x, y) {
     items.push('sep');
   }
   if (!many) {
-    items.push({ label: n.type === 'link' ? 'Edit name and address' : 'Rename', icon: 'pencil', kbd: 'F2', run: () => startEdit(id, 'list') });
+    items.push({ label: 'Edit details…', icon: 'pencil', kbd: 'E', run: () => openEditor(id) });
+    items.push({ label: 'Rename', icon: 'pencil', kbd: 'F2', run: () => startEdit(id, 'list') });
     if (n.type === 'folder') items.push({ label: 'Open folder', icon: 'chev', kbd: '→', run: () => openFolder(id) });
     else {
       if (/^https?:|^file:|^ftp:/i.test(n.url)) items.push({ label: 'Open in new tab', icon: 'external', href: n.url });
@@ -1861,9 +1907,10 @@ function openKeys() {
     <dt>${k('/')}</dt><dd>Search titles and addresses</dd>
     <dt>${k('F')}</dt><dd>Filter the folder list in the sidebar by name</dd>
     <div class="h">Editing</div>
-    <dt>${k('Enter')} ${k('F2')}</dt><dd>Rename. Press Tab to edit a bookmark’s address too.</dd>
+    <dt>${k('E')}</dt><dd>Edit details: name, address, folder, tags, keyword and note. Changes apply as you go.</dd>
+    <dt>${k('Enter')} ${k('F2')}</dt><dd>Rename in place. Press Tab to edit a bookmark’s address too.</dd>
     <dt>${k('N')}</dt><dd>New folder in the open folder</dd>
-    <dt>${k('B')}</dt><dd>New bookmark: paste an address and choose a folder</dd>
+    <dt>${k('B')}</dt><dd>New bookmark: paste an address, choose a folder, add tags or a note</dd>
     <dt>${k('M')}</dt><dd>Move the selection to another folder</dd>
     <dt>${k('G')}</dt><dd>Group the selection into a new folder</dd>
     <dt>${k(MOD + '+X')} ${k(MOD + '+V')}</dt><dd>Cut, then paste into the open folder</dd>
@@ -1888,9 +1935,9 @@ function openKeys() {
   el.dialog.querySelector('[data-m="ok"]').focus();
 }
 
-/* ---------- new bookmark ----------
-   A dialog for one bookmark: address, editable name, folder. With Bindery Assist on, the helper reads the page's name
-   and icon (the page itself can't: its CSP allows no other connections), and can suggest a folder. */
+/* ---------- new bookmark helpers ----------
+   Used by the editor's "new" mode. With Bindery Assist on, the helper reads the page's name and icon (the page itself
+   can't: its CSP allows no other connections), and can suggest a folder. */
 function defaultFolder() {
   if (S.view.kind === 'folder' && idx.has(S.view.id)) return S.view.id;
   if (S.view.kind === 'tree') { const f = treeFolderOfCursor(); if (f) return f; }
@@ -1913,161 +1960,425 @@ function savedCopy(href) {
   for (const [id, r] of idx) if (r.node.type === 'link' && normUrl(r.node.url) === k) return id;
   return null;
 }
-function openNewBookmark(prev, { fetchNow = false, folder } = {}) {
-  if (S.noFile) { toast('Import a bookmarks file first, then add bookmarks to it.'); return; }
-  if (S.editing) commitEdit();
-  const st = prev || { url: '', title: '', icon: '', folder: folder && idx.has(folder) ? folder : defaultFolder(), touched: false, picks: null };
-  if (!idx.has(st.folder)) st.folder = S.root.id;
-  const assist = !AI_URL ? 'none' : S.ai === 'on' ? 'on' : 'ask';
-  openModal(`<h2>New bookmark</h2>
-    <div class="nb-top"><span class="nb-ico" id="nbIco" aria-hidden="true"></span>
-      <div class="field"><label for="nbUrl">Address</label><input id="nbUrl" class="url" type="text" inputmode="url" placeholder="https://example.com" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(st.url)}"></div></div>
-    <div class="field"><label for="nbName">Name</label><input id="nbName" placeholder="${assist === 'on' ? 'Filled in from the page, or type your own' : 'Name'}" autocomplete="off" spellcheck="false" value="${esc(st.title)}"></div>
-    <p class="nb-status" id="nbStatus" aria-live="polite"></p>
-    <div class="field"><span class="flabel" id="nbFolderLbl">Folder</span>
-      <button type="button" class="fpick" id="nbFolder" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="nbFolderLbl nbFolder"></button>
-      <div class="fp-panel" id="nbPanel" hidden>
-        <label class="search"><span>${I.search}</span><input id="nbFq" placeholder="Find a folder" autocomplete="off" spellcheck="false" aria-label="Find a folder"></label>
-        <div class="mp-list" id="nbFl" role="listbox" aria-labelledby="nbFolderLbl"></div>
-      </div>
-      ${assist === 'on' ? '<div class="place-chips" id="nbPlace" role="group" aria-label="Folder suggestions"></div>' : ''}
-    </div>
-    ${assist === 'ask' ? `<p class="nb-assist"><button type="button" class="linkish" data-nb="assist">${I.sparkles}Turn on Bindery Assist</button> to fill in the name and icon from the page, and get a folder suggestion.</p>` : ''}
-    <div class="actions"><button class="btn" data-m="cancel">Cancel</button><button class="btn primary" data-nb="add">${I.plus}Add bookmark</button></div>`, 'newbm');
-  const $d = id => el.dialog.querySelector('#' + id);
-  const urlIn = $d('nbUrl'), nameIn = $d('nbName'), status = $d('nbStatus'), pickBtn = $d('nbFolder'), panel = $d('nbPanel'), fq = $d('nbFq'), fl = $d('nbFl'), place = $d('nbPlace');
-  let ctrl = null, timer = 0, fetched = '', placeCtrl = null, active = -1, shown = [];
-  modalDone = () => { ctrl?.abort(); placeCtrl?.abort(); clearTimeout(timer); };
-  const live = () => el.dialog.contains(urlIn);
-  const href = () => normalizeAddress(urlIn.value);
-  const setStatus = (html, cls = '') => { status.className = 'nb-status' + (cls ? ' ' + cls : ''); status.innerHTML = html; };
-  const drawIcon = () => {
-    const h = href();
-    $d('nbIco').innerHTML = h ? iconHTML({ type: 'link', url: h, title: nameIn.value, attrs: st.icon ? { ICON: st.icon } : {} }) : `<span class="ico blank">${I.link}</span>`;
-    const img = $d('nbIco').querySelector('img');
-    if (img) img.onerror = () => { st.icon = ''; drawIcon(); };
-  };
-  const drawFolder = () => {
-    const f = node(st.folder), parent = f === S.root ? '' : parentOf(f.id) === S.root ? '' : folderPath(parentOf(f.id).id);
-    pickBtn.innerHTML = `${iconHTML(f)}<span class="nm">${esc(folderTitle(f))}${parent ? `<small>${esc(parent)}</small>` : ''}</span>${I.chev}`;
-    pickBtn.title = folderPath(f.id);
-    place?.querySelectorAll('[data-pf]').forEach(b => b.classList.toggle('on', b.dataset.pf === st.folder));
-  };
-  const drawDupe = () => {
-    const h = href(), id = h && savedCopy(h);
-    if (id) setStatus(`You already have this address in “${esc(folderPath(parentOf(id).id))}”, as “${esc(nameOf(node(id)))}”. You can still add it again.`, 'warn');
-    else if (status.classList.contains('warn')) setStatus('');
-  };
-  const drawPlace = () => {
-    if (!place) return;
-    if (placeCtrl) { place.innerHTML = `<span class="chip busy">${I.sparkles}Thinking…</span>`; return; }
-    const picks = (st.picks || []).filter(id => idx.has(id));
-    place.innerHTML = picks.length
-      ? picks.map(id => `<button type="button" class="chip${id === st.folder ? ' on' : ''}" data-pf="${id}" title="${esc(folderPath(id))}">${I.folder}${esc(folderTitle(node(id)))}</button>`).join('')
-      : st.picks ? `<span class="chip quiet">No good match. Pick a folder above.</span><button type="button" class="chip ask" data-nb="place">${I.sparkles}Try again</button>`
-      : `<button type="button" class="chip ask" data-nb="place">${I.sparkles}Suggest a folder</button>`;
-  };
-  // The page's name and icon, read by the helper.
-  const readPage = async () => {
-    const h = href();
-    if (assist !== 'on' || !h || !/^https?:/i.test(h) || h === fetched) return;
-    fetched = h; ctrl?.abort(); const my = ctrl = new AbortController();
-    setStatus(`<span class="chip busy small">${I.sparkles}Reading the page…</span>`);
-    try {
-      const d = await aiFetch('page', { url: h }, my.signal);
-      if (my.signal.aborted || !live() || href() !== h) return;
-      st.icon = typeof d?.icon === 'string' && /^data:image\/[\w.+-]+;base64,/.test(d.icon) && d.icon.length < 70000 ? d.icon : '';
-      const t = String(d?.title ?? '').trim().slice(0, 200);
-      if (t && !st.touched) { nameIn.value = t; st.title = t; }
-      drawIcon();
-      if (!t) setStatus('Couldn’t read a name from that page, so type one above.');
-      else if (st.touched && t !== nameIn.value.trim()) { st.pageTitle = t; setStatus(`The page calls itself <button type="button" class="linkish" data-nb="usetitle">“${esc(t)}”</button>. Click to use that name.`); }
-      else setStatus('');
-      drawDupe();
-    } catch (e) {
-      if (my.signal.aborted || !live()) return;
-      fetched = '';
-      setStatus(`${esc(e instanceof AIError ? e.message : 'Couldn’t read that page.')} You can type a name instead.`);
-    } finally { if (ctrl === my) ctrl = null; }
-  };
-  const suggestPlace = async () => {
-    const h = href();
-    if (!h) { setStatus('Add an address first, then ask for a folder.', 'warn'); urlIn.focus(); return; }
-    const all = folderList().filter(x => x.id !== S.root.id).slice(0, 400);
-    if (all.length < 2) { setStatus('There’s only one folder to choose from.'); return; }
-    placeCtrl?.abort(); const my = placeCtrl = new AbortController();
-    drawPlace();
-    try {
-      const d = await aiFetch('place', { items: [{ title: nameIn.value.trim(), url: sendableUrl(h) || h.slice(0, 300) }], folders: all.map(x => folderPath(x.id)) }, my.signal);
-      if (my.signal.aborted || !live()) return;
-      st.picks = (Array.isArray(d?.folders) ? d.folders : []).filter(i => Number.isInteger(i) && all[i]).map(i => all[i].id).slice(0, 3);
-      if (st.picks.length) { st.folder = st.picks[0]; drawFolder(); }
-    } catch (e) {
-      if (my.signal.aborted || !live()) return;
-      toast(e instanceof AIError ? e.message : 'Bindery Assist couldn’t come up with an answer this time. Try again.', { error: true });
-    } finally { if (placeCtrl === my) placeCtrl = null; if (live()) drawPlace(); }
-  };
-  // Folder picker: a searchable list under the button.
-  const drawList = () => {
-    const t = fq.value.trim().toLowerCase();
-    shown = t ? folderList().filter(x => folderTitle(node(x.id)).toLowerCase().includes(t)) : folderList();
-    if (active >= shown.length) active = shown.length - 1;
-    fl.innerHTML = shown.length ? shown.map((x, i) => `<div class="mp-row${i === active ? ' act' : ''}${x.id === st.folder ? ' cur' : ''}" data-k="${i}" role="option" aria-selected="${x.id === st.folder}" style="--d:${t ? 0 : x.d}">${iconHTML(node(x.id))}<span class="nm"><b>${esc(folderTitle(node(x.id)))}</b>${t && x.id !== S.root.id ? `<small>${esc(folderPath(x.id))}</small>` : ''}</span>${x.id === st.folder ? `<span class="tag">${I.check}</span>` : ''}</div>`).join('')
-      : '<div class="mp-label">No folders match</div>';
-  };
-  const togglePanel = open => {
-    panel.hidden = !open; pickBtn.setAttribute('aria-expanded', String(open));
-    if (open) { fq.value = ''; active = folderList().findIndex(x => x.id === st.folder); drawList(); fl.querySelector('.cur')?.scrollIntoView({ block: 'nearest' }); fq.focus(); }
-  };
-  const choose = i => { const x = shown[i]; if (!x) return; st.folder = x.id; drawFolder(); drawPlace(); togglePanel(false); pickBtn.focus(); };
-  const add = () => {
-    const h = href();
-    if (!h) { setStatus('Enter a web address, like example.com.', 'warn'); urlIn.focus(); return; }
-    st.url = h; st.title = nameIn.value.trim();
-    modalDone = null; ctrl?.abort(); placeCtrl?.abort(); clearTimeout(timer);
-    closeModal();
-    addBookmark(st);
-  };
-
-  urlIn.addEventListener('input', () => {
-    st.url = urlIn.value; drawIcon(); drawDupe();
-    if (st.picks) { st.picks = null; drawPlace(); }
-    clearTimeout(timer); timer = setTimeout(readPage, 550);
-  });
-  urlIn.addEventListener('blur', () => { clearTimeout(timer); readPage(); });
-  nameIn.addEventListener('input', () => { st.title = nameIn.value; st.touched = !!nameIn.value.trim(); });
-  for (const inp of [urlIn, nameIn]) inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
-  pickBtn.addEventListener('click', () => togglePanel(panel.hidden));
-  fq.addEventListener('input', () => { active = 0; drawList(); });
-  fq.addEventListener('keydown', e => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, Math.min(shown.length - 1, active + (e.key === 'ArrowDown' ? 1 : -1))); drawList(); fl.querySelector('.act')?.scrollIntoView({ block: 'nearest' }); }
-    else if (e.key === 'Enter') { e.preventDefault(); choose(active); }
-    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); togglePanel(false); pickBtn.focus(); }
-  });
-  fl.addEventListener('click', e => { const r = e.target.closest('[data-k]'); if (r) choose(+r.dataset.k); });
-  const onClick = e => {
-    const b = e.target.closest('[data-nb], [data-pf]'); if (!b) return;
-    if (b.dataset.pf) { st.folder = b.dataset.pf; drawFolder(); return; }
-    const a = b.dataset.nb;
-    if (a === 'add') add();
-    else if (a === 'place') suggestPlace();
-    else if (a === 'usetitle' && st.pageTitle) { nameIn.value = st.title = st.pageTitle; st.touched = false; setStatus(''); drawIcon(); }
-    else if (a === 'assist') {
-      st.url = urlIn.value; st.title = nameIn.value;
-      modalDone = null; ctrl?.abort(); closeModal();
-      aiOnboarding().then(on => openNewBookmark(st, { fetchNow: on }));
-    }
-  };
-  for (const box of el.dialog.children) box.addEventListener('click', onClick);
-  drawIcon(); drawFolder(); drawPlace(); drawDupe();
-  (st.url ? nameIn : urlIn).focus();
-  if (fetchNow) readPage();
+/* ---------- bookmark editor ----------
+   One panel for looking at and changing a bookmark or folder, and for adding a bookmark. It docks beside the list on
+   wide screens, slides in over it on narrower ones, and rises from the bottom on phones. Changes apply as you make
+   them, each as its own undo step, like renaming in the list. Tags, keyword and note only show when they have a value
+   or you add one. S.insp is null (closed), { mode: 'edit', for } (follows the selection) or { mode: 'new', st }. */
+const tagsOf = n => String(n?.attrs?.TAGS || '').split(',').map(t => t.trim()).filter(Boolean);
+const cleanTag = t => String(t ?? '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+function mergeTags(cur, add) {
+  const out = [...cur], seen = new Set(cur.map(t => t.toLowerCase()));
+  for (const t of add.map(cleanTag)) if (t && !seen.has(t.toLowerCase())) { seen.add(t.toLowerCase()); out.push(t); }
+  return out;
 }
+function allTags() {
+  const m = new Map();
+  for (const [, r] of idx) for (const t of tagsOf(r.node)) if (!m.has(t.toLowerCase())) m.set(t.toLowerCase(), t);
+  return [...m.values()].sort(collator.compare);
+}
+function keywordOwner(kw, except) {
+  if (!kw) return null;
+  for (const [id, r] of idx) if (id !== except && r.node.attrs?.SHORTCUTURL?.toLowerCase() === kw.toLowerCase()) return id;
+  return null;
+}
+function otherCopy(id) {
+  const n = node(id), k = n?.type === 'link' && !/^javascript:/i.test(n.url) ? normUrl(n.url) : '';
+  if (!k) return null;
+  for (const [x, r] of idx) if (x !== id && r.node.type === 'link' && normUrl(r.node.url) === k) return x;
+  return null;
+}
+/* Attributes are shared with undo snapshots, so they're replaced, never changed in place. */
+function setAttr(n, k, v) { const a = { ...n.attrs }; if (v) a[k] = v; else delete a[k]; n.attrs = a; }
+const editNode = (id, label, fn) => { if (S.insp) S.insp.sticky = true; return mutate(label, () => fn(node(id))); };
+
+function abortInsp() { const I_ = S.insp; if (!I_) return; I_.ctrl?.abort(); I_.placeCtrl?.abort(); I_.descCtrl?.abort(); clearTimeout(I_.timer); }
+function openEditor(id) {
+  if (isBlank()) return;
+  if (S.editing) commitEdit();
+  id = id || (S.cursor && S.sel.has(S.cursor) ? S.cursor : selIds()[0]) || S.cursor;
+  if (id && idx.has(id) && !S.sel.has(id)) { selectOnly(id); markSel(); }
+  if (S.insp?.mode !== 'edit') { abortInsp(); S.insp = { mode: 'edit', show: new Set(), for: undefined }; }
+  renderSelbar();
+  el.insp.querySelector('[data-f="name"]')?.focus();
+}
+function closeEditor({ focusList = true } = {}) {
+  abortInsp(); S.insp = null; renderInspector();
+  if (focusList) el.list.focus({ preventScroll: true });
+}
+function openNewBookmark(prev, { folder } = {}) {
+  if (S.noFile || isBlank()) { toast('Import a bookmarks file first, then add bookmarks to it.'); return; }
+  if (S.editing) commitEdit();
+  abortInsp();
+  S.insp = { mode: 'new', show: new Set(), st: { url: '', title: '', icon: '', folder: folder && idx.has(folder) ? folder : defaultFolder(), touched: false, picks: null, tags: [], keyword: '', note: '' } };
+  renderInspector();
+  el.insp.querySelector('[data-f="url"]')?.focus();
+}
+const inspId = () => S.insp?.mode === 'edit' ? S.insp.for : null;
+function inspShown(f) {
+  const I_ = S.insp; if (I_.show.has(f)) return true;
+  if (I_.mode === 'new') return f === 'tags' ? I_.st.tags.length > 0 : f === 'keyword' ? !!I_.st.keyword : !!I_.st.note;
+  const n = node(I_.for);
+  return f === 'tags' ? tagsOf(n).length > 0 : f === 'keyword' ? !!n.attrs?.SHORTCUTURL : !!n.desc;
+}
+function renderInspector() {
+  const I_ = S.insp, box = el.insp, open = !!I_ && !isBlank();
+  if (!open && I_) { abortInsp(); S.insp = null; }
+  el.app.classList.toggle('insp-open', open); box.hidden = !open;
+  if (!open) { box.dataset.key = ''; box.innerHTML = ''; return; }
+  let key;
+  if (I_.mode === 'new') key = 'new|' + ['tags', 'keyword', 'note'].filter(inspShown).join();
+  else {
+    // After an edit made here moves the item out of view (a new folder, say), the panel stays on it.
+    const ids = selIds();
+    if (ids.length) I_.sticky = false;
+    const id = ids.length === 1 ? ids[0] : !ids.length && I_.sticky && idx.has(I_.for) ? I_.for : null;
+    if (I_.for !== id) { I_.descCtrl?.abort(); I_.descCtrl = null; I_.for = id; I_.show = new Set(); I_.pick = null; }
+    key = ids.length > 1 ? 'many|' + ids.length : id ? `edit|${id}|${node(id).type}|${['tags', 'keyword', 'note'].filter(inspShown).join()}` : 'none';
+  }
+  if (box.dataset.key !== key) {
+    const act = box.contains(document.activeElement) ? document.activeElement.dataset.f : null;
+    box.innerHTML = inspHTML(); box.dataset.key = key;
+    if (act) box.querySelector(`[data-f="${act}"]`)?.focus({ preventScroll: true });
+  }
+  fillInspector();
+}
+function inspHTML() {
+  const I_ = S.insp, isNew = I_.mode === 'new', close = `<button class="icon-btn" data-x="close" aria-label="Close" title="Close (Esc)">${I.x}</button>`;
+  if (!isNew && !I_.for) {
+    const n = S.sel.size;
+    return `<div class="insp-h"><span class="insp-ico">${I.pencil}</span><div class="insp-t"><b>${n ? `${fmt(n)} items selected` : 'Details'}</b></div>${close}</div>
+      <div class="insp-empty">${n ? `<p>Select one item to see and edit its details.</p><div class="insp-acts"><button class="btn" data-x="move">${I.move}Move to…</button><button class="btn" data-x="group">${I.group}Group</button><button class="btn" data-x="delmany">${I.trash}Delete</button></div>`
+        : `<p>Select a bookmark or folder to see and edit its details.</p><div class="insp-acts"><button class="btn" data-x="newbm">${I.bmplus}New bookmark</button></div>`}</div>`;
+  }
+  const n = isNew ? null : node(I_.for), isF = n?.type === 'folder';
+  const assist = !AI_URL ? 'none' : S.ai === 'on' ? 'on' : 'ask';
+  const urlField = `<div class="field"><label for="iUrl">Address</label><input id="iUrl" data-f="url" class="url" type="text" inputmode="url" placeholder="https://example.com" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`;
+  const nameField = `<div class="field"><label for="iName">Name</label><input id="iName" data-f="name" autocomplete="off" spellcheck="false" placeholder="${isNew && assist === 'on' ? 'Filled in from the page, or type your own' : isF ? 'Folder name' : 'Name'}"></div>`;
+  const more = [!isF && !inspShown('tags') && ['tags', 'Tags'], !isF && !inspShown('keyword') && ['keyword', 'Keyword'], !inspShown('note') && ['note', 'Note']].filter(Boolean);
+  return `<div class="insp-h"><span class="insp-ico" data-v="icon"></span><div class="insp-t"><b>${isNew ? 'New bookmark' : isF ? 'Folder' : 'Bookmark'}</b><small data-v="where"></small></div>
+      ${!isNew && !isF ? `<a class="icon-btn" data-v="open" target="_blank" rel="noopener noreferrer" aria-label="Open in new tab" title="Open in new tab">${I.external}</a>` : ''}${close}</div>
+    <div class="insp-b">
+      ${isNew ? urlField + nameField : nameField + (isF ? '' : urlField)}
+      <p class="nb-status" data-v="status" aria-live="polite"></p>
+      <div class="field"><span class="flabel">${isF ? 'Inside' : 'Folder'}</span>
+        <button type="button" class="fpick" data-x="pick" aria-haspopup="listbox" aria-expanded="false"></button>
+        <div class="fp-panel" data-v="pickpanel" hidden>
+          <label class="search"><span>${I.search}</span><input data-f="fq" placeholder="Find a folder" autocomplete="off" spellcheck="false" aria-label="Find a folder"></label>
+          <div class="mp-list" data-v="picklist" role="listbox"></div>
+        </div>
+        ${isNew && assist === 'on' ? '<div class="place-chips" data-v="place" role="group" aria-label="Folder suggestions"></div>' : ''}
+      </div>
+      ${!isF && inspShown('tags') ? `<div class="field"><label for="iTag">Tags</label><div class="tagbox"><span class="tg-list" data-v="tags"></span><input id="iTag" data-f="tag" list="iTagList" placeholder="Add a tag" autocomplete="off" spellcheck="false"></div><datalist id="iTagList" data-v="taglist"></datalist><p class="hint">Firefox only. Chrome has no tags.</p></div>` : ''}
+      ${!isF && inspShown('keyword') ? `<div class="field"><label for="iKey">Keyword</label><input id="iKey" data-f="keyword" placeholder="For example, w" autocomplete="off" autocapitalize="off" spellcheck="false"><p class="hint" data-v="kwnote">Firefox only: type it in the address bar to open this bookmark.</p></div>` : ''}
+      ${inspShown('note') ? `<div class="field"><div class="flabel-row"><label for="iNote">Note</label>${!isF && assist !== 'none' ? `<span data-v="describe"></span>` : ''}</div><textarea id="iNote" data-f="note" rows="3" placeholder="${isF ? 'What this folder is for' : 'What this page is, or why you saved it'}"></textarea><p class="hint">Saved in Bindery’s export. Browsers don’t show notes.</p></div>` : ''}
+      ${more.length ? `<div class="insp-more">${more.map(([f, l]) => `<button type="button" class="chip" data-more="${f}">${I.plus}${l}</button>`).join('')}</div>` : ''}
+      ${isNew && assist === 'ask' ? `<p class="nb-assist"><button type="button" class="linkish" data-x="assist">${I.sparkles}Turn on Bindery Assist</button> to fill in the name and icon from the page, and get a folder suggestion.</p>` : ''}
+      ${isNew ? '' : '<div class="insp-meta" data-v="meta"></div>'}
+    </div>
+    <div class="insp-f">${isNew ? `<button class="btn" data-x="cancel">Cancel</button><button class="btn primary" data-x="add">${I.plus}Add bookmark</button>`
+      : `<button class="btn ghost del" data-x="delete">${I.trash}Delete ${isF ? 'folder' : 'bookmark'}</button>`}</div>`;
+}
+function fillInspector() {
+  const I_ = S.insp, box = el.insp, isNew = I_.mode === 'new', id = I_.for, n = isNew ? null : id && node(id);
+  if (!isNew && !n) return;
+  const q = s => box.querySelector(s);
+  const val = (f, v) => { const e = q(`[data-f="${f}"]`); if (e && document.activeElement !== e && e.value !== v) e.value = v; };
+  const st = I_.st;
+  if (isNew) { val('url', st.url); val('name', st.title); val('keyword', st.keyword); val('note', st.note); }
+  else { val('name', n.title); if (n.type === 'link') val('url', n.url); val('keyword', n.attrs?.SHORTCUTURL || ''); val('note', n.desc || ''); }
+  // icon and where it lives
+  const ico = q('[data-v="icon"]');
+  if (isNew) {
+    const h = normalizeAddress(st.url);
+    ico.innerHTML = h ? iconHTML({ type: 'link', url: h, title: st.title, attrs: st.icon ? { ICON: st.icon } : {} }) : `<span class="ico blank">${I.link}</span>`;
+    const img = ico.querySelector('img'); if (img) img.onerror = () => { st.icon = ''; fillInspector(); };
+  } else ico.innerHTML = iconHTML(n);
+  const where = q('[data-v="where"]'); if (where) where.textContent = isNew ? '' : folderPath(parentOf(id).id);
+  const open = q('[data-v="open"]');
+  if (open) { const ok = /^https?:|^file:|^ftp:/i.test(n.url); open.hidden = !ok; if (ok) open.href = n.url; }
+  drawPicker();
+  // tags
+  const tagBox = q('[data-v="tags"]');
+  if (tagBox) {
+    const tags = isNew ? st.tags : tagsOf(n), have = new Set(tags.map(t => t.toLowerCase()));
+    tagBox.innerHTML = tags.map(t => `<span class="tg">${esc(t)}<button type="button" data-rmtag="${esc(t)}" aria-label="Remove the tag ${esc(t)}" tabindex="-1">${I.x}</button></span>`).join('');
+    q('[data-v="taglist"]').innerHTML = allTags().filter(t => !have.has(t.toLowerCase())).slice(0, 300).map(t => `<option value="${esc(t)}">`).join('');
+  }
+  const kw = q('[data-v="kwnote"]');
+  if (kw) {
+    const k = (isNew ? st.keyword : n.attrs?.SHORTCUTURL || '').trim(), other = keywordOwner(k, id);
+    kw.classList.toggle('warn', !!other);
+    kw.textContent = other ? `“${nameOf(node(other))}” uses this keyword too. Firefox only keeps one bookmark per keyword.` : 'Firefox only: type it in the address bar to open this bookmark.';
+  }
+  const dsc = q('[data-v="describe"]');
+  if (dsc) dsc.innerHTML = I_.descCtrl ? `<span class="chip busy small">${I.sparkles}Thinking…</span>`
+    : `<button type="button" class="chip ask small" data-x="describe">${I.sparkles}${(isNew ? st.note : n.desc) ? 'Rewrite' : 'Write one'}</button>`;
+  if (isNew) drawPlace();
+  const meta = q('[data-v="meta"]');
+  if (meta) {
+    const rows = [];
+    if (n.type === 'folder') { const r = idx.get(id); rows.push(r.links || r.folders ? [r.links && plural(r.links, 'bookmark'), r.folders && plural(r.folders, 'folder')].filter(Boolean).join(' · ') + ' inside' : 'Empty'); }
+    const added = fmtDate(n.attrs?.ADD_DATE), mod = fmtDate(n.attrs?.LAST_MODIFIED);
+    if (added || mod) rows.push([added && `Added ${added}`, mod && `changed ${mod}`].filter(Boolean).join(' · '));
+    const dup = otherCopy(id);
+    meta.innerHTML = rows.map(r => `<div>${esc(r)}</div>`).join('') + (dup ? `<div class="warn">Also saved in “${esc(folderPath(parentOf(dup).id))}”. <button type="button" class="linkish" data-x="reveal" data-id="${dup}">Show it</button></div>` : '');
+  }
+}
+function setInspStatus(html, cls = '') { const s = el.insp.querySelector('[data-v="status"]'); if (s) { s.className = 'nb-status' + (cls ? ' ' + cls : ''); s.innerHTML = html; } }
+
+/* Folder picker, shared by both modes. */
+const pickCurrent = () => S.insp.mode === 'new' ? S.insp.st.folder : parentOf(S.insp.for)?.id;
+function drawPicker() {
+  const I_ = S.insp, btn = el.insp.querySelector('[data-x="pick"]'); if (!btn) return;
+  const f = node(pickCurrent()); if (!f) return;
+  const parent = f === S.root || parentOf(f.id) === S.root ? '' : folderPath(parentOf(f.id).id);
+  btn.innerHTML = `${iconHTML(f)}<span class="nm">${esc(folderTitle(f))}${parent ? `<small>${esc(parent)}</small>` : ''}</span>${I.chev}`;
+  btn.title = folderPath(f.id);
+  const p = I_.pick, panel = el.insp.querySelector('[data-v="pickpanel"]');
+  btn.setAttribute('aria-expanded', String(!!p?.open)); panel.hidden = !p?.open;
+  if (!p?.open) return;
+  const t = p.q.trim().toLowerCase(), self = I_.mode === 'edit' && node(I_.for)?.type === 'folder' ? I_.for : null;
+  p.shown = (t ? folderList().filter(x => folderTitle(node(x.id)).toLowerCase().includes(t)) : folderList()).map(x => ({ ...x, dis: !!self && isWithin(self, x.id) }));
+  if (p.active >= p.shown.length) p.active = p.shown.length - 1;
+  const cur = pickCurrent();
+  el.insp.querySelector('[data-v="picklist"]').innerHTML = p.shown.length
+    ? p.shown.map((x, i) => `<div class="mp-row${i === p.active ? ' act' : ''}${x.id === cur ? ' cur' : ''}${x.dis ? ' dis' : ''}" data-k="${i}" role="option" aria-selected="${x.id === cur}" style="--d:${t ? 0 : x.d}">${iconHTML(node(x.id))}<span class="nm"><b>${esc(folderTitle(node(x.id)))}</b>${t && x.id !== S.root.id ? `<small>${esc(folderPath(x.id))}</small>` : ''}</span>${x.id === cur ? `<span class="tag">${I.check}</span>` : ''}</div>`).join('')
+    : '<div class="mp-label">No folders match</div>';
+}
+function togglePicker(open) {
+  const I_ = S.insp;
+  I_.pick = open ? { open: true, q: '', active: folderList().findIndex(x => x.id === pickCurrent()), shown: [] } : null;
+  drawPicker();
+  if (open) { const fq = el.insp.querySelector('[data-f="fq"]'); fq.value = ''; fq.focus(); el.insp.querySelector('[data-v="picklist"] .cur')?.scrollIntoView({ block: 'nearest' }); }
+}
+function choosePick(i) {
+  const I_ = S.insp, x = I_.pick?.shown[i]; if (!x || x.dis) return;
+  I_.pick = null;
+  if (I_.mode === 'new') { I_.st.folder = x.id; fillInspector(); }
+  else if (x.id !== pickCurrent()) { I_.sticky = true; moveItems([I_.for], x.id, null); }
+  else fillInspector();
+  el.insp.querySelector('[data-x="pick"]')?.focus();
+}
+
+/* Edits to an existing item, applied when a field is left or Enter is pressed. */
+function commitField(f, input) {
+  const id = inspId(), n = node(id); if (!n) return;
+  const v = input.value;
+  S.insp.sticky = true;
+  if (f === 'name') {
+    const t = v.trim();
+    if (n.type === 'folder' && !t) { input.value = n.title; return; }
+    if (t !== n.title) renameNode(id, t);
+  } else if (f === 'url') {
+    const u = v.trim();
+    if (!u) { input.value = n.url; return; }
+    if (u !== n.url) renameNode(id, n.title, u);
+  } else if (f === 'keyword') {
+    const k = v.trim();
+    if (/\s/.test(k)) { setInspStatus('A keyword can’t contain spaces.', 'warn'); input.value = n.attrs?.SHORTCUTURL || ''; return; }
+    if (k !== (n.attrs?.SHORTCUTURL || '')) editNode(id, 'Keyword change', x => setAttr(x, 'SHORTCUTURL', k));
+  } else if (f === 'note') {
+    const d = v.trim();
+    if (d !== (n.desc || '')) editNode(id, 'Note change', x => { if (d) x.desc = d; else delete x.desc; });
+  }
+}
+function addTags(raw) {
+  const I_ = S.insp, parts = String(raw ?? '').split(',');
+  if (!parts.some(p => cleanTag(p))) return;
+  if (I_.mode === 'new') { I_.st.tags = mergeTags(I_.st.tags, parts); fillInspector(); return; }
+  const id = I_.for, cur = tagsOf(node(id)), next = mergeTags(cur, parts);
+  if (next.length !== cur.length) editNode(id, 'Tag change', x => setAttr(x, 'TAGS', next.join(',')));
+}
+function removeTag(tag) {
+  const I_ = S.insp, k = tag.toLowerCase();
+  if (I_.mode === 'new') { I_.st.tags = I_.st.tags.filter(t => t.toLowerCase() !== k); fillInspector(); return; }
+  const id = I_.for, next = tagsOf(node(id)).filter(t => t.toLowerCase() !== k);
+  editNode(id, 'Tag change', x => setAttr(x, 'TAGS', next.join(',')));
+}
+
+/* Bindery Assist in the editor: the page's name and icon (new bookmarks), a folder suggestion, and a note. */
+function inspReadPage() {
+  const I_ = S.insp; if (I_?.mode !== 'new') return;
+  const st = I_.st, h = normalizeAddress(st.url);
+  if (!AI_URL || S.ai !== 'on' || !h || !/^https?:/i.test(h) || h === I_.fetched) return;
+  I_.fetched = h; I_.ctrl?.abort();
+  const my = I_.ctrl = new AbortController();
+  setInspStatus(`<span class="chip busy small">${I.sparkles}Reading the page…</span>`);
+  aiFetch('page', { url: h }, my.signal).then(d => {
+    if (my.signal.aborted || S.insp !== I_ || normalizeAddress(st.url) !== h) return;
+    st.icon = typeof d?.icon === 'string' && /^data:image\/[\w.+-]+;base64,/.test(d.icon) && d.icon.length < 70000 ? d.icon : '';
+    const t = String(d?.title ?? '').trim().slice(0, 200);
+    if (t && !st.touched) { st.title = t; const e = el.insp.querySelector('[data-f="name"]'); if (e) e.value = t; }
+    fillInspector();
+    if (!t) setInspStatus('Couldn’t read a name from that page, so type one above.');
+    else if (st.touched && t !== st.title.trim()) { st.pageTitle = t; setInspStatus(`The page calls itself <button type="button" class="linkish" data-x="usetitle">“${esc(t)}”</button>. Click to use that name.`); }
+    else inspDupe();
+  }).catch(e => {
+    if (my.signal.aborted || S.insp !== I_) return;
+    I_.fetched = '';
+    setInspStatus(`${esc(e instanceof AIError ? e.message : 'Couldn’t read that page.')} You can type a name instead.`);
+  }).finally(() => { if (I_.ctrl === my) I_.ctrl = null; });
+}
+function inspDupe() {
+  const I_ = S.insp; if (I_?.mode !== 'new') return;
+  const h = normalizeAddress(I_.st.url), id = h && savedCopy(h);
+  if (id) setInspStatus(`You already have this address in “${esc(folderPath(parentOf(id).id))}”, as “${esc(nameOf(node(id)))}”. You can still add it again.`, 'warn');
+  else if (el.insp.querySelector('[data-v="status"]')?.classList.contains('warn')) setInspStatus('');
+}
+function drawPlace() {
+  const I_ = S.insp, box = el.insp.querySelector('[data-v="place"]'); if (!box) return;
+  if (I_.placeCtrl) { box.innerHTML = `<span class="chip busy">${I.sparkles}Thinking…</span>`; return; }
+  const picks = (I_.st.picks || []).filter(id => idx.has(id));
+  box.innerHTML = picks.length
+    ? picks.map(id => `<button type="button" class="chip${id === I_.st.folder ? ' on' : ''}" data-pf="${id}" title="${esc(folderPath(id))}">${I.folder}${esc(folderTitle(node(id)))}</button>`).join('')
+    : I_.st.picks ? `<span class="chip quiet">No good match. Pick a folder above.</span><button type="button" class="chip ask" data-x="place">${I.sparkles}Try again</button>`
+    : `<button type="button" class="chip ask" data-x="place">${I.sparkles}Suggest a folder</button>`;
+}
+async function inspPlace() {
+  const I_ = S.insp, st = I_.st, h = normalizeAddress(st.url);
+  if (!h) { setInspStatus('Add an address first, then ask for a folder.', 'warn'); el.insp.querySelector('[data-f="url"]')?.focus(); return; }
+  const all = folderList().filter(x => x.id !== S.root.id).slice(0, 400);
+  if (all.length < 2) { setInspStatus('There’s only one folder to choose from.'); return; }
+  I_.placeCtrl?.abort(); const my = I_.placeCtrl = new AbortController();
+  drawPlace();
+  try {
+    const d = await aiFetch('place', { items: [{ title: st.title.trim(), url: sendableUrl(h) || h.slice(0, 300) }], folders: all.map(x => folderPath(x.id)) }, my.signal);
+    if (my.signal.aborted || S.insp !== I_) return;
+    st.picks = (Array.isArray(d?.folders) ? d.folders : []).filter(i => Number.isInteger(i) && all[i]).map(i => all[i].id).slice(0, 3);
+    if (st.picks.length) st.folder = st.picks[0];
+  } catch (e) {
+    if (my.signal.aborted || S.insp !== I_) return;
+    toast(e instanceof AIError ? e.message : 'Bindery Assist couldn’t come up with an answer this time. Try again.', { error: true });
+  } finally { if (I_.placeCtrl === my) I_.placeCtrl = null; if (S.insp === I_) fillInspector(); }
+}
+async function inspDescribe() {
+  const I_ = S.insp, isNew = I_.mode === 'new', id = I_.for, n = isNew ? null : node(id);
+  const url = isNew ? normalizeAddress(I_.st.url) : n?.url;
+  if (!url || !/^https?:/i.test(url)) { setInspStatus(isNew ? 'Add a web address first, then ask for a note.' : 'Only web pages can be described.', 'warn'); return; }
+  I_.descCtrl?.abort(); const my = I_.descCtrl = new AbortController();
+  fillInspector();
+  try {
+    const d = await aiFetch('describe', { url, title: (isNew ? I_.st.title : n.title) || '' }, my.signal);
+    if (my.signal.aborted || S.insp !== I_ || (!isNew && I_.for !== id)) return;
+    const text = String(d?.description ?? '').trim().slice(0, 1000);
+    if (!text) { toast('Couldn’t read enough of that page to describe it. You can write a note yourself.'); return; }
+    const ta = el.insp.querySelector('[data-f="note"]'); if (ta) ta.value = text;
+    if (isNew) I_.st.note = text;
+    else if (node(id)) { I_.sticky = true; editNode(id, 'Note from Bindery Assist', x => { x.desc = text; }); toast('Bindery Assist wrote a note. Edit it as you like.', { undo: true }); }
+  } catch (e) {
+    if (my.signal.aborted || S.insp !== I_) return;
+    toast(e instanceof AIError ? e.message : 'Bindery Assist couldn’t come up with an answer this time. Try again.', { error: true });
+  } finally { if (I_.descCtrl === my) I_.descCtrl = null; if (S.insp === I_) fillInspector(); }
+}
+function inspAdd() {
+  const I_ = S.insp, st = I_.st, h = normalizeAddress(st.url);
+  if (!h) { setInspStatus('Enter a web address, like example.com.', 'warn'); el.insp.querySelector('[data-f="url"]')?.focus(); return; }
+  const pending = el.insp.querySelector('[data-f="tag"]')?.value; if (pending) st.tags = mergeTags(st.tags, pending.split(','));
+  const k = st.keyword.trim();
+  if (/\s/.test(k)) { setInspStatus('A keyword can’t contain spaces.', 'warn'); return; }
+  st.url = h; st.title = st.title.trim(); st.keyword = k; st.note = st.note.trim();
+  abortInsp();
+  S.insp = { mode: 'edit', show: new Set(), for: undefined };
+  addBookmark(st);
+  renderSelbar();
+}
+
+/* One set of listeners for whatever the panel shows. */
+el.insp.addEventListener('pointerdown', e => {
+  const rm = e.target.closest('[data-rmtag]'); if (!rm) return;
+  e.preventDefault(); removeTag(rm.dataset.rmtag);
+});
+el.insp.addEventListener('click', e => {
+  const I_ = S.insp; if (!I_) return;
+  const pk = e.target.closest('[data-k]'); if (pk) { choosePick(+pk.dataset.k); return; }
+  const pf = e.target.closest('[data-pf]'); if (pf) { I_.st.folder = pf.dataset.pf; fillInspector(); return; }
+  const more = e.target.closest('[data-more]');
+  if (more) { const f = more.dataset.more; I_.show.add(f); renderInspector(); el.insp.querySelector(`[data-f="${f === 'tags' ? 'tag' : f}"]`)?.focus(); return; }
+  const x = e.target.closest('[data-x]')?.dataset.x; if (!x) return;
+  if (x === 'close' || x === 'cancel') closeEditor();
+  else if (x === 'pick') togglePicker(!I_.pick?.open);
+  else if (x === 'add') inspAdd();
+  else if (x === 'delete') requestDelete([I_.for]);
+  else if (x === 'newbm') openNewBookmark();
+  else if (x === 'move') openMovePicker(selIds());
+  else if (x === 'group') group(selIds());
+  else if (x === 'delmany') requestDelete(selIds());
+  else if (x === 'reveal') reveal(e.target.closest('[data-id]').dataset.id);
+  else if (x === 'place') inspPlace();
+  else if (x === 'describe') withAI(inspDescribe);
+  else if (x === 'usetitle' && I_.st?.pageTitle) { I_.st.title = I_.st.pageTitle; I_.st.touched = false; el.insp.querySelector('[data-f="name"]').value = I_.st.title; setInspStatus(''); fillInspector(); }
+  else if (x === 'assist') aiOnboarding().then(on => { if (S.insp !== I_) return; renderInspector(); if (on) inspReadPage(); });
+});
+el.insp.addEventListener('input', e => {
+  const I_ = S.insp, f = e.target.dataset.f; if (!I_ || !f) return;
+  if (f === 'fq') { I_.pick.q = e.target.value; I_.pick.active = 0; drawPicker(); return; }
+  if (I_.mode !== 'new') { if (f === 'keyword') { const k = e.target.value.trim(), kw = el.insp.querySelector('[data-v="kwnote"]'), o = keywordOwner(k, I_.for); kw.classList.toggle('warn', !!o); kw.textContent = o ? `“${nameOf(node(o))}” uses this keyword too. Firefox only keeps one bookmark per keyword.` : 'Firefox only: type it in the address bar to open this bookmark.'; } return; }
+  const st = I_.st;
+  if (f === 'url') {
+    st.url = e.target.value; fillInspector(); inspDupe();
+    if (st.picks) { st.picks = null; drawPlace(); }
+    clearTimeout(I_.timer); I_.timer = setTimeout(inspReadPage, 550);
+  } else if (f === 'name') { st.title = e.target.value; st.touched = !!st.title.trim(); }
+  else if (f === 'keyword') { st.keyword = e.target.value; fillInspector(); }
+  else if (f === 'note') st.note = e.target.value;
+});
+el.insp.addEventListener('change', e => {
+  const f = e.target.dataset.f;
+  if (S.insp?.mode === 'edit' && ['name', 'url', 'keyword', 'note'].includes(f)) commitField(f, e.target);
+});
+el.insp.addEventListener('focusin', e => { const f = e.target.dataset?.f; if (S.insp && ['tag', 'keyword', 'note'].includes(f)) S.insp.show.add(f === 'tag' ? 'tags' : f); });
+el.insp.addEventListener('focusout', e => {
+  if (e.target.dataset?.f === 'url' && S.insp?.mode === 'new') { clearTimeout(S.insp.timer); inspReadPage(); }
+  if (e.target.dataset?.f === 'tag' && e.target.value.trim()) { const v = e.target.value; e.target.value = ''; addTags(v); }
+});
+el.insp.addEventListener('keydown', e => {
+  const I_ = S.insp; if (!I_) return;
+  const t = e.target, f = t.dataset?.f;
+  e.stopPropagation();
+  if (f === 'fq') {
+    const p = I_.pick;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); p.active = Math.max(0, Math.min(p.shown.length - 1, p.active + (e.key === 'ArrowDown' ? 1 : -1))); drawPicker(); el.insp.querySelector('[data-v="picklist"] .act')?.scrollIntoView({ block: 'nearest' }); }
+    else if (e.key === 'Enter') { e.preventDefault(); choosePick(p.active); }
+    else if (e.key === 'Escape') { e.preventDefault(); togglePicker(false); el.insp.querySelector('[data-x="pick"]').focus(); }
+    return;
+  }
+  if (f === 'tag') {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); const v = t.value; t.value = ''; addTags(v); return; }
+    if (e.key === 'Backspace' && !t.value) { const tags = I_.mode === 'new' ? I_.st.tags : tagsOf(node(I_.for)); if (tags.length) { e.preventDefault(); removeTag(tags.at(-1)); } return; }
+  }
+  if (e.key === 'Enter' && (f === 'url' || f === 'name' || f === 'keyword' || (f === 'note' && (e.ctrlKey || e.metaKey)))) {
+    e.preventDefault();
+    if (I_.mode === 'new') { if (f !== 'note') inspAdd(); }
+    else commitField(f, t);
+    return;
+  }
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (f && f !== 'tag' && I_.mode === 'edit') { fillInspectorReset(f); el.list.focus({ preventScroll: true }); return; }
+    if (I_.pick?.open) { togglePicker(false); return; }
+    closeEditor();
+  }
+});
+function fillInspectorReset(f) {
+  const n = node(inspId()), e = el.insp.querySelector(`[data-f="${f}"]`); if (!n || !e) return;
+  e.value = f === 'name' ? n.title : f === 'url' ? n.url : f === 'keyword' ? n.attrs?.SHORTCUTURL || '' : f === 'note' ? n.desc || '' : e.value;
+}
+function addMenu(x, y) {
+  openMenu(x, y, [
+    { label: 'New bookmark', icon: 'bmplus', kbd: 'B', run: () => openNewBookmark() },
+    { label: 'New folder', icon: 'group', kbd: 'N', run: newFolderHere },
+  ]);
+}
+function newFolderHere() { if (S.view.kind === 'tree') { const t = treeInsertPoint(); newFolder(t.folder, t.at); } else if (S.view.kind === 'folder') newFolder(S.view.id, 0); }
 function addBookmark(st) {
   const f = node(st.folder) || S.root; let n;
   const title = st.title || displayUrl(st.url) || st.url;
-  const attrs = { ADD_DATE: nowS() }; if (st.icon) attrs.ICON = st.icon;
-  if (!mutate('New bookmark', () => { n = { id: nid(), type: 'link', title, url: st.url, attrs }; f.children.push(n); })) return;
+  const attrs = { ADD_DATE: nowS() };
+  if (st.icon) attrs.ICON = st.icon;
+  if (st.tags?.length) attrs.TAGS = st.tags.join(',');
+  if (st.keyword) attrs.SHORTCUTURL = st.keyword;
+  if (!mutate('New bookmark', () => { n = { id: nid(), type: 'link', title, url: st.url, attrs }; if (st.note) n.desc = st.note; f.children.push(n); })) return;
   S.expanded.add(f.id);
   if (S.view.kind === 'folder' && S.view.id === f.id) { selectOnly(n.id); ensureVisible(S.rowPos.get(n.id)); renderList(); renderSelbar(); }
   else openFolder(f.id, n.id);
@@ -2097,10 +2408,10 @@ function onboardHTML(on) {
       ${feat(0, 'tidy', '--cloth', 'Tidy into folders', 'Turns a cluttered folder into a few clearly named ones. You review every bookmark, and nothing moves until you apply.')}
       ${feat(1, 'tag', '--manila', 'Name folders for you', 'Tap a suggestion under the name field to name a folder by what’s inside it.')}
       ${feat(2, 'retitle', '--leaf', 'Clean up titles', 'Trims site names, “(3)” counts and SEO clutter from bookmark names. Pick which to keep.')}
-      ${feat(3, 'bmplus', '--teal', 'Fill in new bookmarks', 'Paste an address to get the page’s name and icon, plus a suggestion for which folder it belongs in.')}
+      ${feat(3, 'bmplus', '--teal', 'Fill in bookmark details', 'Get a page’s name, icon and a short note about it, plus a suggestion for which folder it belongs in.')}
       ${feat(4, 'shield', '--violet', 'You stay in charge', 'Nothing is sent until you choose an action or add a bookmark, and only what that needs. Every change can be undone.')}
     </ul>
-    <p class="ob-fine">${I.lock}<span>An action sends the titles and web addresses (without anything after “?”) of the bookmarks it’s for to Bindery’s helper on Cloudflare Workers AI. A new bookmark sends its full address so the helper can read the page, and suggesting a folder sends your folder names. The helper stores none of it.</span></p>
+    <p class="ob-fine">${I.lock}<span>An action sends the titles and web addresses (without anything after “?”) of the bookmarks it’s for to Bindery’s helper on Cloudflare Workers AI. Reading a page for a new bookmark or a note sends its full address, and suggesting a folder sends your folder names. The helper stores none of it.</span></p>
     <div class="ob-actions">${on ? `<button class="btn primary ob-go" data-m="ok">Done</button><button class="ob-alt danger" data-m="off">Turn off Bindery Assist</button>`
          : `<button class="btn primary ob-go" data-m="ok">Turn on Bindery Assist</button><button class="ob-alt" data-m="cancel">Not now</button>`}</div>`;
 }
@@ -2573,6 +2884,7 @@ function loadRoot(root, name, noFile) {
   if (S.editing) cancelEdit();
   S.root = root; S.fileName = name; S.noFile = noFile; S.dirty = false;
   undoStack = []; redoStack = []; S.clip = null; S.recent = []; S.tidy = null;
+  abortInsp(); S.insp = null;
   reindex();
   S.expanded = new Set(root.children.filter(c => c.type === 'folder').map(c => c.id));
   const bar = root.children.find(isBar);
@@ -2837,7 +3149,7 @@ el.rows.addEventListener('click', e => {
   if (act === 'tmove' || act === 'tstay') { tidySetOff(S.sel.has(id) && S.sel.size > 1 ? selIds() : [id], act === 'tstay'); return; }
   if (act === 'tsend') { const r = e.target.closest('button').getBoundingClientRect(); tidySendMenu(S.sel.has(id) && S.sel.size > 1 ? selIds() : [id], r.right - 240, r.bottom + 4); return; }
   if (act === 'keep' || act === 'del') { setMarks(S.sel.has(id) && S.sel.size > 1 ? selIds() : [id], act === 'del'); return; }
-  if (act === 'edit') { selectOnly(id); markSel(); renderSelbar(); startEdit(id, 'list'); return; }
+  if (act === 'edit') { selectOnly(id); markSel(); openEditor(id); return; }
   if (act === 'open') { openFolder(id); return; }
   if (act === 'twist') { toggleOpen(id, e.altKey); return; }
   if (act === 'more') { const r = e.target.closest('button').getBoundingClientRect(); rowMenu(id, r.right - 220, r.bottom + 4); return; }
@@ -2853,7 +3165,7 @@ el.rows.addEventListener('dblclick', e => {
   const row = e.target.closest('.row'); if (!row || row.dataset.editing || e.target.closest('[data-a]')) return;
   const n = node(row.dataset.id); if (!n) return;
   if (n.type === 'folder') S.view.kind === 'tree' ? toggleOpen(n.id, e.altKey) : openFolder(n.id);
-  else startEdit(n.id, 'list');
+  else openEditor(n.id);
 });
 el.rows.addEventListener('contextmenu', e => {
   const g = e.target.closest('.grp');
@@ -2911,6 +3223,7 @@ el.phead.addEventListener('click', e => {
   else if (h === 'sort') { const r = e.target.closest('button').getBoundingClientRect(); sortMenu(r.left, r.bottom + 6); }
   else if (h === 'paste') paste();
   else if (h === 'newbookmark') openNewBookmark();
+  else if (h === 'add') { const r = e.target.closest('button').getBoundingClientRect(); addMenu(r.left, r.bottom + 6); }
   else if (h === 'tapply') tidyApply();
   else if (h === 'tdiscard') tidyDiscard();
   else if (h === 'selectall') selectAll();
@@ -2978,7 +3291,7 @@ document.addEventListener('keydown', e => {
       const row = el.rows.querySelector(`.row[data-id="${S.cursor || ids[0]}"]`)?.getBoundingClientRect();
       tidySendMenu(ids, row ? row.right - 280 : innerWidth / 2, row ? row.bottom + 4 : innerHeight / 2); return;
     }
-    if (['Enter', 'F2', 'Delete', 'Backspace', 'g', 'n'].includes(lk)) return;
+    if (['Enter', 'F2', 'Delete', 'Backspace', 'g', 'n', 'e'].includes(lk)) return;
   }
   switch (lk) {
     case 'ArrowDown': case 'ArrowUp': e.preventDefault(); el.list.focus({ preventScroll: true }); moveCursor(k === 'ArrowDown' ? 1 : -1, e.shiftKey); break;
@@ -3008,6 +3321,7 @@ document.addEventListener('keydown', e => {
     case 'g': if (S.sel.size) { e.preventDefault(); group(selIds()); } break;
     case 'k': case 'd': if (S.view.kind === 'dupes') { const ids = S.sel.size ? selIds() : S.cursor ? [S.cursor] : []; if (ids.length) { e.preventDefault(); setMarks(ids, lk === 'd'); } } break;
     case 'b': e.preventDefault(); openNewBookmark(); break;
+    case 'e': if (S.cursor || S.sel.size) { e.preventDefault(); openEditor(); } break;
     case 'n': if (S.view.kind === 'folder') { e.preventDefault(); newFolder(S.view.id, 0); }
       else if (S.view.kind === 'tree') { e.preventDefault(); const t = treeInsertPoint(); newFolder(t.folder, t.at); } break;
     case '/': e.preventDefault(); el.q.focus(); el.q.select(); break;
@@ -3017,6 +3331,7 @@ document.addEventListener('keydown', e => {
       if (S.clip) { S.clip = null; renderList(); renderTree(); renderHead(); }
       else if (S.sel.size) { S.sel.clear(); S.cursor = null; markSel(); renderSelbar(); }
       else if (S.view.kind === 'search') { el.q.value = ''; applySearch(); }
+      else if (S.insp) closeEditor();
       el.app.classList.remove('nav-open');
       break;
   }

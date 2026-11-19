@@ -35,9 +35,10 @@ export async function handle(req, env) {
   let body;
   try { body = JSON.parse(text); } catch { return reply({ error: 'bad_request' }, 400); }
   // "page" takes one address; every other task takes a list of bookmarks.
-  const items = task === 'page' ? [] : cleanItems(body?.items, MAX_ITEMS[task]);
+  const byUrl = task === 'page' || task === 'describe';
+  const items = byUrl ? [] : cleanItems(body?.items, MAX_ITEMS[task]);
   if (!items) return reply({ error: 'bad_request' }, 400);
-  if (task === 'page' && !pageUrl(body?.url)) return reply({ error: 'bad_request' }, 400);
+  if (byUrl && !pageUrl(body?.url)) return reply({ error: 'bad_request' }, 400);
 
   try {
     return reply(await TASKS[task](env, items, body));
@@ -103,15 +104,34 @@ const TASKS = {
   /* Reads a page's name and icon for a new bookmark. Not AI: the Worker fetches the page because the Bindery page
      can't (its CSP allows no other connections, and most sites don't allow cross-site reads). */
   async page(env, items, body) {
-    const u = pageUrl(body.url);
-    let res;
-    try { res = await fetch(u.href, { headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5' }, redirect: 'follow', signal: AbortSignal.timeout(8000) }); }
-    catch { return { title: '', icon: await findIcon([], u) }; }
-    const final = safeUrl(res.url) || u;
-    const type = res.headers.get('Content-Type') || '';
-    const html = res.ok && /html|xml/i.test(type) ? await readText(res, 400_000, type) : '';
-    if (!html) res.body?.cancel?.();
+    const u = pageUrl(body.url), { html, final } = await fetchPage(u);
     return { title: pageTitle(html), icon: await findIcon(iconLinks(html, final), final) };
+  },
+
+  /* Writes a short note about a page for its bookmark: the model reads the page's own description and the start of its
+     text. If the model can't answer, the page's own description is used as it is. */
+  async describe(env, items, body) {
+    const u = pageUrl(body.url), { html } = await fetchPage(u);
+    if (!html) return { description: '' };
+    const own = pageDescription(html), text = pageText(html, 2500), title = clip(body.title, 200) || pageTitle(html);
+    if (!own && text.length < 80) return { description: '' };
+    const system = 'You write short notes for browser bookmarks. Reply with JSON only.';
+    const user = [
+      'Describe this web page in one or two plain sentences (under 240 characters) so its owner remembers what it is. Write in the language of the page.',
+      'Say what the page is or offers. No marketing words, no "This page", no title repeated word for word.',
+      'Reply as {"description":"..."}.',
+      '',
+      `Address: ${u.href.slice(0, 300)}`,
+      title ? `Title: ${title}` : '',
+      own ? `The page describes itself as: ${own}` : '',
+      text ? `Start of the page text: ${text}` : '',
+    ].filter(Boolean).join('\n');
+    try {
+      const out = await ask(env, system, user, { type: 'object', properties: { description: { type: 'string' } }, required: ['description'] }, 200);
+      const d = clip(out?.description, 300);
+      if (d) return { description: d };
+    } catch { /* fall back below */ }
+    return { description: clip(own, 300) };
   },
 
   /* Suggests up to three names for a folder from what's inside it. */
@@ -227,11 +247,38 @@ function attrs(tag) {
   for (const m of tag.matchAll(/([\w:-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g)) out[m[1].toLowerCase()] = decodeEntities(m[3] ?? m[4] ?? m[5] ?? '');
   return out;
 }
+/* Fetches a public page and returns up to 400 KB of its HTML ('' when it isn't HTML or can't be fetched). */
+async function fetchPage(u) {
+  let res;
+  try { res = await fetch(u.href, { headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5' }, redirect: 'follow', signal: AbortSignal.timeout(8000) }); }
+  catch { return { html: '', final: u }; }
+  const final = safeUrl(res.url) || u, type = res.headers.get('Content-Type') || '';
+  const html = res.ok && /html|xml/i.test(type) ? await readText(res, 400_000, type) : '';
+  if (!html) res.body?.cancel?.();
+  return { html, final };
+}
+function metaTags(html) {
+  const meta = {};
+  for (const m of html.slice(0, 200_000).matchAll(/<meta\b[^>]*>/gi)) { const a = attrs(m[0]), k = (a.property || a.name || '').toLowerCase(); if (k && a.content && !meta[k]) meta[k] = a.content; }
+  return meta;
+}
+/* The page's own summary: og:description, then description, then twitter:description. */
+export function pageDescription(html) {
+  if (!html) return '';
+  const m = metaTags(html);
+  return clip(m['og:description'] || m['description'] || m['twitter:description'] || '', 400);
+}
+/* Readable text from <main>, <article> or <body>, without scripts, styles and markup. */
+export function pageText(html, max) {
+  if (!html) return '';
+  let h = html.replace(/<!--[\s\S]*?-->/g, ' ').replace(/<(script|style|noscript|svg|template|iframe|head|nav|footer|header|form)\b[\s\S]*?<\/\1\s*>/gi, ' ');
+  h = /<main\b[\s\S]*?<\/main>/i.exec(h)?.[0] || /<article\b[\s\S]*?<\/article>/i.exec(h)?.[0] || /<body\b[\s\S]*<\/body>/i.exec(h)?.[0] || h;
+  return decodeEntities(h.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim().slice(0, max);
+}
 /* og:title, then twitter:title, then <title>. */
 export function pageTitle(html) {
   if (!html) return '';
-  const head = html.slice(0, 200_000), meta = {};
-  for (const m of head.matchAll(/<meta\b[^>]*>/gi)) { const a = attrs(m[0]), k = (a.property || a.name || '').toLowerCase(); if (k && a.content && !meta[k]) meta[k] = a.content; }
+  const head = html.slice(0, 200_000), meta = metaTags(html);
   const t = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1];
   return clip(meta['og:title'] || meta['twitter:title'] || (t ? decodeEntities(t) : ''), 200);
 }
