@@ -1,13 +1,15 @@
 # Bindery Assist Worker
 
 The Cloudflare Worker behind Bookmark Bindery's optional AI features: **Tidy into folders**, **Suggest a name**, **Clean
-up titles** and, for **New bookmark**, reading a page's name and icon and suggesting a folder. Bindery works fully
+up titles**, reading a page's name and icon and suggesting a folder for **New bookmark**, and writing a bookmark's
+note. Bindery works fully
 without it. Until a site is pointed at a Worker, the AI features don't appear.
 
 ## What it does with bookmarks
 
 For each action, the page sends only the bookmarks that action is for: their titles, and their addresses cut down to
-site and path (no query string or fragment, nothing for bookmarklets or local files). The Worker builds a prompt, asks
+site and path (no query string or fragment, nothing for bookmarklets or local files). Reading a page (`page`,
+`describe`) sends that one bookmark's full address, and `place` also sends folder names. The Worker builds a prompt, asks
 a [Workers AI](https://developers.cloudflare.com/workers-ai/) model for JSON, checks the reply against what was sent
 (real bookmark numbers, each used once, short names), and returns it. It doesn't store requests and doesn't log
 bookmark content.
@@ -22,11 +24,16 @@ limit binding in `wrangler.toml`, allows 20 requests a minute per visitor.
 | `POST /v1/titles` | `{ items }` (up to 100) | `{ titles: [{ item: index, title }] }`, changed titles only |
 | `POST /v1/place` | `{ items: [one bookmark], folders: [folder paths] }` (up to 400) | `{ folders: [up to 3 indexes] }` |
 | `POST /v1/page` | `{ url }` | `{ title, icon }`. Not AI: see below |
+| `POST /v1/describe` | `{ url, title }` | `{ description }`, one or two sentences, up to 300 characters |
 
 `page` fetches the address server-side (8-second limit, the first 400 KB of HTML) and returns its `og:title`,
 `twitter:title` or `<title>`, and its best small icon as a `data:` URL (at most 48 KB, falling back to `/favicon.ico`).
 It only fetches public `http`/`https` addresses: no local names, private networks, raw IP addresses, unusual ports or
-addresses with a username. A site that's down or refuses gets an empty answer, not an error.
+addresses with a username. A site that's down or refuses gets an empty answer, not an error. `describe` reads a page
+the same way, then gives the model the page's own description (`og:description`, `description` or
+`twitter:description`) and the first 2,500 characters of its text (from `<main>`, `<article>` or `<body>`, without
+scripts, styles, navigation, headers, footers or forms). If the model fails, it returns the page's own description;
+if the page can't be read, it returns an empty note.
 
 ## Deploy
 

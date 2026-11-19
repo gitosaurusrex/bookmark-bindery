@@ -37,8 +37,10 @@ sends what each action needs.
 - **Reorganize fast.** Drag and drop, cut and paste, **Move to…**, group a selection into a new folder, and sort by
   name, date or website. Or turn on **Keep everything A to Z**, which keeps every folder in order as you edit and
   exports in that order. There are keyboard shortcuts for all of it.
-- **Add bookmarks.** **New bookmark** takes an address, a name and a folder. With Bindery Assist on, the page's name and
-  icon fill in by themselves, and Assist can suggest a folder.
+- **Edit in one place.** A details panel beside the list shows a bookmark's name, address, folder, tags, keyword and
+  note, and every change applies as you make it, ready to undo. Fields you don't use stay out of the way.
+- **Add bookmarks.** **+ Add → New bookmark** opens the same panel for an address, a name and a folder. With Bindery
+  Assist on, the page's name and icon fill in by themselves, and Assist can suggest a folder and write a note.
 - **Undo anything.** Every change can be undone, up to 200 steps back.
 - **Refuses broken files.** Before opening a file, Bindery checks that it's complete. A file that's cut off, damaged,
   binary, a JSON backup or not a bookmarks export is turned away with a reason, instead of opening with bookmarks
@@ -46,9 +48,14 @@ sends what each action needs.
 - **Private by design.** Everything happens in your browser. The page's security policy only lets it connect to Google
   Fonts and, where it's set up, Bindery Assist's helper. Assist is off until you turn it on.
 - **Optional AI help.** Bindery Assist can sort a cluttered folder into named folders, suggest folder names, clean up
-  bookmark titles, and fill in new bookmarks. You review every suggestion before anything changes.
-- **Round-trips cleanly.** Exports keep each bookmark's dates, icon and descriptions, the bookmarks bar stays the
-  bookmarks bar, and the file comes out in exactly the order you see in Bindery.
+  bookmark titles, and fill in a bookmark's name, icon and note. You review every suggestion before anything changes.
+- **Round-trips cleanly.** Exports keep each bookmark's dates, icon, notes, and Firefox tags and keywords, the
+  bookmarks bar stays the bookmarks bar, and the file comes out in exactly the order you see in Bindery.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/editor-dark.webp">
+  <img src="docs/screenshots/editor-light.webp" alt="The details panel beside the list, showing a bookmark's name, address, folder, tags and note">
+</picture>
 
 <table>
   <tr>
@@ -98,7 +105,13 @@ in your browser, then import Bindery's file.
 
 **Organizing**
 
-- Rename, and edit addresses
+- **Details panel** (**E**, double-click a bookmark, or the pencil on a row): name, address, folder, tags, keyword and
+  note, each saved as you go. It follows the selection, so you can step through bookmarks with the arrow keys. With
+  several items selected it offers Move to…, Group and Delete.
+- Rename in place (**Enter** or **F2**), including a bookmark's address
+- Tags and keywords, the Firefox kind: add and remove tags with suggestions from the tags you already use, and get a
+  warning when two bookmarks share a keyword
+- Notes on bookmarks and folders (exported as the file's descriptions)
 - Move by drag and drop, cut and paste, or **Move to…** (with a folder search)
 - Group a selection into a new folder
 - Sort a folder once by name, newest, oldest or website, with folders first
@@ -115,8 +128,10 @@ in your browser, then import Bindery's file.
 
 **Adding**
 
-- **New bookmark** (header button, **B**, or **New bookmark here…** in the sidebar's folder menu): an address, a name
-  and a folder, with a warning when the address is already saved
+- **+ Add** in the header: **New bookmark** (**B**) or **New folder** (**N**). The sidebar's folder menu also has **New
+  bookmark here…**
+- New bookmark opens the details panel: an address, a name and a folder, plus tags, a keyword or a note if you want
+  them, with a warning when the address is already saved
 
 **Exporting**
 
@@ -140,7 +155,8 @@ in your browser, then import Bindery's file.
 | T | Switch between the tree and one folder at a time |
 | / or Ctrl/⌘+K | Search |
 | F | Filter the sidebar's folder list |
-| Enter or F2 | Rename (Tab moves to the address) |
+| E | Edit details in the side panel |
+| Enter or F2 | Rename in place (Tab moves to the address) |
 | N | New folder |
 | B | New bookmark |
 | M | Move the selection |
@@ -148,7 +164,7 @@ in your browser, then import Bindery's file.
 | Ctrl/⌘+X, Ctrl/⌘+V | Cut, then paste into the open folder |
 | Delete | Delete the selection |
 | Ctrl/⌘+Z, Ctrl/⌘+Shift+Z (or Ctrl+Y) | Undo, redo |
-| Ctrl/⌘+A, Space, Esc | Select everything in view, toggle the item under the cursor, clear the selection |
+| Ctrl/⌘+A, Space, Esc | Select everything in view, toggle the item under the cursor, clear the selection (then close the panel) |
 | K, D | Duplicates: keep, or mark for deletion. Tidy review: move, or leave where it is |
 | M (in Tidy review) | Send the selection to a different suggested folder |
 | ? | Show every shortcut |
@@ -157,7 +173,7 @@ in your browser, then import Bindery's file.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/assist-dark.webp">
-  <img src="docs/screenshots/assist-light.webp" alt="The Bindery Assist welcome sheet, listing Tidy into folders, Name folders for you, Clean up titles, Fill in new bookmarks and You stay in charge, with Turn on Bindery Assist and Not now buttons">
+  <img src="docs/screenshots/assist-light.webp" alt="The Bindery Assist welcome sheet, listing Tidy into folders, Name folders for you, Clean up titles, Fill in bookmark details and You stay in charge, with Turn on Bindery Assist and Not now buttons">
 </picture>
 
 Bindery Assist is off until you turn it on. Click ✦ in the top bar, or pick an AI action from a menu, and a welcome
@@ -176,9 +192,10 @@ it's on, the ✦ button is solid purple. Turn it off any time from ✦ → **Tur
   same.
 - **Clean up titles** (a bookmark's menu, a selection, or a whole folder from ✦): suggests shorter titles for
   bookmarks stuffed with site names, "(3)" unread counts and SEO filler. Untick any you'd rather keep as they are.
-- **Fill in new bookmarks**: in **New bookmark**, paste an address and the page's name and icon fill in. The name stays
-  editable, and a name you've typed is never overwritten. Tap **Suggest a folder** for up to three folders that fit,
-  then tap one.
+- **Fill in bookmark details**: in **New bookmark**, paste an address and the page's name and icon fill in. The name
+  stays editable, and a name you've typed is never overwritten. Tap **Suggest a folder** for up to three folders that
+  fit, then tap one. For any bookmark, **Write one** next to its note asks for a one- or two-sentence description of
+  the page, which you can then edit or undo.
 
 **What's sent, and where.** Requests go to Bindery's helper, a small Cloudflare Worker that asks a Workers AI model
 (Llama 3.3 70B) and checks its answer. The helper doesn't store or log what it's sent. Cloudflare's own terms cover how
@@ -190,6 +207,7 @@ Workers AI handles requests.
 | Suggest names | The folder's current name, and the titles and trimmed addresses of up to 60 items directly in it |
 | Clean up titles | The titles and trimmed addresses of the chosen bookmarks |
 | New bookmark: name and icon | The full address you typed. The helper fetches that page from Cloudflare's servers |
+| Write a note | The bookmark's full address and name. The helper fetches that page from Cloudflare's servers |
 | Suggest a folder | The new bookmark's name and trimmed address, and the names of up to 400 of your folders |
 
 A trimmed address is the site and path only, with nothing after "?" or "#". Bookmarklets and local `file:` addresses
@@ -220,8 +238,12 @@ delete the site's data in your browser settings.
   your browser's bookmarks directly: changes reach your browser only when you export and import.
 - One file is open at a time. Opening another replaces it, after asking if there are edits you haven't exported.
 - Separator lines in Firefox exports aren't kept. They're dropped when the file opens, so the export has none.
-- Descriptions, Firefox tags and keywords, and any other details in the file are kept and exported, but Bindery doesn't
-  show them or let you edit them.
+- Tags, keywords and notes (the file's descriptions) can be edited in the details panel and are exported, but browsers
+  treat them differently. Tags and keywords are Firefox features: Chrome has no tags and, as far as we know, ignores
+  keywords in an imported file. No current browser shows notes: Firefox removed bookmark descriptions in 2018 (versions
+  62–63), and Chrome never had them. They're still kept in Bindery's export.
+- Any other details in the file (for example, the date a folder was last changed) are kept and exported, but not
+  shown or editable.
 - Icons only show for bookmarks whose icon is saved in the file. The rest get a colored letter.
 - Importing into a browser adds to the bookmarks already there (see [How to use it](#how-to-use-it)).
 
@@ -244,6 +266,10 @@ delete the site's data in your browser settings.
 - Removing a query string can break links to sites that need it. Bindery warns you, and you can undo.
 - **New bookmark** needs an open file with at least one bookmark or folder in it; Bindery can't start a library from
   scratch.
+- The details panel saves each change when you leave the field or press Enter (Ctrl/⌘+Enter for a note), with no Save
+  button. Esc in a field puts back what was there. Several selected items can be moved, grouped or deleted from the
+  panel, but not edited together yet, and there's no view of all your tags yet.
+- Keywords can't contain spaces, and Firefox only keeps one bookmark per keyword.
 - The order you see in the folder and tree views is exactly the order exported. Search, Duplicates and the Tidy review
   group items their own way, so they don't show the exported order.
 
@@ -268,6 +294,8 @@ delete the site's data in your browser settings.
   rest stay where they are. It won't create a new folder for a single bookmark, and one plan can be open at a time.
 - **Suggest names** is based on up to 60 items directly in the folder, so it isn't offered for empty folders.
 - **Clean up titles** handles up to 100 bookmarks at a time and skips bookmarklets.
+- **Write a note** reads the page the same way as below, using its own description and the start of its text. Pages it
+  can't read get no note.
 - **Name and icon for a new bookmark** come from fetching the page on Cloudflare's servers, not from your browser.
   Pages behind a login show what a logged-out visitor sees. Sites that block automated readers (some news sites, Hacker
   News), pages slower than 8 seconds, and private or local addresses give no name, so you type one. Icons larger than

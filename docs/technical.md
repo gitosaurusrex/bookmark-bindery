@@ -13,7 +13,7 @@ the [README](../README.md).
 - [Editing and undo](#editing-and-undo)
 - [Duplicate review](#duplicate-review)
 - [Removing query strings](#removing-query-strings)
-- [Adding bookmarks](#adding-bookmarks)
+- [The details panel](#the-details-panel)
 - [Bindery Assist](#bindery-assist)
 - [Exporting](#exporting)
 - [Saving in the browser](#saving-in-the-browser)
@@ -146,7 +146,8 @@ Undo and redo swap whole trees, so every operation is undoable the same way and 
 items" come for free. Snapshots copy only structure and strings, which is cheap even for libraries of thousands of
 bookmarks.
 
-Operations: rename (title, and address with Tab), new folder, [new bookmark](#adding-bookmarks), move (drag and drop,
+Operations: rename (title, and address with Tab), editing in the [details panel](#the-details-panel), new folder,
+new bookmark, move (drag and drop,
 cut and paste, or **Move to…**), group into a new folder, sort a folder once (name, newest, oldest, domain, with folders
 first), and delete. Deleting more than one item, counting everything inside folders, asks first and lists what goes.
 
@@ -175,16 +176,50 @@ Each copy is marked **Keep** or **Delete** (`S.marks`), by clicking, by **K** an
 `splitQuery()` takes everything from `?` up to `#` (a fragment, if any, is kept). **Remove query string** shows the
 before and after, warns that some sites need their query string, and applies it as an undoable edit.
 
-## Adding bookmarks
+## The details panel
 
-`openNewBookmark()` opens a dialog with address, name and folder, from the header button, **B**, or **New bookmark
-here…** in the sidebar's folder menu. It needs an open, non-empty file.
+The editor is one panel, `#insp`, rendered by `renderInspector()` from `S.insp`:
+
+- `null`: closed.
+- `{ mode: 'edit', for }`: shows the single selected bookmark or folder. `renderSelbar()` calls `renderInspector()`, so
+  the panel follows the selection. With several items selected it offers Move to…, Group and Delete. With nothing
+  selected it says so and offers New bookmark. After an edit made in the panel (`sticky`), it stays on the item even
+  if the edit moved it out of the list, until something else is selected.
+- `{ mode: 'new', st }`: the New bookmark form, kept in `st` until **Add bookmark**. Then the panel switches to edit
+  mode on the new bookmark.
+
+It docks as a third grid column above 1180 px (`.app.insp-open`), slides in over the list below that, and is a bottom
+sheet under 600 px. **E**, double-clicking a bookmark, the row's pencil and **Edit details…** in a menu open it.
+Inline renaming (**Enter**/**F2**) is unchanged. **+ Add** in the header (`addMenu()`) offers New bookmark (**B**) and
+New folder (**N**).
+
+**Rendering without losing your place.** The panel's structure is rebuilt only when its key changes: mode, item, type,
+and which optional fields show. Otherwise `fillInspector()` updates values in place and skips the field you're typing
+in. All listeners are delegated on `#insp`, so rebuilding needs no rebinding. Removing a tag happens on pointerdown (and
+cancels it) so the tag input keeps focus.
+
+**Saving.** Each field saves on `change` (leaving it, or Enter; Ctrl/⌘+Enter for the note) through `commitField()`,
+each change one `mutate()`: name and address through `renameNode()`, keyword (`SHORTCUTURL`), note (`desc`), tags
+(`TAGS`, comma-separated as Firefox writes them), and the folder picker through `moveItems()`. Esc in a field puts its
+value back. **Attributes are replaced, never changed in place** (`setAttr()`): `cloneTree()` shares `attrs` objects
+with undo snapshots, so changing one in place would also change history.
+
+**Fields.** Name, address (bookmarks) and folder ("Inside" for folders) always show. Tags, keyword and note show when
+they have a value, or after **+ Tags**, **+ Keyword** or **+ Note**. Folders only get a note. Tags are trimmed, can't
+contain commas, are de-duplicated ignoring case, and suggest from every tag in the library (`allTags()`).
+`keywordOwner()` warns when another bookmark has the same keyword, and keywords can't contain spaces. The footer has
+Delete. Under the fields: added and changed dates, a folder's contents, and "Also saved in…" when another bookmark has
+the same address (`otherCopy()`).
+
+**Folder picker.** A searchable list of every folder (`folderList()`, `folderPath()`). It opens on the current folder,
+and for a folder it disables the folder itself and everything inside it.
+
+**New bookmark.** It needs an open, non-empty file, and starts in the folder being viewed, the tree cursor's folder,
+or the bookmarks bar.
 
 - `normalizeAddress()` adds `https://` to bare addresses like `example.com/x` and refuses anything that isn't an
   address. Bookmarklets (`javascript:`) are accepted as they are.
-- `savedCopy()` warns, without blocking, when the address is already saved (compared with `normUrl()`), naming where.
-- The folder picker is a searchable list of every folder (`folderList()`, `folderPath()`). It opens on the folder being
-  viewed, the tree cursor's folder, or the bookmarks bar.
+- `savedCopy()` warns, without blocking, when the address is already saved (compared with `normUrl()`).
 - With Assist on, the address goes to the Worker's `page` endpoint 550 ms after typing stops, or on blur. The page
   can't read other sites itself: its CSP allows no other connections, and most sites forbid cross-site reads anyway.
   The returned name only fills the field if the person hasn't typed one; otherwise it's offered as a link. The icon is
@@ -192,10 +227,14 @@ here…** in the sidebar's folder menu. It needs an open, non-empty file.
 - **Suggest a folder** sends the name and trimmed address with up to 400 folder paths to `place`. The list is built when
   the chip is tapped, so new folders are included. It's in document order with the root left out, and only names are
   sent. Up to three folder chips come back, and the first is selected.
-- If Assist isn't on, the dialog offers to turn it on and reopens with what was typed. With no Worker configured, the
-  dialog works without any of this.
-- Adding is one `mutate()` that appends to the folder, so it respects A to Z order and can be undone. The new bookmark
-  is then shown and selected.
+- If Assist isn't on, the panel offers to turn it on and then reads the page. With no Worker configured, it works
+  without any of this.
+- `addBookmark()` is one `mutate()` that appends to the folder, so it respects A to Z order and can be undone. The new
+  bookmark is shown and selected.
+
+**Write a note.** Next to a bookmark's note, **Write one** (or **Rewrite**) sends its full address and name to the
+Worker's `describe` endpoint and saves the answer as the note. That's one undo step in edit mode, or fills the field
+in new mode.
 
 ## Bindery Assist
 
@@ -211,7 +250,7 @@ renders.
   a solid gradient.
 - **What's sent.** `aiItem()` sends a title and `sendableUrl()`: host and path only, with no query string or
   fragment, and nothing for non-web addresses. Subfolders are sent as `"Name (folder)"` when naming a folder. The only
-  exceptions are a new bookmark's full address (for `page`) and folder paths (for `place`).
+  exceptions are a bookmark's full address (for `page` and `describe`) and folder paths (for `place`).
 - **Calling.** `aiFetch()` makes one request and turns failures into readable messages: busy (429), too much
   (400/413), no answer (other statuses) or unreachable. `aiWaiting()` is the waiting sheet around it: Cancel, Esc,
   closing the sheet or a 45-second timeout per request aborts. `aiCall()` is the two together for single requests.
@@ -288,10 +327,13 @@ Press **?** or open **Keyboard shortcuts** in the sidebar for the full list. Hig
 - **↑ ↓** move, with Shift to extend the selection. **→ ←** open and close folders.
 - **/** or Ctrl/⌘ + **K** searches. **F** filters the sidebar's folder list. **T** switches layout. Alt + **↑** goes up
   a folder.
-- **Enter** or **F2** renames. **N** makes a folder, **B** a bookmark. **M** moves, **G** groups.
+- **E** opens the details panel. **Enter** or **F2** renames in place. **N** makes a folder, **B** a bookmark. **M**
+  moves, **G** groups.
 - Ctrl/⌘ + **X** and **V** cut and paste. **Del** deletes. Ctrl/⌘ + **Z** undoes, with Shift (or Ctrl + **Y**) to redo.
-- **K** and **D** keep or mark copies in duplicate review. In a Tidy review they set Move and Stay, and **M** opens Send
-  to; editing keys are ignored there.
+- **K** and **D** keep or mark copies in duplicate review. In a Tidy review they set Move and Stay, and **M** opens
+  Send to; editing keys are ignored there.
+- **Esc** in a panel field puts the value back. Otherwise it clears the cut, then the selection, then the search, then
+  closes the panel.
 
 Drag and drop (HTML5 drag events, so it may not work with touch) works within the list and onto the sidebar tree: drop
 onto a folder to move into it, or between rows to reorder, with auto-scroll near the edges and hover-to-open on closed
@@ -316,6 +358,8 @@ opens every action for a row.
 | Clean up titles | up to 100 bookmarks |
 | Suggest a folder | up to 400 folder paths, 3 folders back |
 | Reading a page | 8 s, first 400 KB of HTML; icons up to 48 KB |
+| Writing a note | the page's own description and its first 2,500 characters of text; notes up to 300 characters |
+| Details panel | docked above 1180 px wide (372 px), a drawer below that, a bottom sheet under 600 px |
 | Typing pause before reading a page | 550 ms |
 
 ## Code map
@@ -336,9 +380,10 @@ duplicate review           modes, keeper rules, marks
 rendering                  rows, sidebar tree, header, empty states, selection and mark trays
 folder filter & tools      the sidebar's filter and its expand/collapse buttons
 inline editing             rename in place, name chips' host
-menus                      context menus, Sort and Assist menus
+menus                      context menus, Sort, Add and Assist menus
 dialogs                    confirm, Move to…, shortcuts
-new bookmark               the New bookmark dialog, folder picker, addBookmark
+new bookmark helpers       default folder, folder list and paths, address checks
+bookmark editor            the details panel: both modes, folder picker, tags, keyword, note, Assist, + Add
 bindery assist             consent sheet, aiFetch, waiting sheet, review checklist, Clean up titles
 folder name suggestions    name chips, Suggest a name
 tidy review                aiTidy, the plan, its rows, menus, drop targets, Apply and Discard
@@ -352,16 +397,17 @@ static chrome, boot        button icons, then restore or start blank
 
 ## Worker
 
-`worker/` holds the Bindery Assist Worker (`src/index.js`), its `wrangler.toml` and tests
-(`node --test worker/test/*.mjs`). It has no dependencies. Five `POST` endpoints: `tidy`, `name`, `titles` and `place`
-ask a Workers AI model for JSON (JSON mode, with a plain-text fallback) and validate the answer, and `page` reads a
-page's name and icon without AI. It only answers origins in `ALLOWED_ORIGINS`, caps request size, is rate limited, and
-stores nothing. See [worker/README.md](../worker/README.md) for endpoints, limits, deployment and pointing a copy of
-Bindery at it. The official site's Worker runs at `https://bookmark-bindery-ai.azureus.workers.dev`.
+`worker/` holds the Bindery Assist Worker (`src/index.js`), its `wrangler.toml` and tests (`node --test
+worker/test/*.mjs`). It has no dependencies. Six `POST` endpoints: `tidy`, `name`, `titles` and `place` ask a Workers AI
+model for JSON (JSON mode, with a plain-text fallback) and validate the answer; `page` reads a page's name and icon
+without AI; and `describe` reads a page and asks the model for a short note, falling back to the page's own description.
+It only answers origins in `ALLOWED_ORIGINS`, caps request size, is rate limited, and stores nothing. See
+[worker/README.md](../worker/README.md) for endpoints, limits, deployment and pointing a copy of Bindery at it. The
+official site's Worker runs at `https://bookmark-bindery-ai.azureus.workers.dev`.
 
 ## Screenshots
 
-`node scripts/screenshots.mjs` regenerates `docs/screenshots/`. It serves the repo locally, opens the made-up library
-in `scripts/demo-bookmarks.html`, and captures the library, duplicate review, the Bindery Assist welcome sheet and a
-phone view in light and dark with Playwright, saving WebP. The welcome sheet only appears when `index.html` points at
-a Worker; nothing is sent to take it. It needs Node and Playwright with Chromium, and nothing else.
+`node scripts/screenshots.mjs` regenerates `docs/screenshots/`. It serves the repo locally, opens the made-up library in
+`scripts/demo-bookmarks.html`, and captures the library, duplicate review, the details panel, the Bindery Assist welcome
+sheet and a phone view in light and dark with Playwright, saving WebP. The welcome sheet only appears when `index.html`
+points at a Worker; nothing is sent to take it. It needs Node and Playwright with Chromium, and nothing else.
