@@ -1,7 +1,8 @@
 # Bindery Assist Worker
 
-The Cloudflare Worker behind Bookmark Bindery's optional AI features: **Tidy into folders**, **Suggest a name**,
-**Clean up titles** and, for **New bookmark**, reading a page's name and icon and suggesting a folder. Bindery works fully without it. Until a site is pointed at a Worker, the AI features don't appear.
+The Cloudflare Worker behind Bookmark Bindery's optional AI features: **Tidy into folders**, **Suggest a name**, **Clean
+up titles** and, for **New bookmark**, reading a page's name and icon and suggesting a folder. Bindery works fully
+without it. Until a site is pointed at a Worker, the AI features don't appear.
 
 ## What it does with bookmarks
 
@@ -38,6 +39,10 @@ npx wrangler@4 login
 ```bash
 npx wrangler@4 deploy
 ```
+
+Where `wrangler login` can't open a browser (CI, or a cloud sandbox), skip it and give Wrangler an API token instead:
+create one in the Cloudflare dashboard from the "Edit Cloudflare Workers" template, then set `CLOUDFLARE_API_TOKEN` to
+it and `CLOUDFLARE_ACCOUNT_ID` to your account ID for the `deploy` command.
 
 Wrangler prints the Worker's address, like `https://bookmark-bindery-ai.<your-subdomain>.workers.dev`. Then, from the
 repo root, point the page at it and publish the change:

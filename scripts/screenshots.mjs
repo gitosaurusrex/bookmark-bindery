@@ -2,7 +2,9 @@
  * Takes the README screenshots in docs/screenshots/, light and dark, as WebP.
  *
  * Opens index.html in Chromium, imports the made-up library in
- * scripts/demo-bookmarks.html and captures the main views. Needs Node and
+ * scripts/demo-bookmarks.html and captures the main views, plus the Bindery
+ * Assist welcome sheet (which needs index.html to point at a Worker; nothing
+ * is sent, since the sheet only asks). Needs Node and
  * Playwright with Chromium installed:
  *
  *   node scripts/screenshots.mjs
@@ -67,6 +69,17 @@ const SHOTS = [
       await page.click('[data-view="dupes"]')
       await page.waitForSelector('#rows .grp')
       await page.locator('#rows .row [data-a="del"]').nth(1).click()
+    },
+  },
+  {
+    name: 'assist',
+    width: 1280,
+    height: 900,
+    prepare: async (page) => {
+      await openLibrary(page)
+      // The Bindery Assist welcome sheet. It only appears where the page points at a Worker.
+      await page.click('#aiBtn')
+      await page.waitForSelector('.dialog.onboard')
     },
   },
   {

@@ -1,7 +1,8 @@
 # How Bookmark Bindery works
 
-This is the engineer's tour: how a file gets in, how it's checked, how edits, undo and duplicate review work, what's
-stored, and how it gets back out. For what it does and how to use it, see the [README](../README.md).
+This is the engineer's tour: how a file gets in, how it's checked, how edits, undo and duplicate review work, how the
+optional AI help talks to its Worker, what's stored, and how it gets back out. For what it does and how to use it, see
+the [README](../README.md).
 
 - [One file, no build](#one-file-no-build)
 - [Privacy by construction](#privacy-by-construction)
@@ -12,6 +13,7 @@ stored, and how it gets back out. For what it does and how to use it, see the [R
 - [Editing and undo](#editing-and-undo)
 - [Duplicate review](#duplicate-review)
 - [Removing query strings](#removing-query-strings)
+- [Adding bookmarks](#adding-bookmarks)
 - [Bindery Assist](#bindery-assist)
 - [Exporting](#exporting)
 - [Saving in the browser](#saving-in-the-browser)
@@ -34,15 +36,16 @@ The page's Content Security Policy is the guarantee, not a promise in the copy:
 
 ```
 default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com;
-font-src https://fonts.gstatic.com; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'none';
-form-action 'none'; base-uri 'none'
+font-src https://fonts.gstatic.com; img-src 'self' data: blob:; manifest-src 'self';
+connect-src https://bookmark-bindery-ai.azureus.workers.dev; form-action 'none'; base-uri 'none'
 ```
 
-`connect-src 'none'` means the page can't make fetch, XHR, WebSocket or beacon requests at all. When a site sets up
-[Bindery Assist](#bindery-assist), `scripts/set-ai-endpoint.mjs` replaces `'none'` with the Worker's origin, and
-that origin becomes the only one the page can reach. Images are limited to
-the site itself and `data:`/`blob:` URLs, so favicons stored in a bookmarks file display, but nothing is loaded from the
-sites you bookmarked. The only outside requests are the Google Fonts stylesheet and font files.
+`connect-src` names one origin, the [Bindery Assist](#bindery-assist) Worker, so fetch, XHR, WebSocket and beacon
+requests to anywhere else are blocked. The page only calls it after the person turns Assist on and picks an action.
+`scripts/set-ai-endpoint.mjs` sets that origin, and `off` puts back `connect-src 'none'`, after which the page can't
+make requests at all. Images are limited to the site itself and `data:`/`blob:` URLs, so favicons stored in a
+bookmarks file display, but nothing is loaded from the sites you bookmarked. Icons for new bookmarks arrive as `data:`
+URLs from the Worker. Apart from the Worker, the only outside requests are the Google Fonts stylesheet and font files.
 
 ## Opening a file
 
@@ -63,9 +66,11 @@ Checks on the raw text, before parsing:
 | Damaged structure | More `</DL>` than `<DL>`. |
 
 Then `DOMParser` builds a document. `readDL()` and `readDT()` walk it into a tree, tolerating the format's quirks:
-`<p>` wrappers, `<DD>` descriptions and lists nested in odd places. Finally the parse is **audited**: the number of
-folders and links in the tree must match the number of `<H3>` and `<A>` tags in the text. If any entry fell outside
-the structure, the file is refused rather than opened with bookmarks silently missing.
+`<p>` wrappers, `<DD>` descriptions and lists nested in odd places. `<HR>` separators (Firefox writes them) are
+ignored, so they're dropped and never exported. Finally the parse is **audited**: the number of folders and links in
+the tree must match the number of `<H3>` and `<A>` tags in the text. If any entry fell outside the structure, the file
+is refused rather than opened with bookmarks silently missing. Separators aren't counted, so dropping them doesn't
+trip the audit.
 
 If the open file has edits that haven't been exported, opening another asks first.
 
@@ -79,11 +84,12 @@ The library is a plain tree held in `S.root`:
 ```
 
 `attrs` keeps **every attribute the browser wrote**, upper-cased: `ADD_DATE`, `LAST_MODIFIED`, `ICON`,
-`PERSONAL_TOOLBAR_FOLDER` and anything else. That's how dates, favicons and the bookmarks-bar flag survive a round
-trip. Ids are session-only (`n1`, `n2`…) and are reassigned when a saved library is restored.
+`PERSONAL_TOOLBAR_FOLDER` and anything else, such as Firefox's `TAGS` and `SHORTCUTURL`. That's how dates, favicons and
+the bookmarks-bar flag survive a round trip. `desc` and attributes other than dates and icons are kept and exported but
+never shown or edited. Ids are session-only (`n1`, `n2`…) and are reassigned when a saved library is restored.
 
-All other app state (view, selection, cursor, clipboard, open folders, duplicate marks, settings) lives in one object,
-`S`.
+All other app state (view, selection, cursor, clipboard, open folders, duplicate marks, settings, the folder filter,
+Assist consent and any Tidy plan) lives in one object, `S`.
 
 ## The index
 
@@ -102,8 +108,8 @@ All other app state (view, selection, cursor, clipboard, open folders, duplicate
 
 ## Views and rows
 
-`S.view.kind` is one of `tree`, `folder`, `search`, `all`, `dupes` or `empty`. `buildRows()` turns the current view
-into a flat array of rows, which is all the list renders:
+`S.view.kind` is one of `tree`, `folder`, `search`, `all`, `dupes`, `empty` or `tidy`. `buildRows()` turns the current
+view into a flat array of rows, which is all the list renders:
 
 - **tree:** depth-first, descending only into folders in `S.open`, with each row's depth for indentation.
 - **folder:** the open folder's direct children.
@@ -111,6 +117,11 @@ into a flat array of rows, which is all the list renders:
 - **all:** every bookmark.
 - **dupes:** a header row per group, in document order, followed by its copies.
 - **empty:** the empty folders.
+- **tidy:** a header row per suggested folder, then its bookmarks, then the bookmarks that stay (see
+  [Tidy review](#tidy-review)).
+
+The exported order is the stored order, so it always matches the **tree** and **folder** views. The other views group
+or filter items their own way.
 
 The tree and folder layouts are the two ways to browse. **T** switches between them, and the choice is remembered.
 
@@ -135,17 +146,18 @@ Undo and redo swap whole trees, so every operation is undoable the same way and 
 items" come for free. Snapshots copy only structure and strings, which is cheap even for libraries of thousands of
 bookmarks.
 
-Operations: rename (title, and address with Tab), new folder, move (drag and drop, cut and paste, or **Move to…**),
-group into a new folder, sort a folder (name, newest, oldest, domain, with folders first), and delete.
+Operations: rename (title, and address with Tab), new folder, [new bookmark](#adding-bookmarks), move (drag and drop,
+cut and paste, or **Move to…**), group into a new folder, sort a folder once (name, newest, oldest, domain, with folders
+first), and delete. Deleting more than one item, counting everything inside folders, asks first and lists what goes.
 
 **Keep everything A to Z** (`S.autoSort`, in the Sort menu) rewrites the tree itself, so the export is sorted too.
 `azOrder` puts the bookmarks bar first, then folders, then bookmarks, each compared by name with an `Intl.Collator`
-(case-insensitive, numbers in numeric order). While it's on, `mutate()` runs `sortAll()` after every change, inside
-the same undo step, so new, renamed, grouped and moved items land in place. `moveItems()` sorts the affected folders
-before its "did anything change?" check, so a by-hand reorder is a no-op with a toast explaining why. Turning it on is
-itself an undo step flagged `autoSortOn`. Undoing that step turns the setting off and redoing it turns it back on, so
-whenever the setting is on, the tree is sorted. A file opened while it's on is sorted as its first undo step. Deleting more than
-one item, counting everything inside folders, asks first and lists what goes.
+(case-insensitive, numbers in numeric order). While it's on, `mutate()` runs `sortAll()` after every change, inside the
+same undo step, so new, renamed, grouped and moved items land in place. `moveItems()` sorts the affected folders before
+its "did anything change?" check, so a by-hand reorder is a no-op with a toast explaining why. Turning it on is itself
+an undo step flagged `autoSortOn`. Undoing that step turns the setting off and redoing it turns it back on, so whenever
+the setting is on, the tree is sorted. A file opened while it's on is sorted as its first undo step, and the one-off
+sorts are hidden from the Sort menu.
 
 ## Duplicate review
 
@@ -163,18 +175,43 @@ Each copy is marked **Keep** or **Delete** (`S.marks`), by clicking, by **K** an
 `splitQuery()` takes everything from `?` up to `#` (a fragment, if any, is kept). **Remove query string** shows the
 before and after, warns that some sites need their query string, and applies it as an undoable edit.
 
+## Adding bookmarks
+
+`openNewBookmark()` opens a dialog with address, name and folder, from the header button, **B**, or **New bookmark
+here…** in the sidebar's folder menu. It needs an open, non-empty file.
+
+- `normalizeAddress()` adds `https://` to bare addresses like `example.com/x` and refuses anything that isn't an
+  address. Bookmarklets (`javascript:`) are accepted as they are.
+- `savedCopy()` warns, without blocking, when the address is already saved (compared with `normUrl()`), naming where.
+- The folder picker is a searchable list of every folder (`folderList()`, `folderPath()`). It opens on the folder being
+  viewed, the tree cursor's folder, or the bookmarks bar.
+- With Assist on, the address goes to the Worker's `page` endpoint 550 ms after typing stops, or on blur. The page
+  can't read other sites itself: its CSP allows no other connections, and most sites forbid cross-site reads anyway.
+  The returned name only fills the field if the person hasn't typed one; otherwise it's offered as a link. The icon is
+  kept as the bookmark's `ICON` data URL, like browser exports do, and a broken image falls back to the letter tile.
+- **Suggest a folder** sends the name and trimmed address with up to 400 folder paths to `place`. The list is built when
+  the chip is tapped, so new folders are included. It's in document order with the root left out, and only names are
+  sent. Up to three folder chips come back, and the first is selected.
+- If Assist isn't on, the dialog offers to turn it on and reopens with what was typed. With no Worker configured, the
+  dialog works without any of this.
+- Adding is one `mutate()` that appends to the folder, so it respects A to Z order and can be undone. The new bookmark
+  is then shown and selected.
+
 ## Bindery Assist
 
 Optional AI help, served by the Cloudflare Worker in `worker/` (see [worker/README.md](../worker/README.md)). The page
 reads the Worker's address from `<meta name="bindery-ai">`. Empty means off, and then no AI button or menu item
 renders.
 
-- **Consent.** `S.ai` is `null` (never asked), `'on'` or `'off'`, saved in `bindery.ui.v1`. Every entry point goes
-  through `withAI(run)`, which shows the welcome sheet (`aiOnboarding()`) unless Assist is on. "Not now" leaves it
-  unset, so the sheet comes back next time. Opened from ✦ → **About Bindery Assist** while on, the same sheet offers
-  **Turn off Bindery Assist**. On phones the sheet rises from the bottom with its buttons pinned.
+- **Consent.** `S.ai` is `null` (never asked), `'on'` or `'off'`, saved in `bindery.ui.v1`, so it's per browser and
+  survives **Forget on this device**. Every entry point goes through `withAI(run)`, which shows the welcome sheet
+  (`aiOnboarding()`) unless Assist is on. "Not now" leaves it unset, so the sheet comes back next time. Opened from
+  ✦ → **About Bindery Assist** while on, the same sheet offers **Turn off Bindery Assist**. The sheet's buttons stay
+  pinned to its bottom edge, and on phones it rises from the bottom of the screen. While Assist is on, the ✦ button is
+  a solid gradient.
 - **What's sent.** `aiItem()` sends a title and `sendableUrl()`: host and path only, with no query string or
-  fragment, and nothing for non-web addresses. Subfolders are sent as `"Name (folder)"` when naming a folder.
+  fragment, and nothing for non-web addresses. Subfolders are sent as `"Name (folder)"` when naming a folder. The only
+  exceptions are a new bookmark's full address (for `page`) and folder paths (for `place`).
 - **Calling.** `aiFetch()` makes one request and turns failures into readable messages: busy (429), too much
   (400/413), no answer (other statuses) or unreachable. `aiWaiting()` is the waiting sheet around it: Cancel, Esc,
   closing the sheet or a 45-second timeout per request aborts. `aiCall()` is the two together for single requests.
@@ -182,34 +219,28 @@ renders.
   must point at items still in the folder, each used once.
 - **Name chips.** Renaming a folder that has something in it (in a list row or the folder title) shows a **Suggest
   names** chip under the field, when Assist is on. Tapping it calls `askChips()`, which fetches without a sheet and
-  swaps in up to three name chips. Tapping a name puts it in the field and commits the edit. Chips keep the field
-  focused (pointerdown is cancelled), work with Tab and Enter, and the request is aborted if the edit ends first.
-  Nothing is sent just because a name field opened. "Suggest a name" in a menu starts the same inline edit and asks
-  straight away, or falls back to a picker dialog when the folder isn't on screen.
-- **Tidy review.** `aiTidy()` asks in batches of 150 (up to 750 bookmarks), passing the existing subfolders and the
-  names suggested so far as `existing`, so later batches reuse them. Same-named folders merge, and a name matching an
-  existing subfolder means "move into it". The result is a plan, `S.tidy = { folder, groups: [{ key, name, into }],
-  to: Map(id → group key, '' to stay), off: Set }`, shown as view `tidy`. `buildRows()` turns it into a header row per
-  group plus one row per bookmark, so the review uses the same virtualized list, selection and keyboard handling as
-  everything else. `tidyGroups()` also reconciles the plan with the library on every render: bookmarks that left the
-  folder drop out, new ones stay, empty groups go. That's why the plan can survive leaving the view, undo and edits
-  elsewhere. Renaming a group to another group's name merges them. Drag and drop onto a header or row assigns to that
-  group (`tidyDropAt`). In this view **K**/**D** set Move/Stay and **M** opens Send to. Editing keys are ignored.
-  **Apply** runs one `mutate()` that creates or reuses folders and moves the bookmarks. **Discard** drops the plan.
-  Deleting the folder, or opening another file, discards it too.
-- **New bookmark.** `openNewBookmark()` is a dialog with address, name and folder. `normalizeAddress()` adds
-  `https://` to bare addresses like `example.com/x` and refuses things that aren't addresses. `savedCopy()` warns when
-  the address is already saved (by `normUrl`). The folder picker is a searchable list of every folder (`folderList()`,
-  `folderPath()`), opening on the current folder. With Assist on, the address is sent to the Worker's `page` endpoint
-  550 ms after typing stops (or on blur). The Worker reads the page and returns its name and icon, because the page
-  itself can't: its CSP allows no other connections, and most sites forbid cross-site reads. The name only fills in
-  if you haven't typed one; otherwise the page's name is offered as a link. The icon is kept as the bookmark's `ICON`
-  data URL, like browser exports do. **Suggest a folder** sends the bookmark's title and trimmed address with up to 400
-  folder paths to `place`, and shows up to three folder chips. The first one is picked for you. Adding is one
-  `mutate()`, so it respects A to Z order and can be undone. If Assist isn't on, the dialog offers to turn it on and
-  reopens with what you typed. With no Worker configured, the dialog works without any of this.
-- **Clean up titles** opens `aiReview()`, a checklist where every suggestion starts ticked. Everything accepted goes
-  through `mutate()`, so each action is one undo step and respects A to Z order.
+  swaps in up to three name chips. While a request is out, the chip shows "Thinking…" with an opaque background and a
+  border that cycles between purple and blue (`chipThink`). Tapping a name puts it in the field and commits the edit.
+  Chips keep the field focused (pointerdown is cancelled), work with Tab and Enter, and the request is aborted if the
+  edit ends first. Nothing is sent just because a name field opened. "Suggest a name" in a menu starts the same inline
+  edit and asks straight away, or falls back to a picker dialog when the folder isn't on screen.
+- <a id="tidy-review"></a>**Tidy review.** `aiTidy()` needs at least 4 bookmarks directly in the folder. It asks in
+  batches of 150 (up to 750 bookmarks), passing the existing subfolders and the names suggested so far as `existing`,
+  so later batches reuse them. Same-named folders merge, and a name matching an existing subfolder means "move into
+  it". The Worker drops suggested new folders that would hold a single bookmark. The result is a plan,
+  `S.tidy = { folder, groups: [{ key, name, into }], to: Map(id → group key, '' to stay), off: Set }`, shown as view
+  `tidy`. `buildRows()` turns it into a header row per group plus one row per bookmark, so the review uses the same
+  virtualized list, selection and keyboard handling as everything else. `tidyGroups()` also reconciles the plan with
+  the library on every render: bookmarks that left the folder drop out, new ones stay, empty groups go. That's why the
+  plan can survive leaving the view, undo and edits elsewhere. Renaming a group to another group's name merges them.
+  Drag and drop onto a header or row assigns to that group (`tidyDropAt`). In this view **K**/**D** set Move/Stay and
+  **M** opens Send to. Editing keys are ignored. **Apply** runs one `mutate()` that creates or reuses folders and
+  moves the bookmarks. **Discard** drops the plan. Deleting the folder, or opening another file, discards it too. The
+  plan lives only in memory, so a reload loses it. Only bookmarks directly in the folder are considered; subfolders
+  and their contents stay put.
+- **Clean up titles** sends up to 100 bookmarks (bookmarklets are skipped) and opens `aiReview()`, a checklist where
+  every suggestion starts ticked. Everything accepted goes through `mutate()`, so each action is one undo step and
+  respects A to Z order.
 
 ## Exporting
 
@@ -224,7 +255,9 @@ instead. A successful export clears the "unsaved edits" state.
 - `bindery.session.v1` holds `{ v: 1, root, fileName, dirty }`, written 600 ms after the last change. If the JSON is
   over about 4.5 million characters, or the browser refuses (quota, private mode), nothing is saved and the sidebar
   says so.
-- `bindery.ui.v1` holds settings: duplicate mode, layout, **Remember my file** and **Keep everything A to Z**.
+- `bindery.ui.v1` holds settings: duplicate mode, layout, **Remember my file**, **Keep everything A to Z** and
+  whether Bindery Assist is on. **Forget on this device** leaves these alone.
+- Undo history and Tidy plans are never saved. They last as long as the tab.
 - With **Remember my file** off, the session key is deleted and never written. **Forget on this device** deletes it,
   closes the file and clears undo history.
 - On load, `restore()` reopens the saved library with fresh ids and says so in a toast.
@@ -253,15 +286,18 @@ actions give way to the ⋯ menu). Animations stop for anyone who prefers reduce
 Press **?** or open **Keyboard shortcuts** in the sidebar for the full list. Highlights:
 
 - **↑ ↓** move, with Shift to extend the selection. **→ ←** open and close folders.
-- **/** searches. **F** filters the sidebar's folder list. **T** switches layout.
-- **Enter** or **F2** renames. **N** makes a folder, **M** moves, **G** groups.
-- Ctrl/⌘ + **X** and **V** cut and paste. **Del** deletes. Ctrl/⌘ + **Z** undoes, with Shift to redo.
-- **K** and **D** keep or mark copies in duplicate review.
+- **/** or Ctrl/⌘ + **K** searches. **F** filters the sidebar's folder list. **T** switches layout. Alt + **↑** goes up
+  a folder.
+- **Enter** or **F2** renames. **N** makes a folder, **B** a bookmark. **M** moves, **G** groups.
+- Ctrl/⌘ + **X** and **V** cut and paste. **Del** deletes. Ctrl/⌘ + **Z** undoes, with Shift (or Ctrl + **Y**) to redo.
+- **K** and **D** keep or mark copies in duplicate review. In a Tidy review they set Move and Stay, and **M** opens Send
+  to; editing keys are ignored there.
 
-Drag and drop works within the list and onto the sidebar tree: drop onto a folder to move into it, or between rows to
-reorder, with auto-scroll near the edges and hover-to-open on closed tree folders. A move into a folder's own subfolder
-is refused. Alt-click on a folder's arrow opens or closes every folder inside it. Right-click opens every action for a
-row.
+Drag and drop (HTML5 drag events, so it may not work with touch) works within the list and onto the sidebar tree: drop
+onto a folder to move into it, or between rows to reorder, with auto-scroll near the edges and hover-to-open on closed
+tree folders. A move into a folder's own subfolder is refused. In a Tidy review, dropping onto a header or row sends
+bookmarks to that suggested folder. Alt-click on a folder's arrow opens or closes every folder inside it. Right-click
+opens every action for a row.
 
 ## Numbers worth knowing
 
@@ -273,40 +309,59 @@ row.
 | Save delay after a change | 600 ms |
 | Largest library saved in the browser | about 4.5 million characters of JSON |
 | Layout breakpoints | 1000, 820 and 600 px |
+| Assist request timeout (page side) | 45 s |
+| Assist rate limit (Worker) | 20 requests a minute per IP address, per Cloudflare location |
+| Tidy | at least 4 bookmarks; 150 per request, up to 750 per run; up to 12 folders per answer |
+| Suggest names | up to 60 items sent, 3 names back |
+| Clean up titles | up to 100 bookmarks |
+| Suggest a folder | up to 400 folder paths, 3 folders back |
+| Reading a page | 8 s, first 400 KB of HTML; icons up to 48 KB |
+| Typing pause before reading a page | 550 ms |
 
 ## Code map
 
 The script in `index.html` is in labelled sections, in this order:
 
 ```
-icons                 inline SVG strings
-state                 S, the index, undo and redo stacks, element handles
-small helpers         URL and name normalization, dates, paths
-parse & export        file checks, parsing, the audit, exportHTML
-index                 reindex, empty folders
-rows                  buildRows for each view
-mutations & history   mutate, undo, redo, move, rename, group, sort, delete, cut and paste
-views & selection     setView, tree layout, search, selection
-duplicate review      modes, keeper rules, marks
-rendering             rows, sidebar tree, folder filter and tools, header, empty states, selection tray
-inline editing        rename in place
-menus, dialogs        context menus, confirm, Move to…, shortcuts
-bindery assist        consent sheet, aiCall, review dialogs, tidy, name, titles
+icons                      inline SVG strings
+state                      S, the index, undo and redo stacks, element handles
+small helpers              URL and name normalization, A to Z order, dates, paths
+parse & export             file checks, parsing, the audit, exportHTML
+index                      reindex, empty folders
+rows for the current view  buildRows for each view
+mutations & history        mutate, undo, redo, move, rename, group, sort, A to Z, delete, cut and paste
+views & selection          setView, search, selection
+tree layout                tree view, open folders, expand and collapse all
+duplicate review           modes, keeper rules, marks
+rendering                  rows, sidebar tree, header, empty states, selection and mark trays
+folder filter & tools      the sidebar's filter and its expand/collapse buttons
+inline editing             rename in place, name chips' host
+menus                      context menus, Sort and Assist menus
+dialogs                    confirm, Move to…, shortcuts
+new bookmark               the New bookmark dialog, folder picker, addBookmark
+bindery assist             consent sheet, aiFetch, waiting sheet, review checklist, Clean up titles
+folder name suggestions    name chips, Suggest a name
+tidy review                aiTidy, the plan, its rows, menus, drop targets, Apply and Discard
 toasts
-import / export       importFile, showProblem, loadRoot, doExport
-persistence           localStorage, Remember my file, Forget on this device
-drag & drop           drop targets, reorder lines, autoscroll
-pointer, keyboard     event wiring
-boot                  restore or start blank
+import / export            importFile, showProblem, loadRoot, doExport
+persistence                localStorage, Remember my file, Forget on this device
+drag & drop                drop targets, reorder lines, autoscroll
+pointer events, keyboard   event wiring
+static chrome, boot        button icons, then restore or start blank
 ```
 
 ## Worker
 
-`worker/` holds the Bindery Assist Worker, its `wrangler.toml` and tests (`node --test worker/test/*.mjs`). It has no
-dependencies. See [worker/README.md](../worker/README.md) to deploy it and point a copy of Bindery at it.
+`worker/` holds the Bindery Assist Worker (`src/index.js`), its `wrangler.toml` and tests
+(`node --test worker/test/*.mjs`). It has no dependencies. Five `POST` endpoints: `tidy`, `name`, `titles` and `place`
+ask a Workers AI model for JSON (JSON mode, with a plain-text fallback) and validate the answer, and `page` reads a
+page's name and icon without AI. It only answers origins in `ALLOWED_ORIGINS`, caps request size, is rate limited, and
+stores nothing. See [worker/README.md](../worker/README.md) for endpoints, limits, deployment and pointing a copy of
+Bindery at it. The official site's Worker runs at `https://bookmark-bindery-ai.azureus.workers.dev`.
 
 ## Screenshots
 
 `node scripts/screenshots.mjs` regenerates `docs/screenshots/`. It serves the repo locally, opens the made-up library
-in `scripts/demo-bookmarks.html`, and captures the library, duplicate review and a phone view in light and dark with
-Playwright, saving WebP. It needs Node and Playwright with Chromium, and nothing else.
+in `scripts/demo-bookmarks.html`, and captures the library, duplicate review, the Bindery Assist welcome sheet and a
+phone view in light and dark with Playwright, saving WebP. The welcome sheet only appears when `index.html` points at
+a Worker; nothing is sent to take it. It needs Node and Playwright with Chromium, and nothing else.
