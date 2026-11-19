@@ -35,10 +35,11 @@ export async function handle(req, env) {
   let body;
   try { body = JSON.parse(text); } catch { return reply({ error: 'bad_request' }, 400); }
   // "page" takes one address; every other task takes a list of bookmarks.
-  const byUrl = task === 'page' || task === 'describe';
-  const items = byUrl ? [] : cleanItems(body?.items, MAX_ITEMS[task]);
+  const byUrl = task === 'page' || task === 'describe', byTags = task === 'tagsim';
+  const items = byUrl || byTags ? [] : cleanItems(body?.items, MAX_ITEMS[task]);
   if (!items) return reply({ error: 'bad_request' }, 400);
   if (byUrl && !pageUrl(body?.url)) return reply({ error: 'bad_request' }, 400);
+  if (byTags && !cleanTags(body?.tags)) return reply({ error: 'bad_request' }, 400);
 
   try {
     return reply(await TASKS[task](env, items, body));
@@ -132,6 +133,30 @@ const TASKS = {
       if (d) return { description: d };
     } catch { /* fall back below */ }
     return { description: clip(own, 300) };
+  },
+
+  /* Groups tags that mean the same thing (synonyms, abbreviations, spellings, singular and plural). */
+  async tagsim(env, items, body) {
+    const tags = cleanTags(body.tags);
+    const system = 'You tidy the tags people use for browser bookmarks. Reply with JSON only.';
+    const user = [
+      'Group the tags below that mean the same thing: synonyms, abbreviations (js and javascript), spelling variants, singular and plural, or the same word in another language.',
+      'Don\'t group tags that are only related (python and django, recipes and baking). Leave out tags that have no match. A tag can be in at most one group.',
+      'Reply as {"groups":[[0,5],[3,8,9]]}, where the numbers are tag numbers from the list.',
+      '',
+      tags.map((t, i) => `${i}. ${t}`).join('\n'),
+    ].join('\n');
+    const out = await ask(env, system, user, {
+      type: 'object', properties: { groups: { type: 'array', items: { type: 'array', items: { type: 'integer' } } } }, required: ['groups'],
+    }, 1024);
+    const used = new Set(), groups = [];
+    for (const g of Array.isArray(out?.groups) ? out.groups : []) {
+      const ok = (Array.isArray(g) ? g : []).filter(i => Number.isInteger(i) && i >= 0 && i < tags.length && !used.has(i));
+      const uniq = [...new Set(ok)];
+      if (uniq.length < 2) continue;
+      uniq.forEach(i => used.add(i)); groups.push(uniq);
+    }
+    return { groups: groups.slice(0, 60) };
   },
 
   /* Suggests up to three names for a folder from what's inside it. */
@@ -317,6 +342,12 @@ async function findIcon(links, base) {
   return '';
 }
 
+const MAX_TAGS = 600;
+function cleanTags(raw) {
+  if (!Array.isArray(raw) || raw.length < 2 || raw.length > MAX_TAGS) return null;
+  const tags = raw.map(t => clip(t, 60));
+  return tags.every(Boolean) ? tags : null;
+}
 function cleanItems(raw, max) {
   if (!Array.isArray(raw) || !raw.length || raw.length > max) return null;
   const items = [];

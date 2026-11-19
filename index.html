@@ -352,6 +352,25 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .keys .h{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
 @keyframes fade{from{opacity:0}}
 
+/* ---------- tags ---------- */
+.ico.tagi{color:var(--manila);background:var(--manila-fill)}
+.ico.tagi svg{width:14px;height:14px}
+.ico.tagi.ai{color:var(--violet);background:color-mix(in srgb,var(--violet) 14%,transparent)}
+.grp.tsect{align-items:flex-end}
+.row.simrow{cursor:default}
+.row.tagrow .u,.row.simrow .u{font:12.5px/1.35 var(--f-ui)}
+.row.simrow .t{display:flex;flex-wrap:nowrap;gap:6px;overflow:hidden}
+.tname-c{display:inline-flex;align-items:baseline;gap:4px;padding:1px 8px;border-radius:10px;background:var(--paper);border:1px solid var(--rule);font-size:13px;white-space:nowrap}
+.tname-c small{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.simacts{flex:none;display:flex;align-items:center;gap:4px}
+.btn.small{height:28px;padding:0 10px;font-size:12.5px}
+.dialog .opts{display:grid;gap:8px;margin:14px 0 4px;color:var(--ink-2)}
+.dialog .opts label{display:flex;gap:9px;align-items:flex-start;cursor:pointer}
+.dialog .opts input{margin:3px 0 0;accent-color:var(--cloth)}
+.dialog .cf-list{max-height:min(34vh,280px)}
+.mp-row .tag{margin-left:auto}
+@media (max-width:600px){ .simacts .btn.small{max-width:120px;overflow:hidden;text-overflow:ellipsis} .row.simrow .u{display:none} }
+
 /* ---------- bookmark editor ---------- */
 :root{--insp-w:372px}
 .app.insp-open{grid-template-columns:var(--side-w) minmax(0,1fr) var(--insp-w)}
@@ -389,6 +408,9 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .tg button{width:20px;height:20px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:transparent;color:inherit}
 .tg button:hover{background:color-mix(in srgb,var(--cloth) 18%,transparent)}
 .tg button svg{width:11px;height:11px;stroke-width:2}
+.tg.part{background:var(--sheet);border:1.5px dashed color-mix(in srgb,var(--cloth) 55%,transparent);padding-left:9px}
+.tg.part small{font-size:10.5px;color:var(--ink-3);margin-left:3px;font-variant-numeric:tabular-nums}
+.insp-acts.left{justify-content:flex-start;margin-top:18px}
 .field>textarea{min-height:78px;resize:vertical;border-radius:9px;border:1px solid var(--rule-2);background:var(--sheet);padding:8px 11px;outline:none;color:var(--ink);font:inherit;line-height:1.45}
 .field>textarea:focus{border-color:var(--cloth);box-shadow:0 0 0 3px var(--cloth-soft)}
 .btn .caret{display:inline-grid;margin-left:-2px}
@@ -575,7 +597,7 @@ body.dragging .row.sel:hover{background:var(--select)}
     <button class="icon-btn only-narrow" id="navBtn" aria-label="Show folders"></button>
     <div class="brand"><span class="mark" id="brandMark"></span><span class="word">Bindery</span></div>
     <div class="file" id="fileChip"></div>
-    <label class="search" id="searchBox"><span id="searchIco"></span><input id="q" type="search" placeholder="Search titles and addresses" autocomplete="off" spellcheck="false" aria-label="Search bookmarks"><kbd>/</kbd></label>
+    <label class="search" id="searchBox"><span id="searchIco"></span><input id="q" type="search" placeholder="Search titles, addresses and #tags" autocomplete="off" spellcheck="false" aria-label="Search bookmarks"><kbd>/</kbd></label>
     <div class="tools">
       <button class="icon-btn ai-btn" id="aiBtn" aria-label="Bindery Assist" aria-haspopup="menu" hidden></button>
       <button class="icon-btn" id="undoBtn" aria-label="Undo"></button>
@@ -686,9 +708,11 @@ const S = {
   drag: null, drop: null, recent: [],
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
-  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null, insp: null,
+  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null, insp: null, tagSort: 'count', tagIgnore: new Set(), tagAI: [],
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
+/* Tags, ignoring case: key → { name (the most used spelling), ids (in file order), spell: Map(spelling → count) }. */
+let tagIdx = new Map();
 let undoStack = [], redoStack = [];
 let seq = 1;
 const nid = () => 'n' + (seq++);
@@ -855,9 +879,9 @@ function reassignIds(n) { n.id = nid(); n.children?.forEach(reassignIds); return
 
 /* ---------- index ---------- */
 function reindex() {
-  idx = new Map(); dupeMaps = { url: new Map(), name: new Map(), both: new Map() };
+  idx = new Map(); dupeMaps = { url: new Map(), name: new Map(), both: new Map() }; tagIdx = new Map();
   const add = (m, k, id) => { const a = m.get(k); a ? a.push(id) : m.set(k, [id]); };
-  let ord = 0; const st = { links: 0, folders: 0, dupes: 0, dupeGroups: 0, empty: 0, dupeBy: {} };
+  let ord = 0; const st = { links: 0, folders: 0, dupes: 0, dupeGroups: 0, empty: 0, dupeBy: {}, tagged: 0 };
   const walk = (n, parent, depth) => {
     const r = { node: n, parent, depth, ord: ord++, links: 0, folders: 0 };
     idx.set(n.id, r);
@@ -874,6 +898,14 @@ function reindex() {
       if (k) add(dupeMaps.url, k, n.id);
       if (nm) add(dupeMaps.name, nm, n.id);
       if (k && nm) add(dupeMaps.both, nm + '\n' + k, n.id);
+      const tags = tagsOf(n);
+      if (tags.length) st.tagged++;
+      for (const t of tags) {
+        const key = t.toLowerCase(); let e = tagIdx.get(key);
+        if (!e) tagIdx.set(key, e = { name: t, ids: [], spell: new Map() });
+        if (e.ids.at(-1) !== n.id) e.ids.push(n.id);
+        e.spell.set(t, (e.spell.get(t) || 0) + 1);
+      }
     }
     return r;
   };
@@ -885,6 +917,8 @@ function reindex() {
   }
   st.dupeGroups = st.dupeBy[S.dupeMode].groups; st.dupes = st.dupeBy[S.dupeMode].extra;
   st.empty = emptyFolders().length;
+  for (const e of tagIdx.values()) { let best = 0; for (const [sp, c] of e.spell) if (c > best) { best = c; e.name = sp; } }
+  st.tags = tagIdx.size; tagVer++;
   stats = st;
 }
 function emptyFolders() {
@@ -903,7 +937,16 @@ function buildRows() {
   }
   else if (v.kind === 'search') {
     const t = S.terms;
-    const walk = n => { for (const c of n.children) { const hay = (c.title + ' ' + (c.url || '')).toLowerCase(); if (t.every(x => hay.includes(x))) rows.push({ id: c.id }); if (c.type === 'folder') walk(c); } };
+    // "#tra" matches bookmarks with a tag starting "tra"; other words match the title, address or tags.
+    const tagT = t.filter(x => x.length > 1 && x[0] === '#').map(x => x.slice(1)), textT = t.filter(x => !(x.length > 1 && x[0] === '#'));
+    const walk = n => {
+      for (const c of n.children) {
+        const tags = c.type === 'link' ? tagsOf(c).map(x => x.toLowerCase()) : [];
+        const hay = (c.title + ' ' + (c.url || '') + ' ' + tags.join(' ')).toLowerCase();
+        if (textT.every(x => hay.includes(x)) && tagT.every(x => tags.some(g => g.startsWith(x)))) rows.push({ id: c.id });
+        if (c.type === 'folder') walk(c);
+      }
+    };
     walk(S.root);
   } else if (v.kind === 'all') {
     const walk = n => { for (const c of n.children) c.type === 'link' ? rows.push({ id: c.id }) : walk(c); };
@@ -912,6 +955,15 @@ function buildRows() {
     const groups = [...dupeMaps[S.dupeMode].entries()].sort((a, b) => idx.get(a[1][0]).ord - idx.get(b[1][0]).ord);
     for (const [k, a] of groups) { rows.push({ group: true, id: 'g:' + k, key: k, ids: a }); for (const id of a) rows.push({ id, gkey: k }); }
   } else if (v.kind === 'empty') for (const id of emptyFolders()) rows.push({ id });
+  else if (v.kind === 'tags') {
+    const sims = similarTagGroups();
+    if (sims.length) { rows.push({ group: true, sect: 'sim', id: 's:sim', n: sims.length }); sims.forEach((g, i) => rows.push({ group: true, sim: g, id: 'sim:' + i })); }
+    const keys = [...tagIdx.keys()], byName = (a, b) => collator.compare(tagIdx.get(a).name, tagIdx.get(b).name);
+    keys.sort(S.tagSort === 'name' ? byName : (a, b) => tagIdx.get(b).ids.length - tagIdx.get(a).ids.length || byName(a, b));
+    if (keys.length) rows.push({ group: true, sect: 'all', id: 's:all', n: keys.length });
+    for (const k of keys) rows.push({ id: 'tag:' + k, tag: k });
+  }
+  else if (v.kind === 'tag') for (const id of tagIdx.get(v.key)?.ids || []) rows.push({ id });
   else if (v.kind === 'tidy' && S.tidy) for (const { g, ids } of tidyGroups()) {
     const k = g ? g.key : '';
     rows.push({ group: true, id: 't:' + k, tkey: k, ids });
@@ -1125,6 +1177,8 @@ function paste() {
 /* ---------- views & selection ---------- */
 function setView(v, { keepSel = false } = {}) {
   if (S.editing) commitEdit();
+  // The details panel has nothing to show for tags, and on small screens it would cover the new view.
+  if (S.insp?.mode === 'edit' && (v.kind === 'tags' || innerWidth <= 820)) { abortInsp(); S.insp = null; }
   S.view = v;
   if (v.kind !== 'search') { S.prevView = null; }
   if (v.kind === 'folder') for (const a of ancestors(v.id)) S.expanded.add(a.id);
@@ -1345,9 +1399,10 @@ function markTerms(text, terms) {
   const re = new RegExp('(' + terms.map(t => esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
   return s.replace(re, '<mark>$1</mark>');
 }
-const hl = text => markTerms(text, S.view.kind === 'search' ? S.terms : []);
+const hl = text => markTerms(text, S.view.kind === 'search' ? S.terms.filter(x => !(x.length > 1 && x[0] === '#')) : []);
 function rowHTML(r, i) {
   if (S.view.kind === 'tidy') return r.group ? tidyHeadHTML(r, i) : tidyRowHTML(r, i);
+  if (S.view.kind === 'tags') return tagsRowHTML(r, i);
   const top = PAD + i * ROW;
   if (r.group) {
     const nDel = r.ids.filter(id => S.marks.has(id)).length, all = nDel === r.ids.length;
@@ -1419,8 +1474,10 @@ function renderList() {
   if (blank) msg = blankHTML();
   else if (!rows.length) {
     if (S.view.kind === 'folder') msg = `<div><h3>This folder is empty</h3><p>Drag bookmarks onto it, or cut them elsewhere and paste here with ${MOD}+V.</p></div>`;
-    else if (S.view.kind === 'search') msg = `<div><h3>Nothing matches “${esc(S.query)}”</h3><p>Search looks at titles and addresses across every folder.</p></div>`;
+    else if (S.view.kind === 'search') msg = `<div><h3>Nothing matches “${esc(S.query)}”</h3><p>Search looks at titles, addresses and tags across every folder. Start a word with # to match tags only.</p></div>`;
     else if (S.view.kind === 'dupes') msg = `<div><h3>No duplicates by ${DUPE_MODES[S.dupeMode].tab.toLowerCase()}</h3><p>${S.dupeMode === 'url' ? 'Every address in this library is saved exactly once.' : S.dupeMode === 'name' ? 'Every bookmark has its own name.' : 'No bookmark is saved twice with the same name and address.'} Try matching by ${S.dupeMode === 'name' ? 'address' : 'name'} instead.</p></div>`;
+    else if (S.view.kind === 'tags') msg = `<div><h3>No tags yet</h3><p>Tags are labels that let one bookmark belong to several topics. Firefox keeps them; Chrome doesn’t. Select bookmarks and press E to tag them, or use Convert to tag bookmarks with their folder names.</p></div>`;
+    else if (S.view.kind === 'tag') msg = `<div><h3>No bookmarks have this tag now</h3><p>It may have been renamed, merged or removed. Find it again under Tags, or press ← to go back.</p></div>`;
     else if (S.view.kind === 'tidy') msg = `<div><h3>Nothing left to tidy</h3><p>The bookmarks in this plan have moved or been deleted. Discard the plan to go back.</p></div>`;
     else if (S.view.kind === 'empty') msg = `<div><h3>No empty folders</h3><p>Every folder holds at least one bookmark.</p></div>`;
     else msg = `<div><h3>No bookmarks yet</h3><p>Import a bookmarks file to get started.</p></div>`;
@@ -1505,8 +1562,8 @@ function setAllExpanded(open) {
 }
 function renderViews() {
   const v = S.view.kind;
-  const item = (k, icon, label, n) => `<button class="vrow${v === k ? ' on' : ''}" data-view="${k}"><span class="ficon plain" style="color:inherit">${icon}</span><span class="tname">${label}</span><span class="tcount">${n ? fmt(n) : ''}</span></button>`;
-  el.views.innerHTML = item('all', I.list, 'All bookmarks', stats.links) + item('dupes', I.dupes, 'Duplicates', stats.dupes) + item('empty', I.emptyf, 'Empty folders', stats.empty)
+  const item = (k, icon, label, n) => `<button class="vrow${v === k || (k === 'tags' && v === 'tag') ? ' on' : ''}" data-view="${k}"><span class="ficon plain" style="color:inherit">${icon}</span><span class="tname">${label}</span><span class="tcount">${n ? fmt(n) : ''}</span></button>`;
+  el.views.innerHTML = item('all', I.list, 'All bookmarks', stats.links) + item('dupes', I.dupes, 'Duplicates', stats.dupes) + item('empty', I.emptyf, 'Empty folders', stats.empty) + item('tags', I.tag, 'Tags', stats.tags)
     + (S.tidy ? item('tidy', I.tidy, 'Tidy plan', tidyStats().move) : '');
 }
 function renderHead() {
@@ -1568,6 +1625,20 @@ function renderHead() {
       + `${s.folders ? ' · ' : ''}<b>${fmt(s.move)}</b> of ${plural(s.total, 'bookmark')} move · ${fmt(s.stay)} stay`
       + '<div class="dim">Nothing changes until you apply. Click a folder name to rename it, and drag bookmarks between folders.</div>';
     acts = `<button class="btn" data-h="tdiscard">Discard</button><button class="btn primary" data-h="tapply"${s.move ? '' : ' disabled'}>${I.check}Apply</button>`;
+  } else if (v.kind === 'tags') {
+    crumbs = '<span>Inspect</span>'; title = '<h1 class="ptitle">Tags</h1>';
+    const sims = similarTagGroups().length;
+    meta = (stats.tags ? `${plural(stats.tags, 'tag')} on ${plural(stats.tagged, 'bookmark')}${sims ? ` · <b class="del">${plural(sims, 'group')} look${sims === 1 ? 's' : ''} like the same tag</b>` : ''}` : 'No tags yet')
+      + '<div class="dim">Tags are a Firefox feature; Chrome has none. Tag bookmarks in their details panel (E), one at a time or several at once.</div>';
+    acts = (stats.tags > 1 ? `<div class="seg" role="tablist" aria-label="Sort tags"><button role="tab" data-tagsort="count" class="${S.tagSort !== 'name' ? 'on' : ''}" aria-selected="${S.tagSort !== 'name'}">Most used</button><button role="tab" data-tagsort="name" class="${S.tagSort === 'name' ? 'on' : ''}" aria-selected="${S.tagSort === 'name'}">A to Z</button></div>` : '')
+      + `<button class="btn" data-h="convert" aria-haspopup="menu">${I.retitle}Convert<span class="caret">${I.chev}</span></button>`
+      + (AI_URL && stats.tags > 1 ? `<button class="btn" data-h="tagai">${I.sparkles}Find similar</button>` : '');
+  } else if (v.kind === 'tag') {
+    const e = tagIdx.get(v.key);
+    crumbs = `<button class="crumb" data-viewgo="tags">Tags</button>${I.chev}`;
+    title = `<h1 class="ptitle">${esc(e?.name || 'Tag')}</h1>`;
+    meta = e ? `${plural(e.ids.length, 'bookmark')} in ${plural(new Set(e.ids.map(id => parentOf(id)?.id)).size, 'folder')}${e.spell.size > 1 ? ` <span class="dim">· also spelled ${[...e.spell.keys()].filter(x => x !== e.name).map(x => `“${esc(x)}”`).join(', ')}</span>` : ''}` : 'No bookmarks have this tag now';
+    acts = e ? `<button class="btn" data-h="tagrename">${I.pencil}Rename</button><button class="btn" data-h="tagmore" aria-haspopup="menu">${I.more}More</button>` + selAllBtn : '';
   } else if (v.kind === 'empty') {
     crumbs = '<span>Inspect</span>'; title = '<h1 class="ptitle">Empty folders</h1>';
     meta = stats.empty ? `${plural(stats.empty, 'folder')} with no bookmarks inside, including folders that only hold other empty folders` : 'No empty folders';
@@ -1604,7 +1675,7 @@ function blankHTML() {
 function renderSelbar() {
   syncSideHighlight();
   renderInspector();
-  const n = S.sel.size;
+  const n = S.view.kind === 'tags' ? 0 : S.sel.size;
   el.list.classList.toggle('selecting', n > 0);
   if (!n) { el.selbar.hidden = true; return; }
   el.selbar.hidden = false;
@@ -1904,7 +1975,7 @@ function openKeys() {
     <dt>${k('→')}</dt><dd>Open the folder under the cursor. In the tree: expand it, then step inside.</dd>
     <dt>${k('←')}</dt><dd>Go up to the parent folder. In the tree: collapse, then jump to the parent.</dd>
     <dt>${k('T')}</dt><dd>Switch between the tree and one folder at a time</dd>
-    <dt>${k('/')}</dt><dd>Search titles and addresses</dd>
+    <dt>${k('/')}</dt><dd>Search titles, addresses and tags. Start a word with # to match tags only, like #travel.</dd>
     <dt>${k('F')}</dt><dd>Filter the folder list in the sidebar by name</dd>
     <div class="h">Editing</div>
     <dt>${k('E')}</dt><dd>Edit details: name, address, folder, tags, keyword and note. Changes apply as you go.</dd>
@@ -1919,6 +1990,10 @@ function openKeys() {
     <div class="h">Reviewing duplicates</div>
     <dt>${k('K')}</dt><dd>Keep the selected copies</dd>
     <dt>${k('D')}</dt><dd>Mark the selected copies for deletion. Nothing is deleted until you choose Review and delete.</dd>
+    <div class="h">Tags (Inspect → Tags)</div>
+    <dt>${k('Enter')} ${k('→')}</dt><dd>Show the bookmarks with the tag under the cursor. ← goes back to all tags.</dd>
+    <dt>${k('F2')}</dt><dd>Rename the tag. Use the name of another tag to merge them.</dd>
+    <dt>${k('Del')}</dt><dd>Remove the tag from every bookmark. The bookmarks stay.</dd>
     <div class="h">Reviewing a tidy plan</div>
     <dt>${k('K')} ${k('D')}</dt><dd>Move the selected bookmarks with the plan, or leave them where they are</dd>
     <dt>${k('M')}</dt><dd>Send the selected bookmarks to a different suggested folder</dd>
@@ -1972,11 +2047,7 @@ function mergeTags(cur, add) {
   for (const t of add.map(cleanTag)) if (t && !seen.has(t.toLowerCase())) { seen.add(t.toLowerCase()); out.push(t); }
   return out;
 }
-function allTags() {
-  const m = new Map();
-  for (const [, r] of idx) for (const t of tagsOf(r.node)) if (!m.has(t.toLowerCase())) m.set(t.toLowerCase(), t);
-  return [...m.values()].sort(collator.compare);
-}
+function allTags() { return [...tagIdx.values()].map(e => e.name).sort(collator.compare); }
 function keywordOwner(kw, except) {
   if (!kw) return null;
   for (const [id, r] of idx) if (id !== except && r.node.attrs?.SHORTCUTURL?.toLowerCase() === kw.toLowerCase()) return id;
@@ -2034,7 +2105,8 @@ function renderInspector() {
     if (ids.length) I_.sticky = false;
     const id = ids.length === 1 ? ids[0] : !ids.length && I_.sticky && idx.has(I_.for) ? I_.for : null;
     if (I_.for !== id) { I_.descCtrl?.abort(); I_.descCtrl = null; I_.for = id; I_.show = new Set(); I_.pick = null; }
-    key = ids.length > 1 ? 'many|' + ids.length : id ? `edit|${id}|${node(id).type}|${['tags', 'keyword', 'note'].filter(inspShown).join()}` : 'none';
+    I_.many = ids.length > 1 ? ids.filter(x => node(x).type === 'link') : null;
+    key = ids.length > 1 ? 'many|' + ids.join(',') : id ? `edit|${id}|${node(id).type}|${['tags', 'keyword', 'note'].filter(inspShown).join()}` : 'none';
   }
   if (box.dataset.key !== key) {
     const act = box.contains(document.activeElement) ? document.activeElement.dataset.f : null;
@@ -2046,10 +2118,17 @@ function renderInspector() {
 function inspHTML() {
   const I_ = S.insp, isNew = I_.mode === 'new', close = `<button class="icon-btn" data-x="close" aria-label="Close" title="Close (Esc)">${I.x}</button>`;
   if (!isNew && !I_.for) {
-    const n = S.sel.size;
-    return `<div class="insp-h"><span class="insp-ico">${I.pencil}</span><div class="insp-t"><b>${n ? `${fmt(n)} items selected` : 'Details'}</b></div>${close}</div>
-      <div class="insp-empty">${n ? `<p>Select one item to see and edit its details.</p><div class="insp-acts"><button class="btn" data-x="move">${I.move}Move to…</button><button class="btn" data-x="group">${I.group}Group</button><button class="btn" data-x="delmany">${I.trash}Delete</button></div>`
-        : `<p>Select a bookmark or folder to see and edit its details.</p><div class="insp-acts"><button class="btn" data-x="newbm">${I.bmplus}New bookmark</button></div>`}</div>`;
+    const n = selIds().length;
+    if (!n) return `<div class="insp-h"><span class="insp-ico">${I.pencil}</span><div class="insp-t"><b>Details</b></div>${close}</div>
+      <div class="insp-empty"><p>Select a bookmark or folder to see and edit its details.</p><div class="insp-acts"><button class="btn" data-x="newbm">${I.bmplus}New bookmark</button></div></div>`;
+    const links = I_.many?.length || 0, folders = n - links;
+    return `<div class="insp-h"><span class="insp-ico">${I.pencil}</span><div class="insp-t"><b>${fmt(n)} items selected</b><small>${[links && plural(links, 'bookmark'), folders && plural(folders, 'folder')].filter(Boolean).join(' · ')}</small></div>${close}</div>
+      <div class="insp-b">
+        ${links ? `<div class="field"><label for="iTag">Tags</label><div class="tagbox"><span class="tg-list" data-v="tags"></span><input id="iTag" data-f="tag" list="iTagList" placeholder="Add a tag to all ${fmt(links)}" autocomplete="off" spellcheck="false"></div><datalist id="iTagList" data-v="taglist"></datalist>
+          <p class="hint">Changes apply to all ${plural(links, 'selected bookmark')}. Dashed tags are on only some of them: + adds one to the rest.${folders ? ' Folders can’t have tags.' : ''}</p></div>` : '<p class="hint">Folders can’t have tags. Select bookmarks to tag them together.</p>'}
+        <div class="insp-acts left"><button class="btn" data-x="move">${I.move}Move to…</button><button class="btn" data-x="group">${I.group}Group</button><button class="btn" data-x="delmany">${I.trash}Delete</button></div>
+        <p class="hint">Select one item to edit its name, address or note.</p>
+      </div>`;
   }
   const n = isNew ? null : node(I_.for), isF = n?.type === 'folder';
   const assist = !AI_URL ? 'none' : S.ai === 'on' ? 'on' : 'ask';
@@ -2081,6 +2160,7 @@ function inspHTML() {
 }
 function fillInspector() {
   const I_ = S.insp, box = el.insp, isNew = I_.mode === 'new', id = I_.for, n = isNew ? null : id && node(id);
+  if (!isNew && !id && I_.many?.length) { fillMany(); return; }
   if (!isNew && !n) return;
   const q = s => box.querySelector(s);
   const val = (f, v) => { const e = q(`[data-f="${f}"]`); if (e && document.activeElement !== e && e.value !== v) e.value = v; };
@@ -2124,6 +2204,18 @@ function fillInspector() {
     const dup = otherCopy(id);
     meta.innerHTML = rows.map(r => `<div>${esc(r)}</div>`).join('') + (dup ? `<div class="warn">Also saved in “${esc(folderPath(parentOf(dup).id))}”. <button type="button" class="linkish" data-x="reveal" data-id="${dup}">Show it</button></div>` : '');
   }
+}
+/* Several bookmarks: each tag with how many of them have it. */
+function fillMany() {
+  const ids = S.insp.many, box = el.insp.querySelector('[data-v="tags"]'); if (!box) return;
+  const counts = new Map();
+  for (const id of ids) for (const t of tagsOf(node(id))) { const k = t.toLowerCase(), c = counts.get(k); c ? c.n++ : counts.set(k, { name: tagIdx.get(k)?.name || t, n: 1 }); }
+  const list = [...counts.values()].sort((a, b) => b.n - a.n || collator.compare(a.name, b.name));
+  box.innerHTML = list.map(t => t.n === ids.length
+    ? `<span class="tg">${esc(t.name)}<button type="button" data-rmtag="${esc(t.name)}" aria-label="Remove ${esc(t.name)} from all" title="Remove from all" tabindex="-1">${I.x}</button></span>`
+    : `<span class="tg part" title="On ${t.n} of ${ids.length}">${esc(t.name)}<small>${t.n}/${ids.length}</small><button type="button" data-addtag="${esc(t.name)}" aria-label="Add ${esc(t.name)} to all" title="Add to all" tabindex="-1">${I.plus}</button><button type="button" data-rmtag="${esc(t.name)}" aria-label="Remove ${esc(t.name)} from all" title="Remove from all" tabindex="-1">${I.x}</button></span>`).join('');
+  const have = new Set(list.filter(t => t.n === ids.length).map(t => t.name.toLowerCase()));
+  el.insp.querySelector('[data-v="taglist"]').innerHTML = allTags().filter(t => !have.has(t.toLowerCase())).slice(0, 300).map(t => `<option value="${esc(t)}">`).join('');
 }
 function setInspStatus(html, cls = '') { const s = el.insp.querySelector('[data-v="status"]'); if (s) { s.className = 'nb-status' + (cls ? ' ' + cls : ''); s.innerHTML = html; } }
 
@@ -2187,12 +2279,14 @@ function addTags(raw) {
   const I_ = S.insp, parts = String(raw ?? '').split(',');
   if (!parts.some(p => cleanTag(p))) return;
   if (I_.mode === 'new') { I_.st.tags = mergeTags(I_.st.tags, parts); fillInspector(); return; }
+  if (!I_.for && I_.many?.length) { retag(I_.many, `Tagging of ${plural(I_.many.length, 'bookmark')}`, tags => [...tags, ...parts]); return; }
   const id = I_.for, cur = tagsOf(node(id)), next = mergeTags(cur, parts);
   if (next.length !== cur.length) editNode(id, 'Tag change', x => setAttr(x, 'TAGS', next.join(',')));
 }
 function removeTag(tag) {
   const I_ = S.insp, k = tag.toLowerCase();
   if (I_.mode === 'new') { I_.st.tags = I_.st.tags.filter(t => t.toLowerCase() !== k); fillInspector(); return; }
+  if (!I_.for && I_.many?.length) { retag(I_.many, `Untagging of ${plural(I_.many.length, 'bookmark')}`, tags => tags.filter(t => t.toLowerCase() !== k)); return; }
   const id = I_.for, next = tagsOf(node(id)).filter(t => t.toLowerCase() !== k);
   editNode(id, 'Tag change', x => setAttr(x, 'TAGS', next.join(',')));
 }
@@ -2286,8 +2380,9 @@ function inspAdd() {
 
 /* One set of listeners for whatever the panel shows. */
 el.insp.addEventListener('pointerdown', e => {
-  const rm = e.target.closest('[data-rmtag]'); if (!rm) return;
-  e.preventDefault(); removeTag(rm.dataset.rmtag);
+  const rm = e.target.closest('[data-rmtag]'), ad = e.target.closest('[data-addtag]');
+  if (rm) { e.preventDefault(); removeTag(rm.dataset.rmtag); }
+  else if (ad) { e.preventDefault(); addTags(ad.dataset.addtag); }
 });
 el.insp.addEventListener('click', e => {
   const I_ = S.insp; if (!I_) return;
@@ -2345,7 +2440,7 @@ el.insp.addEventListener('keydown', e => {
   }
   if (f === 'tag') {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); const v = t.value; t.value = ''; addTags(v); return; }
-    if (e.key === 'Backspace' && !t.value) { const tags = I_.mode === 'new' ? I_.st.tags : tagsOf(node(I_.for)); if (tags.length) { e.preventDefault(); removeTag(tags.at(-1)); } return; }
+    if (e.key === 'Backspace' && !t.value && (I_.mode === 'new' || I_.for)) { const tags = I_.mode === 'new' ? I_.st.tags : tagsOf(node(I_.for)); if (tags.length) { e.preventDefault(); removeTag(tags.at(-1)); } return; }
   }
   if (e.key === 'Enter' && (f === 'url' || f === 'name' || f === 'keyword' || (f === 'note' && (e.ctrlKey || e.metaKey)))) {
     e.preventDefault();
@@ -2407,11 +2502,11 @@ function onboardHTML(on) {
     <ul class="ob-list">
       ${feat(0, 'tidy', '--cloth', 'Tidy into folders', 'Turns a cluttered folder into a few clearly named ones. You review every bookmark, and nothing moves until you apply.')}
       ${feat(1, 'tag', '--manila', 'Name folders for you', 'Tap a suggestion under the name field to name a folder by what’s inside it.')}
-      ${feat(2, 'retitle', '--leaf', 'Clean up titles', 'Trims site names, “(3)” counts and SEO clutter from bookmark names. Pick which to keep.')}
+      ${feat(2, 'retitle', '--leaf', 'Clean up titles and tags', 'Trims site names, “(3)” counts and SEO clutter from bookmark names, and spots tags that mean the same thing.')}
       ${feat(3, 'bmplus', '--teal', 'Fill in bookmark details', 'Get a page’s name, icon and a short note about it, plus a suggestion for which folder it belongs in.')}
       ${feat(4, 'shield', '--violet', 'You stay in charge', 'Nothing is sent until you choose an action or add a bookmark, and only what that needs. Every change can be undone.')}
     </ul>
-    <p class="ob-fine">${I.lock}<span>An action sends the titles and web addresses (without anything after “?”) of the bookmarks it’s for to Bindery’s helper on Cloudflare Workers AI. Reading a page for a new bookmark or a note sends its full address, and suggesting a folder sends your folder names. The helper stores none of it.</span></p>
+    <p class="ob-fine">${I.lock}<span>An action sends the titles and web addresses (without anything after “?”) of the bookmarks it’s for to Bindery’s helper on Cloudflare Workers AI. Reading a page for a new bookmark or a note sends its full address, suggesting a folder sends your folder names, and finding similar tags sends your tag names. The helper stores none of it.</span></p>
     <div class="ob-actions">${on ? `<button class="btn primary ob-go" data-m="ok">Done</button><button class="ob-alt danger" data-m="off">Turn off Bindery Assist</button>`
          : `<button class="btn primary ob-go" data-m="ok">Turn on Bindery Assist</button><button class="ob-alt" data-m="cancel">Not now</button>`}</div>`;
 }
@@ -2842,6 +2937,302 @@ async function aiTitles(ids) {
   toast(`Renamed ${plural(live.length, 'bookmark')}`, { undo: true });
 }
 
+/* ---------- tags ----------
+   Inspect → Tags lists every tag (ignoring case) and the tags that look like the same tag. A tag opens a view of its
+   bookmarks. Renaming, merging, removing and converting tags are each one undo step. Tags live in each bookmark's TAGS
+   attribute, comma-separated, as Firefox writes them. */
+const dedupeTags = list => mergeTags([], list);
+/* Changes the tags of many bookmarks in one undo step. fn(tags, id) returns the new list. */
+function retag(ids, label, fn) {
+  return mutate(label, () => {
+    let changed = false;
+    for (const id of ids) {
+      const n = node(id); if (!n || n.type !== 'link') continue;
+      const cur = tagsOf(n), next = dedupeTags(fn(cur, id));
+      if (next.join(',') !== cur.join(',')) { setAttr(n, 'TAGS', next.join(',')); changed = true; }
+    }
+    if (!changed) return false;
+  });
+}
+/* Every spelling of the given tags becomes `target`. Renaming is merging one tag. */
+function mergeTagKeys(keys, target, { quiet = false } = {}) {
+  target = cleanTag(target); if (!target) return false;
+  const set = new Set(keys), ids = [...new Set(keys.flatMap(k => tagIdx.get(k)?.ids || []))];
+  const tk = target.toLowerCase(), into = tagIdx.has(tk) && !set.has(tk) ? tagIdx.get(tk).name : null;
+  const was = keys.map(k => tagIdx.get(k)?.name).filter(Boolean);
+  const view = S.view;
+  if (view.kind === 'tag' && set.has(view.key)) S.view = { kind: 'tag', key: tk };
+  const ok = retag(ids, keys.length > 1 || into ? `Merging of ${plural(keys.length + (into ? 1 : 0), 'tag')}` : `Renaming of the tag “${was[0]}”`,
+    tags => tags.map(t => set.has(t.toLowerCase()) ? target : t));
+  if (!ok) { S.view = view; if (!quiet) toast('Nothing to change.'); return false; }
+  if (!quiet) toast(into ? `Merged ${was.map(w => `“${w}”`).join(', ')} into “${into}”` : keys.length > 1 ? `Merged ${plural(keys.length, 'tag')} into “${target}”`
+    : was[0].toLowerCase() === tk ? `Now spelled “${target}” everywhere` : `Renamed “${was[0]}” to “${target}”`, { undo: true });
+  return true;
+}
+function dropTag(key) {
+  const e = tagIdx.get(key); if (!e) return;
+  const name = e.name, n = e.ids.length;
+  if (retag([...e.ids], `Removal of the tag “${name}”`, tags => tags.filter(t => t.toLowerCase() !== key)))
+    toast(`Removed “${name}” from ${plural(n, 'bookmark')}. The bookmarks stay.`, { undo: true });
+}
+function openTag(key) { if (!tagIdx.has(key)) return; clearSearchBox(); setView({ kind: 'tag', key }); }
+function promptDialog({ title, label, value = '', ok, hint = '', suggest = [] }) {
+  return new Promise(res => {
+    openModal(`<h2>${esc(title)}</h2><div class="field"><label for="pdIn">${esc(label)}</label><input id="pdIn" value="${esc(value)}" list="pdList" autocomplete="off" spellcheck="false"></div>
+      ${suggest.length ? `<datalist id="pdList">${suggest.map(t => `<option value="${esc(t)}">`).join('')}</datalist>` : ''}${hint ? `<p class="note">${hint}</p>` : ''}
+      <div class="actions"><button class="btn" data-m="cancel">Cancel</button><button class="btn primary" data-pd="ok">${esc(ok)}</button></div>`);
+    const inp = el.dialog.querySelector('#pdIn'), done = () => closeModal(inp.value.trim() || null);
+    el.dialog.querySelector('[data-pd="ok"]').addEventListener('click', done);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); done(); } });
+    modalDone = v => res(typeof v === 'string' ? v : null);
+    inp.focus(); inp.select();
+  });
+}
+async function tagRename(key) {
+  const e = tagIdx.get(key); if (!e) return;
+  const v = await promptDialog({ title: `Rename “${e.name}”`, label: 'New name', value: e.name, ok: 'Rename',
+    hint: `Changes it on ${plural(e.ids.length, 'bookmark')}. Use the name of another tag to merge the two.`, suggest: allTags().filter(t => t.toLowerCase() !== key) });
+  if (v && v !== e.name) mergeTagKeys([key], v);
+}
+async function tagMergeInto(key) {
+  const e = tagIdx.get(key); if (!e) return;
+  const v = await promptDialog({ title: `Merge “${e.name}” into another tag`, label: 'Tag to keep', ok: 'Merge',
+    hint: `The ${plural(e.ids.length, 'bookmark')} tagged “${esc(e.name)}” get the other tag instead.`, suggest: allTags().filter(t => t.toLowerCase() !== key) });
+  if (v) mergeTagKeys([key], v);
+}
+function tagMenu(key, x, y) {
+  const e = tagIdx.get(key); if (!e) return;
+  openMenu(x, y, [
+    ...(S.view.kind === 'tags' ? [{ label: 'Show its bookmarks', icon: 'list', kbd: '→', run: () => openTag(key) }] : []),
+    { label: 'Rename…', icon: 'pencil', kbd: 'F2', run: () => tagRename(key) },
+    { label: 'Merge into another tag…', icon: 'tag', run: () => tagMergeInto(key) },
+    ...(e.spell.size > 1 ? [{ label: `Spell it “${e.name}” everywhere`, icon: 'check', run: () => mergeTagKeys([key], e.name) }] : []),
+    { label: 'Make a folder from this tag…', icon: 'group', run: () => tagToFolder(key) },
+    'sep',
+    { label: `Remove from ${plural(e.ids.length, 'bookmark')}`, icon: 'trash', kbd: 'Del', danger: true, run: () => dropTag(key) },
+  ]);
+}
+
+/* Tags that look like the same tag: different spellings of one tag, plurals, spacing and one-letter typos, plus any
+   groups Bindery Assist found. Cached until the library changes. */
+let tagVer = 0, simCache = { ver: -1, groups: [] };
+const fuzzyTag = k => k.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[\s_\-.\/]+/g, '').replace(/ies$/, 'y').replace(/([^s])s$/, '$1');
+function oneEdit(a, b) {
+  if (a === b) return true;
+  const la = a.length, lb = b.length; if (Math.abs(la - lb) > 1) return false;
+  let i = 0, j = 0, d = 0;
+  while (i < la && j < lb) {
+    if (a[i] === b[j]) { i++; j++; continue; }
+    if (++d > 1) return false;
+    if (la > lb) i++; else if (lb > la) j++; else { i++; j++; }
+  }
+  return d + (la - i) + (lb - j) <= 1;
+}
+const simSig = g => g.kind + ':' + [...g.keys].sort().join('\n');
+function similarTagGroups() {
+  if (simCache.ver === tagVer && simCache.ignore === S.tagIgnore.size && simCache.ai === S.tagAI.length) return simCache.groups;
+  const keys = [...tagIdx.keys()], out = [], most = ks => ks.reduce((a, b) => tagIdx.get(b).ids.length > tagIdx.get(a).ids.length ? b : a);
+  for (const k of keys) { const e = tagIdx.get(k); if (e.spell.size > 1) out.push({ kind: 'case', keys: [k], target: e.name }); }
+  // Union keys that are the same once plurals and spacing are ignored, or one letter apart (5+ letters, no digits).
+  const parent = new Map(keys.map(k => [k, k])), find = k => { while (parent.get(k) !== k) k = parent.get(k); return k; };
+  const join = (a, b) => { a = find(a); b = find(b); if (a !== b) parent.set(b, a); };
+  const byFuzzy = new Map();
+  for (const k of keys) { const f = fuzzyTag(k); byFuzzy.has(f) ? join(byFuzzy.get(f), k) : byFuzzy.set(f, k); }
+  if (keys.length <= 3000) {
+    const fz = [...byFuzzy.keys()].filter(f => f.length >= 5 && !/\d/.test(f)), byLen = new Map();
+    for (const f of fz) { const l = f.length; byLen.has(l) ? byLen.get(l).push(f) : byLen.set(l, [f]); }
+    for (const f of fz) for (const l of [f.length, f.length + 1]) for (const g of byLen.get(l) || []) if (g > f || l > f.length) if (oneEdit(f, g)) join(byFuzzy.get(f), byFuzzy.get(g));
+  }
+  const groups = new Map();
+  for (const k of keys) { const r = find(k); groups.has(r) ? groups.get(r).push(k) : groups.set(r, [k]); }
+  const seen = new Set();
+  for (const ks of groups.values()) if (ks.length > 1) { const g = { kind: 'alike', keys: ks, target: tagIdx.get(most(ks)).name }; out.push(g); seen.add([...ks].sort().join('\n')); }
+  for (const ks0 of S.tagAI) {
+    const ks = [...new Set(ks0)].filter(k => tagIdx.has(k));
+    if (ks.length > 1 && !seen.has([...ks].sort().join('\n'))) out.push({ kind: 'ai', keys: ks, target: tagIdx.get(most(ks)).name });
+  }
+  const groupsOut = out.filter(g => !S.tagIgnore.has(simSig(g)));
+  simCache = { ver: tagVer, ignore: S.tagIgnore.size, ai: S.tagAI.length, groups: groupsOut };
+  return groupsOut;
+}
+function simMenu(g, x, y) {
+  const names = g.kind === 'case' ? [...tagIdx.get(g.keys[0]).spell.keys()] : g.keys.map(k => tagIdx.get(k).name);
+  openMenu(x, y, [
+    { heading: g.kind === 'case' ? 'Spell it' : 'Merge into' },
+    ...names.map(nm => ({ label: `“${nm}”`, icon: 'tag', run: () => mergeTagKeys(g.keys, nm) })),
+    'sep',
+    { label: g.kind === 'case' ? 'Keep the different spellings' : 'They’re different tags', icon: 'x', run: () => { S.tagIgnore.add(simSig(g)); refresh(); } },
+  ]);
+}
+async function findSimilarWithAssist() {
+  const tags = [...tagIdx.values()].sort((a, b) => b.ids.length - a.ids.length).slice(0, 600).map(e => e.name);
+  if (tags.length < 2) { toast('You need at least two tags to compare.'); return; }
+  const data = await aiCall('tagsim', { tags }, `Comparing ${plural(tags.length, 'tag')}`, 'Sending your tag names (nothing else) to Bindery Assist.');
+  if (!data) return;
+  const groups = (Array.isArray(data.groups) ? data.groups : []).map(g => (Array.isArray(g) ? g : []).filter(i => Number.isInteger(i) && tags[i]).map(i => tags[i].toLowerCase())).filter(g => g.length > 1);
+  const before = similarTagGroups().length;
+  S.tagAI.push(...groups); refresh();
+  const added = similarTagGroups().length - before;
+  toast(added ? `Bindery Assist found ${plural(added, 'more group')} of tags that mean the same. They’re at the top.` : 'Bindery Assist didn’t find any more tags that mean the same.');
+}
+function tagsRowHTML(r, i) {
+  const top = PAD + i * ROW;
+  if (r.sect) return `<div class="grp tsect" style="top:${top}px"><span class="gl">${r.sect === 'sim' ? 'These look like the same tag' : S.tagSort === 'name' ? 'All tags, A to Z' : 'All tags, most used first'}</span><span class="n">${fmt(r.n)}</span></div>`;
+  if (r.sim) {
+    const g = r.sim, list = g.kind === 'case' ? [...tagIdx.get(g.keys[0]).spell].map(([nm, c]) => [nm, c]) : g.keys.map(k => [tagIdx.get(k).name, tagIdx.get(k).ids.length]);
+    const why = g.kind === 'case' ? 'One tag, spelled different ways' : g.kind === 'ai' ? 'Bindery Assist thinks these mean the same' : 'Plurals, spacing or a typo apart';
+    return `<div class="row simrow" style="top:${top}px" data-sim="${i}"><span class="ico tagi${g.kind === 'ai' ? ' ai' : ''}">${g.kind === 'ai' ? I.sparkles : I.tag}</span>
+      <div class="main"><div class="t">${list.map(([nm, c]) => `<span class="tname-c">${esc(nm)}<small>${fmt(c)}</small></span>`).join('')}</div><div class="u">${why}</div></div>
+      <div class="simacts"><button class="btn small" data-a="simmerge" title="${g.kind === 'case' ? 'Use this spelling everywhere' : 'Merge these tags into one'}">${g.kind === 'case' ? 'Use' : 'Merge into'} “${esc(shortName(g.target, 22))}”</button><button class="icon-btn" data-a="simmore" aria-label="Other choices" title="Other choices">${I.more}</button></div></div>`;
+  }
+  const e = tagIdx.get(r.tag), id = r.id, cls = ['row', 'tagrow'];
+  if (S.sel.has(id)) cls.push('sel'); if (S.cursor === id) cls.push('cur');
+  const others = [...e.spell.keys()].filter(x => x !== e.name);
+  return `<div class="${cls.join(' ')}" data-id="${esc(id)}" style="top:${top}px" role="option" aria-selected="${S.sel.has(id)}">
+    <span class="ico tagi">${I.tag}</span>
+    <div class="main"><div class="t">${esc(e.name)}</div><div class="u">${plural(e.ids.length, 'bookmark')}${others.length ? ` · also spelled ${others.map(x => `“${esc(x)}”`).join(', ')}` : ''}</div></div>
+    <div class="tail"><div class="acts">
+      <button class="icon-btn" data-a="trn" aria-label="Rename" title="Rename (F2)">${I.pencil}</button>
+      <button class="icon-btn" data-a="topen" aria-label="Show its bookmarks" title="Show its bookmarks (→)">${I.chev}</button>
+      <button class="icon-btn" data-a="tmore" aria-label="More actions">${I.more}</button></div></div></div>`;
+}
+function tagsClick(e) {
+  const sim = e.target.closest('[data-sim]');
+  if (sim) {
+    const g = S.rows[+sim.dataset.sim]?.sim, a = e.target.closest('[data-a]')?.dataset.a; if (!g) return;
+    if (a === 'simmerge') mergeTagKeys(g.keys, g.target);
+    else if (a === 'simmore') { const r = e.target.closest('button').getBoundingClientRect(); simMenu(g, r.right - 240, r.bottom + 4); }
+    return;
+  }
+  const row = e.target.closest('.row.tagrow'); if (!row) return;
+  const id = row.dataset.id, key = S.rows[S.rowPos.get(id)]?.tag, a = e.target.closest('[data-a]')?.dataset.a;
+  if (!key) return;
+  if (a === 'trn') tagRename(key);
+  else if (a === 'topen') openTag(key);
+  else if (a === 'tmore') { const r = e.target.closest('button').getBoundingClientRect(); tagMenu(key, r.right - 240, r.bottom + 4); }
+  else { S.sel = new Set([id]); S.cursor = id; S.anchor = id; markSel(); el.list.focus({ preventScroll: true }); }
+}
+
+/* ---------- moving tags between browsers ---------- */
+const copyOf = n => reassignIds(cloneTree(n));
+function newFolderNode(title) { return { id: nid(), type: 'folder', title, attrs: { ADD_DATE: nowS(), LAST_MODIFIED: nowS() }, children: [] }; }
+/* A folder picker in a dialog, with optional form fields above it. Resolves { folder, form } or null. */
+function chooseFolderDialog({ title, intro = '', extra = '', ok, start = S.root.id, label = 'Put it in' }) {
+  return new Promise(res => {
+    let chosen = idx.has(start) ? start : S.root.id;
+    openModal(`<h2>${esc(title)}</h2>${intro}${extra}<div class="field"><span class="flabel">${esc(label)}</span>
+      <label class="search"><span>${I.search}</span><input data-cf="q" placeholder="Find a folder" autocomplete="off" spellcheck="false" aria-label="Find a folder"></label>
+      <div class="mp-list cf-list" role="listbox"></div></div>
+      <div class="actions"><button class="btn" data-m="cancel">Cancel</button><button class="btn primary" data-cf="ok">${esc(ok)}</button></div>`, 'wide');
+    const list = el.dialog.querySelector('.cf-list'), q = el.dialog.querySelector('[data-cf="q"]');
+    const draw = () => {
+      const t = q.value.trim().toLowerCase(), all = folderList().filter(x => !t || folderTitle(node(x.id)).toLowerCase().includes(t));
+      list.innerHTML = all.map(x => `<div class="mp-row${x.id === chosen ? ' act' : ''}" data-cfid="${x.id}" role="option" aria-selected="${x.id === chosen}" style="--d:${t ? 0 : x.d}">${iconHTML(node(x.id))}<span class="nm"><b>${esc(folderTitle(node(x.id)))}</b>${t && x.id !== S.root.id ? `<small>${esc(folderPath(x.id))}</small>` : ''}</span>${x.id === chosen ? `<span class="tag">${I.check}</span>` : ''}</div>`).join('') || '<div class="mp-label">No folders match</div>';
+    };
+    list.addEventListener('click', e => { const r = e.target.closest('[data-cfid]'); if (r) { chosen = r.dataset.cfid; draw(); } });
+    q.addEventListener('input', draw);
+    q.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+    el.dialog.querySelector('[data-cf="ok"]').addEventListener('click', () => {
+      const form = {};
+      for (const i of el.dialog.querySelectorAll('[name]')) { if (i.type === 'radio') { if (i.checked) form[i.name] = i.value; } else form[i.name] = i.type === 'checkbox' ? i.checked : i.value; }
+      closeModal({ folder: chosen, form });
+    });
+    modalDone = v => res(v && typeof v === 'object' ? v : null);
+    draw(); list.querySelector('.act')?.scrollIntoView({ block: 'nearest' });
+  });
+}
+async function tagToFolder(key) {
+  const e = tagIdx.get(key); if (!e) return;
+  const r = await chooseFolderDialog({
+    title: `Make a folder from “${e.name}”`,
+    intro: `<p>${plural(e.ids.length, 'bookmark')} ${e.ids.length === 1 ? 'has' : 'have'} this tag.</p>`,
+    extra: `<div class="field"><label for="cfName">Folder name</label><input id="cfName" name="name" value="${esc(e.name)}" autocomplete="off"></div>
+      <div class="opts"><label><input type="radio" name="how" value="copy" checked> Put copies in it, and leave the bookmarks where they are</label>
+      <label><input type="radio" name="how" value="move"> Move the bookmarks into it</label>
+      <label><input type="checkbox" name="untag"> Remove the tag “${esc(e.name)}” afterwards</label></div>`,
+    ok: 'Make folder',
+  });
+  if (!r || !tagIdx.has(key)) return;
+  const name = String(r.form.name || '').trim() || e.name, ids = [...tagIdx.get(key).ids], dest = node(r.folder), move = r.form.how === 'move';
+  const untag = n => { if (r.form.untag) setAttr(n, 'TAGS', tagsOf(n).filter(t => t.toLowerCase() !== key).join(',')); };
+  let nf;
+  if (!mutate(`Folder from the tag “${e.name}”`, () => {
+    nf = newFolderNode(name); dest.children.push(nf);
+    for (const id of ids) {
+      const n = node(id); if (!n) continue;
+      if (move) { const p = parentOf(id); p.children.splice(p.children.indexOf(n), 1); untag(n); nf.children.push(n); }
+      else { const c = copyOf(n); untag(n); untag(c); nf.children.push(c); }
+    }
+  })) return;
+  openFolder(nf.id);
+  toast(move ? `Moved ${plural(ids.length, 'bookmark')} into “${name}”` : `Made “${name}” with ${plural(ids.length, 'copy', 'copies')}. Copies show up in Duplicates; that’s expected.`, { undo: true, ms: 8000 });
+}
+async function allTagsToFolders() {
+  const tags = [...tagIdx.values()].sort((a, b) => collator.compare(a.name, b.name));
+  if (!tags.length) { toast('There are no tags to turn into folders.'); return; }
+  const copies = tags.reduce((s, e) => s + e.ids.length, 0);
+  const r = await chooseFolderDialog({
+    title: 'Make a folder for each tag',
+    intro: `<p>Bindery makes one folder holding a folder for each of your ${plural(tags.length, 'tag')}, with copies of the bookmarks that have it (${plural(copies, 'copy', 'copies')} in all). A bookmark with several tags gets a copy in each. The originals and their tags stay as they are.</p>
+      <p class="note">Useful before exporting for Chrome, which has no tags. The copies will show up in Duplicates.</p>`,
+    extra: `<div class="field"><label for="cfName">Name of the folder that holds them</label><input id="cfName" name="name" value="Tags" autocomplete="off"></div>`,
+    ok: `Make ${plural(tags.length, 'folder')}`,
+  });
+  if (!r) return;
+  const name = String(r.form.name || '').trim() || 'Tags', dest = node(r.folder);
+  let top;
+  if (!mutate('Folders from tags', () => {
+    top = newFolderNode(name); dest.children.push(top);
+    for (const e of tags) { const f = newFolderNode(e.name); for (const id of e.ids) { const n = node(id); if (n) f.children.push(copyOf(n)); } top.children.push(f); }
+  })) return;
+  openFolder(top.id);
+  toast(`Made ${plural(tags.length, 'folder')} with ${plural(copies, 'copy', 'copies')} in “${name}”`, { undo: true });
+}
+async function foldersToTags() {
+  const r = await chooseFolderDialog({
+    title: 'Tag bookmarks with their folder names',
+    intro: `<p>Every bookmark inside the folder you pick gets a tag for each folder it’s in, below that one. A bookmark in “Travel › Japan 2026” gets the tags “Travel” and “Japan 2026”. Its existing tags stay.</p>
+      <p class="note">Useful before exporting for Firefox, so the bookmarks can be found by tag.</p>`,
+    extra: `<div class="opts"><label><input type="checkbox" name="self"> Also tag them with the name of the folder you pick</label></div>`,
+    ok: 'Add tags', label: 'Bookmarks inside',
+  });
+  if (!r) return;
+  const top = node(r.folder), paths = new Map();
+  const walk = (f, path) => { for (const c of f.children) { if (c.type === 'folder') walk(c, [...path, folderTitle(c)]); else if (path.length) paths.set(c.id, path); } };
+  walk(top, r.form.self && top !== S.root ? [folderTitle(top)] : []);
+  if (!paths.size) { toast('There are no bookmarks inside a folder there to tag.'); return; }
+  if (retag([...paths.keys()], 'Tags from folder names', (tags, id) => [...tags, ...paths.get(id)])) toast(`Tagged ${plural(paths.size, 'bookmark')} with their folder names`, { undo: true });
+  else toast('Those bookmarks already have tags for their folders.');
+}
+async function tagsToTitles() {
+  const ids = [...new Set([...tagIdx.values()].flatMap(e => e.ids))];
+  if (!ids.length) { toast('There are no tagged bookmarks.'); return; }
+  const ok = await confirmDialog({ title: 'Add tags to titles?',
+    body: `<p>Each tagged bookmark’s title gets its tags at the end, like “Kyoto guide #japan #travel”, so they can still be searched in browsers without tags. Spaces in a tag become hyphens, and tags already in a title aren’t added twice. The tags themselves stay.</p><p>This changes up to ${plural(ids.length, 'title')}. You can undo it with ${MOD}+Z.</p>`,
+    ok: `Add to ${plural(ids.length, 'title')}` });
+  if (!ok) return;
+  let changed = 0;
+  mutate('Tags added to titles', () => {
+    for (const id of ids) {
+      const n = node(id), low = n.title.toLowerCase();
+      const add = tagsOf(n).map(t => '#' + t.replace(/\s+/g, '-')).filter(h => !low.includes(h.toLowerCase()));
+      if (add.length) { n.title = (n.title ? n.title + ' ' : '') + add.join(' '); changed++; }
+    }
+    if (!changed) return false;
+  });
+  toast(changed ? `Added tags to ${plural(changed, 'title')}` : 'Every title already has its tags.', { undo: !!changed });
+}
+function convertMenu(x, y) {
+  const has = tagIdx.size > 0;
+  openMenu(x, y, [
+    { heading: 'For Chrome (no tags)' },
+    ...(has ? [{ label: 'Make a folder for each tag…', icon: 'group', run: allTagsToFolders }, { label: 'Add tags to titles…', icon: 'retitle', run: tagsToTitles }] : [{ note: 'There are no tags to convert yet.' }]),
+    'sep',
+    { heading: 'For Firefox' },
+    { label: 'Tag bookmarks with their folder names…', icon: 'tag', run: foldersToTags },
+  ]);
+}
+
 /* ---------- toasts ---------- */
 function toast(msg, { undo: withUndo = false, error = false, ms, action } = {}) {
   const t = document.createElement('div');
@@ -2883,7 +3274,7 @@ function showProblem(p) {
 function loadRoot(root, name, noFile) {
   if (S.editing) cancelEdit();
   S.root = root; S.fileName = name; S.noFile = noFile; S.dirty = false;
-  undoStack = []; redoStack = []; S.clip = null; S.recent = []; S.tidy = null;
+  undoStack = []; redoStack = []; S.clip = null; S.recent = []; S.tidy = null; S.tagAI = []; S.tagIgnore = new Set();
   abortInsp(); S.insp = null;
   reindex();
   S.expanded = new Set(root.children.filter(c => c.type === 'folder').map(c => c.id));
@@ -3134,6 +3525,7 @@ addEventListener('drop', e => {
 
 /* ---------- pointer events ---------- */
 el.rows.addEventListener('click', e => {
+  if (S.view.kind === 'tags') { tagsClick(e); return; }
   const g = e.target.closest('.grp');
   if (g?.classList.contains('tgrp')) {
     if (g.dataset.editing) return;
@@ -3161,6 +3553,7 @@ el.rows.addEventListener('click', e => {
   markSel(); renderSelbar();
 });
 el.rows.addEventListener('dblclick', e => {
+  if (S.view.kind === 'tags') { const r = e.target.closest('.row.tagrow'); if (r && !e.target.closest('[data-a]')) openTag(S.rows[S.rowPos.get(r.dataset.id)]?.tag); return; }
   if (S.view.kind === 'tidy') { const g = e.target.closest('.grp.tgrp'); if (g?.dataset.tk && !g.dataset.editing && !e.target.closest('[data-a]')) tidyRename(g.dataset.tk); return; }
   const row = e.target.closest('.row'); if (!row || row.dataset.editing || e.target.closest('[data-a]')) return;
   const n = node(row.dataset.id); if (!n) return;
@@ -3168,6 +3561,7 @@ el.rows.addEventListener('dblclick', e => {
   else openEditor(n.id);
 });
 el.rows.addEventListener('contextmenu', e => {
+  if (S.view.kind === 'tags') { const r = e.target.closest('.row.tagrow'); if (r) { e.preventDefault(); tagMenu(S.rows[S.rowPos.get(r.dataset.id)]?.tag, e.clientX, e.clientY); } return; }
   const g = e.target.closest('.grp');
   if (g?.classList.contains('tgrp')) { e.preventDefault(); if (g.dataset.tk && !g.dataset.editing) tidyHeadMenu(g.dataset.tk, e.clientX, e.clientY); return; }
   if (g) { e.preventDefault(); groupMenu(S.rows[+g.dataset.gi], e.clientX, e.clientY); return; }
@@ -3214,6 +3608,8 @@ el.views.addEventListener('click', e => {
 });
 el.phead.addEventListener('click', e => {
   const go = e.target.closest('[data-go]'); if (go) { openFolder(go.dataset.go); return; }
+  if (e.target.closest('[data-viewgo]')) { setView({ kind: 'tags' }); return; }
+  const ts = e.target.closest('[data-tagsort]'); if (ts) { S.tagSort = ts.dataset.tagsort; refresh(); return; }
   const md = e.target.closest('[data-mode]'); if (md) { setDupeMode(md.dataset.mode); return; }
   const ly = e.target.closest('[data-layout]'); if (ly) { setLayout(ly.dataset.layout); return; }
   const h = e.target.closest('[data-h]')?.dataset.h; if (!h) return;
@@ -3225,6 +3621,10 @@ el.phead.addEventListener('click', e => {
   else if (h === 'newbookmark') openNewBookmark();
   else if (h === 'add') { const r = e.target.closest('button').getBoundingClientRect(); addMenu(r.left, r.bottom + 6); }
   else if (h === 'tapply') tidyApply();
+  else if (h === 'convert') { const r = e.target.closest('button').getBoundingClientRect(); convertMenu(r.left, r.bottom + 6); }
+  else if (h === 'tagai') withAI(findSimilarWithAssist);
+  else if (h === 'tagrename') tagRename(S.view.key);
+  else if (h === 'tagmore') { const r = e.target.closest('button').getBoundingClientRect(); tagMenu(S.view.key, r.left, r.bottom + 6); }
   else if (h === 'tdiscard') tidyDiscard();
   else if (h === 'selectall') selectAll();
   else if (h === 'marks') { const r = e.target.closest('button').getBoundingClientRect(); marksMenu(r.right - 260, r.bottom + 6); }
@@ -3283,6 +3683,14 @@ document.addEventListener('keydown', e => {
   if (e.altKey && k === 'ArrowUp') { e.preventDefault(); goUp(); return; }
   if (mod || e.altKey) return;
   if ((k === 'Enter' || k === ' ') && e.target.closest?.('button,a')) return;
+  if (S.view.kind === 'tags') {
+    const key = S.cursor?.startsWith('tag:') ? S.cursor.slice(4) : null;
+    if ((lk === 'Enter' || lk === 'ArrowRight') && key) { e.preventDefault(); openTag(key); return; }
+    if (lk === 'F2' && key) { e.preventDefault(); tagRename(key); return; }
+    if ((lk === 'Delete' || lk === 'Backspace') && key) { e.preventDefault(); dropTag(key); return; }
+    if (['Enter', 'F2', 'Delete', 'Backspace', 'ArrowLeft', 'e', 'g', 'n', 'm', 'k', 'd', ' ', 't'].includes(lk)) return;
+  }
+  if (S.view.kind === 'tag' && lk === 'ArrowLeft') { e.preventDefault(); setView({ kind: 'tags' }); return; }
   if (S.view.kind === 'tidy') {
     const ids = S.sel.size ? selIds() : S.cursor ? [S.cursor] : [];
     if (lk === 'k' || lk === 'd') { e.preventDefault(); if (ids.length) tidySetOff(ids, lk === 'd'); return; }

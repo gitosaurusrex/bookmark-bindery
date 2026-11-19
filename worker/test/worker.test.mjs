@@ -198,3 +198,16 @@ test('pageText prefers <main>, then <article>, then <body>', () => {
   assert.equal(pageText('<body><p>Only &lt;body&gt;</p></body>', 100), 'Only <body>')
   assert.equal(pageDescription('<meta name="twitter:description" content="T"><meta name="description" content="D">'), 'D')
 })
+
+/* ---------- tagsim: tags that mean the same thing ---------- */
+test('tagsim keeps groups of two or more real, unused tag numbers', async () => {
+  const env = fakeEnv({ groups: [[0, 1, 1], [2], [1, 3], [4, 5, 99, -1], 'x'] })
+  const res = await handle(post('tagsim', { tags: ['js', 'javascript', 'python', 'JS', 'recipe', 'recipes'] }), env)
+  assert.deepEqual(await res.json(), { groups: [[0, 1], [4, 5]] })
+  assert.match(env.calls[0].opts.messages[1].content, /5\. recipes/)
+})
+
+test('tagsim needs a list of 2 to 600 non-empty tags', async () => {
+  for (const tags of [undefined, ['one'], ['a', ''], Array(601).fill('t'), 'a,b'])
+    assert.equal((await handle(post('tagsim', { tags }), fakeEnv({}))).status, 400, JSON.stringify(tags)?.slice(0, 30))
+})
