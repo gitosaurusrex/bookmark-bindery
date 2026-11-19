@@ -12,12 +12,14 @@ stored, and how it gets back out. For what it does and how to use it, see the [R
 - [Editing and undo](#editing-and-undo)
 - [Duplicate review](#duplicate-review)
 - [Removing query strings](#removing-query-strings)
+- [Bindery Assist](#bindery-assist)
 - [Exporting](#exporting)
 - [Saving in the browser](#saving-in-the-browser)
 - [Rendering](#rendering)
 - [Keyboard and pointer](#keyboard-and-pointer)
 - [Numbers worth knowing](#numbers-worth-knowing)
 - [Code map](#code-map)
+- [Worker](#worker)
 - [Screenshots](#screenshots)
 
 ## One file, no build
@@ -36,7 +38,9 @@ font-src https://fonts.gstatic.com; img-src 'self' data: blob:; manifest-src 'se
 form-action 'none'; base-uri 'none'
 ```
 
-`connect-src 'none'` means the page can't make fetch, XHR, WebSocket or beacon requests at all. Images are limited to
+`connect-src 'none'` means the page can't make fetch, XHR, WebSocket or beacon requests at all. When a site sets up
+[Bindery Assist](#bindery-assist), `scripts/set-ai-endpoint.mjs` replaces `'none'` with the Worker's origin, and
+that origin becomes the only one the page can reach. Images are limited to
 the site itself and `data:`/`blob:` URLs, so favicons stored in a bookmarks file display, but nothing is loaded from the
 sites you bookmarked. The only outside requests are the Google Fonts stylesheet and font files.
 
@@ -159,6 +163,43 @@ Each copy is marked **Keep** or **Delete** (`S.marks`), by clicking, by **K** an
 `splitQuery()` takes everything from `?` up to `#` (a fragment, if any, is kept). **Remove query string** shows the
 before and after, warns that some sites need their query string, and applies it as an undoable edit.
 
+## Bindery Assist
+
+Optional AI help, served by the Cloudflare Worker in `worker/` (see [worker/README.md](../worker/README.md)). The page
+reads the Worker's address from `<meta name="bindery-ai">`. Empty means off, and then no AI button or menu item
+renders.
+
+- **Consent.** `S.ai` is `null` (never asked), `'on'` or `'off'`, saved in `bindery.ui.v1`. Every entry point goes
+  through `withAI(run)`, which shows the welcome sheet (`aiOnboarding()`) unless Assist is on. "Not now" leaves it
+  unset, so the sheet comes back next time. Opened from ✦ → **About Bindery Assist** while on, the same sheet offers
+  **Turn off Bindery Assist**. On phones the sheet rises from the bottom with its buttons pinned.
+- **What's sent.** `aiItem()` sends a title and `sendableUrl()`: host and path only, with no query string or
+  fragment, and nothing for non-web addresses. Subfolders are sent as `"Name (folder)"` when naming a folder.
+- **Calling.** `aiFetch()` makes one request and turns failures into readable messages: busy (429), too much
+  (400/413), no answer (other statuses) or unreachable. `aiWaiting()` is the waiting sheet around it: Cancel, Esc,
+  closing the sheet or a 45-second timeout per request aborts. `aiCall()` is the two together for single requests.
+- **Checking.** The Worker validates replies, and the page checks again against the current tree: bookmark numbers
+  must point at items still in the folder, each used once.
+- **Name chips.** Renaming a folder that has something in it (in a list row or the folder title) shows a **Suggest
+  names** chip under the field, when Assist is on. Tapping it calls `askChips()`, which fetches without a sheet and
+  swaps in up to three name chips. Tapping a name puts it in the field and commits the edit. Chips keep the field
+  focused (pointerdown is cancelled), work with Tab and Enter, and the request is aborted if the edit ends first.
+  Nothing is sent just because a name field opened. "Suggest a name" in a menu starts the same inline edit and asks
+  straight away, or falls back to a picker dialog when the folder isn't on screen.
+- **Tidy review.** `aiTidy()` asks in batches of 150 (up to 750 bookmarks), passing the existing subfolders and the
+  names suggested so far as `existing`, so later batches reuse them. Same-named folders merge, and a name matching an
+  existing subfolder means "move into it". The result is a plan, `S.tidy = { folder, groups: [{ key, name, into }],
+  to: Map(id → group key, '' to stay), off: Set }`, shown as view `tidy`. `buildRows()` turns it into a header row per
+  group plus one row per bookmark, so the review uses the same virtualized list, selection and keyboard handling as
+  everything else. `tidyGroups()` also reconciles the plan with the library on every render: bookmarks that left the
+  folder drop out, new ones stay, empty groups go. That's why the plan can survive leaving the view, undo and edits
+  elsewhere. Renaming a group to another group's name merges them. Drag and drop onto a header or row assigns to that
+  group (`tidyDropAt`). In this view **K**/**D** set Move/Stay and **M** opens Send to. Editing keys are ignored.
+  **Apply** runs one `mutate()` that creates or reuses folders and moves the bookmarks. **Discard** drops the plan.
+  Deleting the folder, or opening another file, discards it too.
+- **Clean up titles** opens `aiReview()`, a checklist where every suggestion starts ticked. Everything accepted goes
+  through `mutate()`, so each action is one undo step and respects A to Z order.
+
 ## Exporting
 
 `exportHTML()` writes a standard Netscape bookmarks file: the doctype and "DO NOT EDIT" comment browsers expect, a UTF-8
@@ -239,6 +280,7 @@ duplicate review      modes, keeper rules, marks
 rendering             rows, sidebar tree, folder filter and tools, header, empty states, selection tray
 inline editing        rename in place
 menus, dialogs        context menus, confirm, Move to…, shortcuts
+bindery assist        consent sheet, aiCall, review dialogs, tidy, name, titles
 toasts
 import / export       importFile, showProblem, loadRoot, doExport
 persistence           localStorage, Remember my file, Forget on this device
@@ -246,6 +288,11 @@ drag & drop           drop targets, reorder lines, autoscroll
 pointer, keyboard     event wiring
 boot                  restore or start blank
 ```
+
+## Worker
+
+`worker/` holds the Bindery Assist Worker, its `wrangler.toml` and tests (`node --test worker/test/*.mjs`). It has no
+dependencies. See [worker/README.md](../worker/README.md) to deploy it and point a copy of Bindery at it.
 
 ## Screenshots
 

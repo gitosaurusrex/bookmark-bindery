@@ -31,7 +31,11 @@ drag and drop, and export a clean file that Chrome imports straight back. No acc
   binary, a JSON backup or not a bookmarks export is turned away with a reason, instead of opening with bookmarks quietly
   missing.
 - **Private by design.** Everything happens in your browser. The page's security policy blocks it from connecting
-  anywhere except Google Fonts, so your bookmarks can't be sent anywhere.
+  anywhere except Google Fonts (and Bindery Assist, below, when a site sets it up), so your bookmarks can't be sent
+  anywhere else.
+- **Optional AI help.** Bindery Assist can tidy a cluttered folder into named folders, suggest folder names and clean
+  up bookmark titles. It's off until you turn it on, sends only the bookmarks an action is for, and shows every
+  suggestion for review before anything changes.
 - **Round-trips cleanly.** Exports keep each bookmark's dates, icon and descriptions, and the bookmarks bar stays the
   bookmarks bar.
 
@@ -71,12 +75,13 @@ Everything Bindery can do:
 - Find duplicates by address, name or both, and choose which copies to keep
 - Remove query strings from addresses
 - Export a Netscape-format bookmarks file that Chrome's Bookmark Manager can import
+- Optional AI help (Bindery Assist): tidy into folders, suggest folder names, clean up titles
 
 ## Your bookmarks stay on your computer
 
 Everything runs in the browser. The page makes no network requests apart from loading Google Fonts, and its Content
-Security Policy blocks any other connection. Your library is kept only in this browser's local storage, so it reopens
-on your next visit.
+Security Policy blocks any other connection. The one exception is Bindery Assist, which is off until you turn it on.
+Your library is kept only in this browser's local storage, so it reopens on your next visit.
 
 Under **This device** in the sidebar:
 
@@ -87,6 +92,29 @@ Under **This device** in the sidebar:
 
 Your browser may keep traces in its own storage files after a delete until they're overwritten. To clear those as well,
 delete the site's data in your browser settings.
+
+## Bindery Assist (optional AI)
+
+Click ✦ in the top bar, or pick an AI action from a right-click menu. The first time, a short welcome sheet explains
+each feature and what gets sent. Nothing is sent unless you choose **Turn on Bindery Assist**.
+
+- **Tidy into folders** (a folder's menu): suggests folders for the bookmarks in a cluttered folder, reusing
+  subfolders it already has, then opens a review of the whole plan. Every bookmark is listed under the folder it would
+  go to. Rename any suggested folder by clicking its name, set single bookmarks to **Move** or **Stay**, or drag them
+  (or select them and press **M**) to a different folder. Nothing changes until **Apply**, which is one undo step. You
+  can leave the review and come back to it from **Tidy plan** in the sidebar. Large folders are sent in batches of 150,
+  up to 750 bookmarks.
+- **Suggest a name**: while you rename a folder, including the new one **Group** makes, tap **Suggest names** under
+  the name field and then tap a suggestion. Also in a folder's menu.
+- **Clean up titles** (a bookmark's menu, a selection, or a whole folder from ✦): shortens titles stuffed with site
+  names, “(3)” counts and SEO filler. You choose which to accept.
+
+What's sent: for the bookmarks an action is for, their titles and their addresses cut down to site and path (nothing
+after “?” or “#”, nothing for bookmarklets or local files). It goes to a small Cloudflare Worker that asks a Workers AI
+model and doesn't store anything. Turn Assist off any time from ✦ → **Turn off Bindery Assist**.
+
+Assist needs a deployed Worker. A copy of Bindery without one shows no AI features at all, and its security policy
+still blocks every connection. To set one up, see [worker/README.md](worker/README.md).
 
 ## Hosting your own
 
