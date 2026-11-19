@@ -98,9 +98,14 @@ delete the site's data in your browser settings.
 Click ✦ in the top bar, or pick an AI action from a right-click menu. The first time, a short welcome sheet explains
 each feature and what gets sent. Nothing is sent unless you choose **Turn on Bindery Assist**.
 
-- **Tidy into folders** (a folder's menu): suggests a few folders for the bookmarks in a cluttered folder, reusing
-  subfolders it already has. You tick the ones you want, and the move is one undo step.
-- **Suggest a name** (a folder's menu, or after **Group**): offers up to three names based on what's inside.
+- **Tidy into folders** (a folder's menu): suggests folders for the bookmarks in a cluttered folder, reusing
+  subfolders it already has, then opens a review of the whole plan. Every bookmark is listed under the folder it would
+  go to. Rename any suggested folder by clicking its name, set single bookmarks to **Move** or **Stay**, or drag them
+  (or select them and press **M**) to a different folder. Nothing changes until **Apply**, which is one undo step. You
+  can leave the review and come back to it from **Tidy plan** in the sidebar. Large folders are sent in batches of 150,
+  up to 750 bookmarks.
+- **Suggest a name**: while you rename a folder, including the new one **Group** makes, tap **Suggest names** under
+  the name field and then tap a suggestion. Also in a folder's menu.
 - **Clean up titles** (a bookmark's menu, a selection, or a whole folder from ✦): shortens titles stuffed with site
   names, “(3)” counts and SEO filler. You choose which to accept.
 

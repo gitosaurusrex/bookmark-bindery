@@ -175,14 +175,30 @@ renders.
   **Turn off Bindery Assist**. On phones the sheet rises from the bottom with its buttons pinned.
 - **What's sent.** `aiItem()` sends a title and `sendableUrl()`: host and path only, with no query string or
   fragment, and nothing for non-web addresses. Subfolders are sent as `"Name (folder)"` when naming a folder.
-- **Calling.** `aiCall()` shows a waiting sheet with Cancel. Cancel, Esc, closing the sheet or a 45-second timeout
-  aborts the request. Errors become a toast: busy (429), too much (400/413), no answer (other statuses) or unreachable.
+- **Calling.** `aiFetch()` makes one request and turns failures into readable messages: busy (429), too much
+  (400/413), no answer (other statuses) or unreachable. `aiWaiting()` is the waiting sheet around it: Cancel, Esc,
+  closing the sheet or a 45-second timeout per request aborts. `aiCall()` is the two together for single requests.
 - **Checking.** The Worker validates replies, and the page checks again against the current tree: bookmark numbers
-  must point at items still in the folder, each used once. Tidy merges folders whose names match and moves into an
-  existing subfolder when one has the same name.
-- **Applying.** Tidy and Clean up titles open `aiReview()`, a checklist where every suggestion starts ticked. Suggest a
-  name offers up to three buttons. Whatever you accept is applied through `mutate()`, so it's one undo step and it
-  respects A to Z order.
+  must point at items still in the folder, each used once.
+- **Name chips.** Renaming a folder that has something in it (in a list row or the folder title) shows a **Suggest
+  names** chip under the field, when Assist is on. Tapping it calls `askChips()`, which fetches without a sheet and
+  swaps in up to three name chips. Tapping a name puts it in the field and commits the edit. Chips keep the field
+  focused (pointerdown is cancelled), work with Tab and Enter, and the request is aborted if the edit ends first.
+  Nothing is sent just because a name field opened. "Suggest a name" in a menu starts the same inline edit and asks
+  straight away, or falls back to a picker dialog when the folder isn't on screen.
+- **Tidy review.** `aiTidy()` asks in batches of 150 (up to 750 bookmarks), passing the existing subfolders and the
+  names suggested so far as `existing`, so later batches reuse them. Same-named folders merge, and a name matching an
+  existing subfolder means "move into it". The result is a plan, `S.tidy = { folder, groups: [{ key, name, into }],
+  to: Map(id → group key, '' to stay), off: Set }`, shown as view `tidy`. `buildRows()` turns it into a header row per
+  group plus one row per bookmark, so the review uses the same virtualized list, selection and keyboard handling as
+  everything else. `tidyGroups()` also reconciles the plan with the library on every render: bookmarks that left the
+  folder drop out, new ones stay, empty groups go. That's why the plan can survive leaving the view, undo and edits
+  elsewhere. Renaming a group to another group's name merges them. Drag and drop onto a header or row assigns to that
+  group (`tidyDropAt`). In this view **K**/**D** set Move/Stay and **M** opens Send to. Editing keys are ignored.
+  **Apply** runs one `mutate()` that creates or reuses folders and moves the bookmarks. **Discard** drops the plan.
+  Deleting the folder, or opening another file, discards it too.
+- **Clean up titles** opens `aiReview()`, a checklist where every suggestion starts ticked. Everything accepted goes
+  through `mutate()`, so each action is one undo step and respects A to Z order.
 
 ## Exporting
 

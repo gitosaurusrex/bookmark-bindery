@@ -350,6 +350,40 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 @keyframes fade{from{opacity:0}}
 
 /* ---------- bindery assist ---------- */
+.vrow[data-view="tidy"] .ficon{color:var(--violet)}
+.grp.tgrp{align-items:center;padding:0 4px 0 8px;font-weight:400;border-radius:0}
+.grp.tgrp .gl{display:flex;align-items:center;gap:8px;padding:0;min-width:0}
+.grp.tgrp .n{padding:0}
+.grp.tgrp .ico{width:24px;height:24px}
+.grp.drop-into{background:var(--cloth-soft);box-shadow:inset 0 0 0 1.5px var(--cloth);border-radius:9px}
+.grp.toff .tg-name,.grp.toff .ico{opacity:.5}
+.tcheck{width:18px;height:18px;flex:none;display:grid;place-items:center;padding:0;border-radius:5px;border:1.5px solid var(--rule-2);background:var(--sheet);color:var(--on-cloth)}
+.tcheck.all,.tcheck.some{background:var(--cloth);border-color:var(--cloth)}
+.tcheck svg{width:12px;height:12px;stroke-width:2.2}
+.tg-name{min-width:0;border:0;background:transparent;padding:3px 6px;margin-left:-6px;border-radius:6px;font:600 14px/1.3 var(--f-ui);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text}
+button.tg-name:hover{background:var(--hover)}
+.tstay .tg-name{color:var(--ink-2);cursor:default}
+.tg-in{font:600 14px/1.3 var(--f-ui);height:26px;max-width:320px;margin-left:0}
+.tbadge{flex:none;font:500 11px/1 var(--f-ui);padding:4px 7px;border-radius:10px;background:var(--cloth-soft);color:var(--cloth-ink)}
+.tbadge.ex{background:var(--manila-fill);color:var(--manila)}
+.tidy-row .tsend{flex:none;color:var(--ink-3)}
+.row.stays .main,.row.stays .ico{opacity:.5}
+.stay-note{flex:none;font-size:12.5px;color:var(--ink-3);padding:0 10px}
+.keep-seg button.on[data-a="tmove"],.keep-seg button.on[data-a="tstay"]{background:var(--sheet);color:var(--ink);box-shadow:0 0 0 1px var(--rule-2)}
+.selbar .fill-primary{background:var(--tray-ink);color:var(--tray)}
+.selbar .fill-primary:hover{background:var(--tray-ink);filter:brightness(.92)}
+.selbar button:disabled{opacity:.45;cursor:default}
+.main.editing{position:relative}
+.name-chips{position:absolute;left:-6px;top:calc(100% + 15px);display:flex;flex-wrap:wrap;gap:6px;z-index:4;max-width:calc(100vw - 80px)}
+.name-chips.head{position:static;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:15px;border:1px solid var(--rule-2);background:var(--sheet);color:var(--ink);font:500 13px var(--f-ui);white-space:nowrap;box-shadow:0 2px 8px rgba(20,28,25,.1)}
+.chip:hover,.chip:focus-visible{border-color:var(--cloth);background:var(--cloth-soft)}
+.chip svg{width:14px;height:14px;color:var(--violet)}
+.chip.ask{color:var(--violet)}
+.chip.busy{color:var(--ink-3);cursor:default;animation:chipPulse 1.2s ease-in-out infinite}
+.chip.quiet{color:var(--ink-3);cursor:default;animation:none}
+.chip.quiet:hover{border-color:var(--rule-2);background:var(--sheet)}
+@keyframes chipPulse{50%{opacity:.55}}
 .ai-btn.on{color:var(--violet)}
 .mi.ai svg{color:var(--violet)}
 .mnote{padding:8px 10px;max-width:260px;font-size:12.5px;line-height:1.4;color:var(--ink-3)}
@@ -542,6 +576,7 @@ const I = {
   reveal: sv(`<path d="${FOLDER_D}"/><circle cx="8" cy="8.75" r="1.6"/>`),
   filter: sv('<path d="M2.25 3.25h11.5l-4.5 5.5v4.25l-2.5 1.25V8.75z"/>'),
   az: sv('<path d="M2 12.5 4.75 4l2.75 8.5M3 9.75h3.5"/><path d="M9.5 4h4.25L9.5 12.5h4.5"/>'),
+  dash: sv('<path d="M4 8h8"/>'),
   sparkles: sv('<path d="M7 2.5 8.15 6.35 12 7.5 8.15 8.65 7 12.5 5.85 8.65 2 7.5 5.85 6.35z"/><path d="M12.25 9.75v3.5M10.5 11.5H14"/>'),
   tidy: sv('<path d="M1.75 6.4c0-.55.45-1 1-1h2.6l1.25 1.25h4.65c.55 0 1 .45 1 1v4.6c0 .55-.45 1-1 1h-8.5c-.55 0-1-.45-1-1z"/><path d="M4.25 3.5c0-.55.45-1 1-1h2.1l1.15 1.15h4.25c.55 0 1 .45 1 1v4.6"/>'),
   tag: sv('<path d="M2.25 3.25c0-.55.45-1 1-1h4.1c.27 0 .52.1.71.29l5.4 5.4a1 1 0 0 1 0 1.42l-4.1 4.1a1 1 0 0 1-1.42 0l-5.4-5.4a1 1 0 0 1-.29-.71z"/><circle cx="5.5" cy="5.5" r="1"/>'),
@@ -561,7 +596,7 @@ const S = {
   drag: null, drop: null, recent: [],
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
-  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null,
+  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null,
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
 let undoStack = [], redoStack = [];
@@ -787,6 +822,11 @@ function buildRows() {
     const groups = [...dupeMaps[S.dupeMode].entries()].sort((a, b) => idx.get(a[1][0]).ord - idx.get(b[1][0]).ord);
     for (const [k, a] of groups) { rows.push({ group: true, id: 'g:' + k, key: k, ids: a }); for (const id of a) rows.push({ id, gkey: k }); }
   } else if (v.kind === 'empty') for (const id of emptyFolders()) rows.push({ id });
+  else if (v.kind === 'tidy' && S.tidy) for (const { g, ids } of tidyGroups()) {
+    const k = g ? g.key : '';
+    rows.push({ group: true, id: 't:' + k, tkey: k, ids });
+    for (const id of ids) rows.push({ id, tkey: k });
+  }
   S.rows = rows; S.rowPos = new Map();
   rows.forEach((r, i) => { if (!r.group) S.rowPos.set(r.id, i); });
 }
@@ -807,6 +847,8 @@ function viewChain() { return S.view.kind === 'folder' && idx.has(S.view.id) ? [
 function afterChange(chain) {
   S.dirty = true;
   reindex();
+  if (S.tidy && !idx.has(S.tidy.folder)) { S.tidy = null; toast('The folder you were tidying is gone, so its plan was discarded.'); }
+  if (S.view.kind === 'tidy' && !S.tidy) S.view = { kind: 'folder', id: chain.find(id => idx.has(id)) || S.root.id };
   if (S.view.kind === 'folder' && !idx.has(S.view.id)) S.view = { kind: 'folder', id: chain.find(id => idx.has(id)) || S.root.id };
   if (S.view.kind === 'search' && S.prevView?.kind === 'folder' && !idx.has(S.prevView.id)) S.prevView = { kind: 'folder', id: chain.find(id => idx.has(id)) || S.root.id };
   buildRows();
@@ -911,7 +953,6 @@ function group(ids) {
   if (S.layout === 'tree') { S.open.add(nf.id); revealInTree(nf.id); }
   else { setView({ kind: 'folder', id: parent.id }); selectOnly(nf.id); renderList(); }
   startEdit(nf.id, 'list');
-  if (AI_URL && S.ai === 'on') toast(`Grouped ${plural(ids.length, 'item')} into a new folder`, { action: { label: 'Suggest a name', run: () => aiName(nf.id) } });
 }
 function sortFolder(id, mode) {
   const f = node(id);
@@ -1168,7 +1209,16 @@ async function deleteMarked() {
   doDelete(ids);
 }
 function renderMarkbar() {
-  const mb = el.markbar, n = S.view.kind === 'dupes' ? visibleMarks().length : 0;
+  const mb = el.markbar;
+  if (S.view.kind === 'tidy' && S.tidy) {
+    const s = tidyStats();
+    mb.hidden = false;
+    mb.innerHTML = `<span class="count">${s.move ? `Move ${plural(s.move, 'bookmark')} into ${plural(s.folders, 'folder')}` : 'Nothing set to move'}</span>
+      <button data-mb="tapply" class="fill-primary"${s.move ? '' : ' disabled'}>${I.check}<span>Apply</span></button>
+      <button data-mb="tdiscard" class="x" aria-label="Discard this plan" title="Discard this plan">${I.x}</button>`;
+    return;
+  }
+  const n = S.view.kind === 'dupes' ? visibleMarks().length : 0;
   if (!n) { mb.hidden = true; return; }
   mb.hidden = false;
   mb.innerHTML = `<span class="count">${plural(n, 'copy', 'copies')} marked for deletion</span>
@@ -1207,6 +1257,7 @@ function markTerms(text, terms) {
 }
 const hl = text => markTerms(text, S.view.kind === 'search' ? S.terms : []);
 function rowHTML(r, i) {
+  if (S.view.kind === 'tidy') return r.group ? tidyHeadHTML(r, i) : tidyRowHTML(r, i);
   const top = PAD + i * ROW;
   if (r.group) {
     const nDel = r.ids.filter(id => S.marks.has(id)).length, all = nDel === r.ids.length;
@@ -1236,7 +1287,7 @@ function rowHTML(r, i) {
   const seg = reviewing && !editing ? `<div class="keep-seg" role="group" aria-label="Keep or delete this copy">
       <button data-a="keep" class="${marked ? '' : 'on'}" aria-pressed="${!marked}" title="Keep (K)">Keep</button><button data-a="del" class="${marked ? 'on' : ''}" aria-pressed="${marked}" title="Mark for deletion (D)">Delete</button></div>` : '';
   let main;
-  if (editing) main = `<div class="main editing">${editFields(n)}</div>`;
+  if (editing) main = `<div class="main editing">${editFields(n)}${chipsHTML(n)}</div>`;
   else {
     let sub;
     if (isF) sub = rc.links || rc.folders ? [rc.links && plural(rc.links, 'bookmark'), rc.folders && plural(rc.folders, 'folder')].filter(Boolean).join(' · ') : 'Empty';
@@ -1270,7 +1321,7 @@ function renderList() {
   el.rows.insertAdjacentHTML('beforeend', html);
   if (keep && S.rowPos.has(S.editing.id)) keep.style.top = (PAD + S.rowPos.get(S.editing.id) * ROW) + 'px';
   L.classList.toggle('selecting', S.sel.size > 0);
-  if (S.drop?.zone === 'into' && S.drop.src === 'list') el.rows.querySelector(`.row[data-id="${S.drop.folder}"]`)?.classList.add('drop-into');
+  if (S.drop?.zone === 'into' && S.drop.src === 'list') (S.drop.tidyKey != null ? el.rows.querySelector(`.grp[data-tk="${CSS.escape(S.drop.tidyKey)}"]`) : el.rows.querySelector(`.row[data-id="${S.drop.folder}"]`))?.classList.add('drop-into');
   // empty states
   let msg = '';
   const blank = isBlank();
@@ -1280,6 +1331,7 @@ function renderList() {
     if (S.view.kind === 'folder') msg = `<div><h3>This folder is empty</h3><p>Drag bookmarks onto it, or cut them elsewhere and paste here with ${MOD}+V.</p></div>`;
     else if (S.view.kind === 'search') msg = `<div><h3>Nothing matches “${esc(S.query)}”</h3><p>Search looks at titles and addresses across every folder.</p></div>`;
     else if (S.view.kind === 'dupes') msg = `<div><h3>No duplicates by ${DUPE_MODES[S.dupeMode].tab.toLowerCase()}</h3><p>${S.dupeMode === 'url' ? 'Every address in this library is saved exactly once.' : S.dupeMode === 'name' ? 'Every bookmark has its own name.' : 'No bookmark is saved twice with the same name and address.'} Try matching by ${S.dupeMode === 'name' ? 'address' : 'name'} instead.</p></div>`;
+    else if (S.view.kind === 'tidy') msg = `<div><h3>Nothing left to tidy</h3><p>The bookmarks in this plan have moved or been deleted. Discard the plan to go back.</p></div>`;
     else if (S.view.kind === 'empty') msg = `<div><h3>No empty folders</h3><p>Every folder holds at least one bookmark.</p></div>`;
     else msg = `<div><h3>No bookmarks yet</h3><p>Import a bookmarks file to get started.</p></div>`;
   }
@@ -1364,7 +1416,8 @@ function setAllExpanded(open) {
 function renderViews() {
   const v = S.view.kind;
   const item = (k, icon, label, n) => `<button class="vrow${v === k ? ' on' : ''}" data-view="${k}"><span class="ficon plain" style="color:inherit">${icon}</span><span class="tname">${label}</span><span class="tcount">${n ? fmt(n) : ''}</span></button>`;
-  el.views.innerHTML = item('all', I.list, 'All bookmarks', stats.links) + item('dupes', I.dupes, 'Duplicates', stats.dupes) + item('empty', I.emptyf, 'Empty folders', stats.empty);
+  el.views.innerHTML = item('all', I.list, 'All bookmarks', stats.links) + item('dupes', I.dupes, 'Duplicates', stats.dupes) + item('empty', I.emptyf, 'Empty folders', stats.empty)
+    + (S.tidy ? item('tidy', I.tidy, 'Tidy plan', tidyStats().move) : '');
 }
 function renderHead() {
   if (S.editing?.where === 'head' && S.editing.el?.isConnected) return;
@@ -1381,7 +1434,7 @@ function renderHead() {
     const n = node(v.id), r = idx.get(v.id), anc = ancestors(v.id);
     crumbs = anc.map(a => `<button class="crumb" data-go="${a.id}" data-dropid="${a.id}">${esc(folderTitle(a))}</button>${I.chev}`).join('');
     const editing = S.editing?.where === 'head' && S.editing.id === n.id;
-    title = editing ? `<input class="ptitle-in in-t" value="${esc(n.title)}" aria-label="Folder name" spellcheck="false">`
+    title = editing ? `<input class="ptitle-in in-t" value="${esc(n.title)}" aria-label="Folder name" spellcheck="false">${chipsHTML(n, true)}`
       : `<h1 class="ptitle"${n === S.root ? '' : ` data-rename="${n.id}" title="Double-click to rename"`}>${esc(folderTitle(n))}</h1>`;
     const dl = n.children.filter(c => c.type === 'link').length, df = n.children.length - dl;
     meta = n.children.length ? [dl && plural(dl, 'bookmark'), df && plural(df, 'folder')].filter(Boolean).join(' · ') + (r.links > dl ? ` <span class="dim">· ${fmt(r.links)} bookmarks including subfolders</span>` : '') : 'Empty folder';
@@ -1416,6 +1469,14 @@ function renderHead() {
     acts = `<div class="seg" role="tablist" aria-label="Match duplicates by">${Object.entries(DUPE_MODES).map(([k, d]) =>
       `<button role="tab" data-mode="${k}" class="${k === S.dupeMode ? 'on' : ''}" aria-selected="${k === S.dupeMode}" title="${esc(d.rule)}">${d.tab}<span class="sc">${stats.dupeBy[k].extra || ''}</span></button>`).join('')}</div>`
       + (s.extra ? `<button class="btn" data-h="marks" aria-haspopup="menu">${I.check}Mark extras</button>` : '');
+  } else if (v.kind === 'tidy' && S.tidy) {
+    const s = tidyStats();
+    crumbs = `<span>Bindery Assist</span>`;
+    title = `<h1 class="ptitle">Tidy “${esc(folderTitle(node(S.tidy.folder)))}”</h1>`;
+    meta = [s.made && plural(s.made, 'new folder'), s.existing && `${fmt(s.existing)} existing`].filter(Boolean).join(' · ')
+      + `${s.folders ? ' · ' : ''}<b>${fmt(s.move)}</b> of ${plural(s.total, 'bookmark')} move · ${fmt(s.stay)} stay`
+      + '<div class="dim">Nothing changes until you apply. Click a folder name to rename it, and drag bookmarks between folders.</div>';
+    acts = `<button class="btn" data-h="tdiscard">Discard</button><button class="btn primary" data-h="tapply"${s.move ? '' : ' disabled'}>${I.check}Apply</button>`;
   } else if (v.kind === 'empty') {
     crumbs = '<span>Inspect</span>'; title = '<h1 class="ptitle">Empty folders</h1>';
     meta = stats.empty ? `${plural(stats.empty, 'folder')} with no bookmarks inside, including folders that only hold other empty folders` : 'No empty folders';
@@ -1455,6 +1516,14 @@ function renderSelbar() {
   el.list.classList.toggle('selecting', n > 0);
   if (!n) { el.selbar.hidden = true; return; }
   el.selbar.hidden = false;
+  if (S.view.kind === 'tidy') {
+    el.selbar.innerHTML = `<span class="count">${fmt(n)} selected</span>
+      <button data-sa="tmove">${I.check}<span class="lbl">Move</span><kbd>K</kbd></button>
+      <button data-sa="tstay">${I.x}<span class="lbl">Stay</span><kbd>D</kbd></button>
+      <button data-sa="tsend">${I.move}<span>Send to…</span><kbd>M</kbd></button>
+      <button data-sa="clear" class="x" aria-label="Clear selection" title="Clear selection (Esc)">${I.x}</button>`;
+    return;
+  }
   el.selbar.innerHTML = `<span class="count">${fmt(n)} selected</span>
     <button data-sa="move">${I.move}<span>Move to…</span><kbd>M</kbd></button>
     <button data-sa="group">${I.group}<span class="lbl">Group</span><kbd>G</kbd></button>
@@ -1499,20 +1568,27 @@ function startEdit(id, where) {
     host = el.phead.querySelector('.ttl');
   }
   if (!host) { S.editing = null; return; }
+  attachEditor(host);
+}
+function attachEditor(host) {
   S.editing.el = host;
   host.addEventListener('keydown', onEditKey);
   host.addEventListener('focusout', onEditBlur);
+  host.addEventListener('pointerdown', e => { if (e.target.closest('.chip')) e.preventDefault(); });
+  host.addEventListener('click', onChipClick);
   const inp = host.querySelector('.in-t'); inp.focus(); inp.select();
 }
 function onEditKey(e) {
   e.stopPropagation();
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('.chip')) { e.preventDefault(); e.target.closest('.chip').click(); return; }
   if (e.key === 'Enter') { e.preventDefault(); const w = S.editing?.where; commitEdit(); if (w === 'list') el.list.focus({ preventScroll: true }); }
   else if (e.key === 'Escape') { e.preventDefault(); const w = S.editing?.where; cancelEdit(); if (w === 'list') el.list.focus({ preventScroll: true }); }
 }
 function onEditBlur(e) { if (S.editing && S.editing.el && !S.editing.el.contains(e.relatedTarget)) commitEdit(); }
 function commitEdit() {
   const ed = S.editing; if (!ed) return;
-  S.editing = null;
+  S.editing = null; ed.chipCtrl?.abort();
+  if (ed.tidy != null) { tidyNamed(ed.tidy, ed.el?.querySelector('.in-t')?.value); return; }
   const n = node(ed.id), h = ed.el;
   if (!n || !h) { rerenderAfterEdit(ed.where); return; }
   let t = (h.querySelector('.in-t')?.value ?? n.title).trim();
@@ -1524,11 +1600,11 @@ function commitEdit() {
     if (S.view.kind === 'dupes' && !S.rowPos.has(n.id)) toast(`“${nameOf(n)}” no longer matches another bookmark, so it left this list.`, { undo: true });
   } else rerenderAfterEdit(ed.where);
 }
-function cancelEdit() { const ed = S.editing; if (!ed) return; S.editing = null; rerenderAfterEdit(ed.where); }
+function cancelEdit() { const ed = S.editing; if (!ed) return; S.editing = null; ed.chipCtrl?.abort(); rerenderAfterEdit(ed.where); }
 function rerenderAfterEdit(where) { if (where === 'list') renderList(); else if (where === 'tree') renderTree(); else renderHead(); }
 
 /* ---------- menus ---------- */
-function openMenu(x, y, items) {
+function openMenu(x, y, items, { above = false } = {}) {
   const m = el.menu;
   m.innerHTML = items.map((it, i) => it === 'sep' ? '<div class="msep"></div>'
     : it.heading ? `<div class="mlabel">${esc(it.heading)}</div>`
@@ -1539,7 +1615,7 @@ function openMenu(x, y, items) {
   m.hidden = false;
   const r = m.getBoundingClientRect();
   m.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
-  m.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+  m.style.top = Math.max(8, Math.min(above ? y - r.height : y, innerHeight - r.height - 8)) + 'px';
   m._items = items;
   m.querySelector('.mi')?.focus({ preventScroll: true });
 }
@@ -1559,6 +1635,7 @@ el.menu.addEventListener('keydown', e => {
 document.addEventListener('pointerdown', e => { if (!el.menu.hidden && !el.menu.contains(e.target)) closeMenu(); }, true);
 
 function rowMenu(id, x, y) {
+  if (S.view.kind === 'tidy') { tidyRowMenu(id, x, y); return; }
   if (!S.sel.has(id)) { selectOnly(id); markSel(); renderSelbar(); }
   const ids = selIds(), n = node(id), many = ids.length > 1;
   const items = [];
@@ -1746,6 +1823,9 @@ function openKeys() {
     <div class="h">Reviewing duplicates</div>
     <dt>${k('K')}</dt><dd>Keep the selected copies</dd>
     <dt>${k('D')}</dt><dd>Mark the selected copies for deletion. Nothing is deleted until you choose Review and delete.</dd>
+    <div class="h">Reviewing a tidy plan</div>
+    <dt>${k('K')} ${k('D')}</dt><dd>Move the selected bookmarks with the plan, or leave them where they are</dd>
+    <dt>${k('M')}</dt><dd>Send the selected bookmarks to a different suggested folder</dd>
     <div class="h">Selecting</div>
     <dt>${k(MOD + '+A')}</dt><dd>Select everything in view</dd>
     <dt>${k('Space')}</dt><dd>Add or remove the item under the cursor</dd>
@@ -1779,8 +1859,8 @@ function onboardHTML(on) {
     <h2 id="obTitle">${on ? 'Bindery Assist' : 'Meet Bindery Assist'}</h2>
     <p class="ob-sub">Optional AI help for the slow parts of tidying up.</p>
     <ul class="ob-list">
-      ${feat(0, 'tidy', '--cloth', 'Tidy into folders', 'Turns a cluttered folder into a few clearly named ones. You see the plan, and nothing moves until you say so.')}
-      ${feat(1, 'tag', '--manila', 'Name folders for you', 'Suggests names that fit what’s inside, for that “New folder” you just made.')}
+      ${feat(0, 'tidy', '--cloth', 'Tidy into folders', 'Turns a cluttered folder into a few clearly named ones. You review every bookmark, and nothing moves until you apply.')}
+      ${feat(1, 'tag', '--manila', 'Name folders for you', 'Tap a suggestion under the name field to name a folder by what’s inside it.')}
       ${feat(2, 'retitle', '--leaf', 'Clean up titles', 'Trims site names, “(3)” counts and SEO clutter from bookmark names. Pick which to keep.')}
       ${feat(3, 'shield', '--violet', 'You stay in charge', 'Nothing is sent until you choose an action, and only the bookmarks it’s for. Every change can be undone.')}
     </ul>
@@ -1831,28 +1911,42 @@ function assistMenu(x, y) {
   items.push('sep', { label: 'About Bindery Assist', icon: 'sparkles', run: aiOnboarding }, { label: 'Turn off Bindery Assist', icon: 'x', run: aiOff });
   openMenu(x, y, items);
 }
-/* Shows a waiting sheet while the helper thinks. Cancel, Esc or a timeout stops the request. Returns the reply, or
-   null after saying what went wrong. */
-async function aiCall(task, payload, heading, detail) {
+/* Calls the helper. Throws AIError with a message for people, or the abort error when cancelled. */
+async function aiFetch(task, payload, signal) {
+  let res;
+  try {
+    res = await fetch(`${AI_URL}/v1/${task}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' });
+  } catch (e) {
+    if (signal?.aborted) throw e;
+    throw new AIError('Couldn’t reach Bindery Assist. Check your connection and try again.');
+  }
+  if (!res.ok) throw new AIError(res.status === 429 ? 'Bindery Assist is busy. Try again in a minute.'
+    : res.status === 413 || res.status === 400 ? 'That’s more than Bindery Assist can take at once. Try fewer bookmarks.'
+    : 'Bindery Assist couldn’t come up with an answer this time. Try again.');
+  try { return await res.json(); } catch { throw new AIError('Bindery Assist couldn’t come up with an answer this time. Try again.'); }
+}
+/* A waiting sheet while the helper thinks. Cancel, Esc or a 45-second timeout per request stops it. */
+function aiWaiting(heading, detail) {
   const ctrl = new AbortController(); let timedOut = false;
-  const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, 45000);
-  openModal(`<span class="ai-orb">${I.sparkles}</span><h2>${esc(heading)}</h2><p>${esc(detail)}</p><div class="actions"><button class="btn" data-m="cancel">Cancel</button></div>`, 'aiwait');
+  openModal(`<span class="ai-orb">${I.sparkles}</span><h2>${esc(heading)}</h2><p class="ai-detail">${esc(detail)}</p><div class="actions"><button class="btn" data-m="cancel">Cancel</button></div>`, 'aiwait');
   modalDone = () => ctrl.abort();
   el.dialog.querySelector('[data-m]').focus();
-  try {
-    const res = await fetch(`${AI_URL}/v1/${task}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl.signal, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' });
-    if (!res.ok) throw new AIError(res.status === 429 ? 'Bindery Assist is busy. Try again in a minute.'
-      : res.status === 413 || res.status === 400 ? 'That’s more than Bindery Assist can take at once. Try fewer bookmarks.'
-      : 'Bindery Assist couldn’t come up with an answer this time. Try again.');
-    return await res.json();
-  } catch (e) {
-    if (ctrl.signal.aborted && !timedOut) return null;
-    toast(e instanceof AIError ? e.message : timedOut ? 'Bindery Assist took too long to answer. Try again, or with fewer bookmarks.' : 'Couldn’t reach Bindery Assist. Check your connection and try again.', { error: true });
-    return null;
-  } finally {
-    clearTimeout(timer);
-    if (!el.modal.hidden && el.dialog.classList.contains('aiwait')) { modalDone = null; closeModal(); }
-  }
+  return {
+    update: text => { const p = el.dialog.querySelector('.ai-detail'); if (p) p.textContent = text; },
+    async fetch(task, payload) {
+      const t = setTimeout(() => { timedOut = true; ctrl.abort(); }, 45000);
+      try { return await aiFetch(task, payload, ctrl.signal); }
+      catch (e) { throw timedOut ? new AIError('Bindery Assist took too long to answer. Try again, or with fewer bookmarks.') : e; }
+      finally { clearTimeout(t); }
+    },
+    cancelled: () => ctrl.signal.aborted && !timedOut,
+    fail(e) { if (ctrl.signal.aborted && !timedOut) return; toast(e instanceof AIError ? e.message : 'Bindery Assist couldn’t come up with an answer this time. Try again.', { error: true }); },
+    close() { if (!el.modal.hidden && el.dialog.classList.contains('aiwait')) { modalDone = null; closeModal(); } },
+  };
+}
+async function aiCall(task, payload, heading, detail) {
+  const w = aiWaiting(heading, detail);
+  try { return await w.fetch(task, payload); } catch (e) { w.fail(e); return null; } finally { w.close(); }
 }
 /* A checklist dialog for reviewing suggestions. Resolves with the ticked entries, or null. */
 function aiReview({ title, intro, rows, okLabel }) {
@@ -1869,62 +1963,61 @@ function aiReview({ title, intro, rows, okLabel }) {
   });
 }
 
-async function aiTidy(id) {
-  const f = node(id); if (!f) return;
-  const links = f.children.filter(c => c.type === 'link');
-  if (links.length < 4) { toast(`Tidying needs at least 4 bookmarks directly in “${folderTitle(f)}”.`); return; }
-  const sent = links.slice(0, AI_MAX.tidy), subs = f.children.filter(c => c.type === 'folder');
-  const data = await aiCall('tidy', { folder: folderTitle(f), existing: subs.map(folderTitle), items: sent.map(aiItem) },
-    `Finding folders for ${plural(sent.length, 'bookmark')}`,
-    `Sending their titles and addresses to Bindery Assist.${links.length > sent.length ? ` That’s the first ${fmt(sent.length)} of ${fmt(links.length)}.` : ''}`);
-  if (!data || !node(id)) return;
-  // Check the reply against the folder as it is: real bookmarks, each once, same-named folders merged.
-  const used = new Set(), plan = new Map();
-  for (const g of Array.isArray(data.folders) ? data.folders : []) {
-    const name = String(g?.name ?? '').trim().slice(0, 60); if (!name) continue;
-    const key = normName(name), into = subs.find(s => idx.has(s.id) && normName(folderTitle(s)) === key);
-    const p = plan.get(key) || { name: into ? folderTitle(into) : name, into: into?.id || null, ids: [] };
-    for (const i of Array.isArray(g.items) ? g.items : []) if (Number.isInteger(i) && sent[i] && !used.has(i) && parentOf(sent[i].id) === f) { used.add(i); p.ids.push(sent[i].id); }
-    if (p.ids.length) plan.set(key, p);
-  }
-  if (!plan.size) { toast('Bindery Assist didn’t find a useful way to group these. Nothing changed.'); return; }
-  const moving = [...plan.values()].reduce((n, p) => n + p.ids.length, 0);
-  const picked = await aiReview({
-    title: `Tidy “${folderTitle(f)}”`,
-    intro: `Bindery Assist suggests ${plural(plan.size, 'folder')} for ${fmt(moving)} of the ${plural(links.length, 'bookmark')} here. Untick any you don’t want. Everything else stays where it is.`,
-    rows: [...plan.values()].map(p => ({ ...p, html: `<span class="ico fold">${I.folder}</span><span class="nm"><b>${esc(p.name)}</b><small>${esc(p.ids.slice(0, 4).map(x => nameOf(node(x))).join(', '))}${p.ids.length > 4 ? ', …' : ''}</small></span><span class="tag">${p.into ? 'Existing · ' : ''}${fmt(p.ids.length)}</span>` })),
-    okLabel: ps => { const n = ps.reduce((s, p) => s + p.ids.length, 0); return n ? `Move ${plural(n, 'bookmark')}` : 'Nothing to move'; },
-  });
-  if (!picked?.length || !node(id)) return;
-  let moved = 0;
-  const ok = mutate(`Tidying of “${folderTitle(f)}”`, () => {
-    let at = f.children.findIndex(c => c.type === 'link'); if (at < 0) at = f.children.length;
-    for (const p of picked) {
-      let dest = p.into && f.children.find(c => c.id === p.into);
-      if (!dest) { dest = { id: nid(), type: 'folder', title: p.name, attrs: { ADD_DATE: nowS(), LAST_MODIFIED: nowS() }, children: [] }; f.children.splice(at++, 0, dest); }
-      for (const cid of p.ids) {
-        const i = f.children.findIndex(c => c.id === cid); if (i < 0) continue;
-        const [n] = f.children.splice(i, 1); if (i < at) at--;
-        dest.children.push(n); moved++;
-      }
-    }
-    if (!moved) return false;
-  });
-  if (!ok) return;
-  S.expanded.add(id);
-  if (S.view.kind === 'tree') { S.open.add(id); buildRows(); }
-  renderAll();
-  toast(`Moved ${plural(moved, 'bookmark')} into ${plural(picked.length, 'folder')}`, { undo: true });
+/* ---------- folder name suggestions ----------
+   Chips under the name field while a folder with something in it is renamed. Asking is always a tap on
+   "Suggest names", so nothing is sent just because a name field opened. */
+const chipsOn = n => !!AI_URL && S.ai === 'on' && n?.type === 'folder' && n !== S.root && n.children.length > 0;
+const ASK_CHIP = `<button type="button" class="chip ask" data-chip="ask">${I.sparkles}Suggest names</button>`;
+function chipsHTML(n, head = false) { return chipsOn(n) ? `<div class="name-chips${head ? ' head' : ''}" role="group" aria-label="Name suggestions">${ASK_CHIP}</div>` : ''; }
+function cleanNames(data, current) {
+  return [...new Set((Array.isArray(data?.names) ? data.names : []).map(n => String(n ?? '').trim().slice(0, 60)))].filter(n => n && n !== current).slice(0, 3);
 }
-
-async function aiName(id) {
+async function askChips() {
+  const ed = S.editing, box = ed?.el?.querySelector('.name-chips'), n = ed && node(ed.id);
+  if (!box || !n || ed.chipCtrl) return;
+  if (box.contains(document.activeElement)) ed.el.querySelector('.in-t').focus();
+  const ctrl = ed.chipCtrl = new AbortController();
+  box.innerHTML = `<span class="chip busy">${I.sparkles}Thinking…</span>`;
+  try {
+    const data = await aiFetch('name', { current: n.title, items: n.children.slice(0, AI_MAX.name).map(aiItem) }, ctrl.signal);
+    if (S.editing !== ed) return;
+    ed.chipNames = cleanNames(data, n.title);
+    box.innerHTML = ed.chipNames.length ? ed.chipNames.map((x, i) => `<button type="button" class="chip" data-chip="${i}" title="Use this name">${esc(x)}</button>`).join('')
+      : '<span class="chip quiet">No better name this time</span>';
+  } catch (e) {
+    if (ctrl.signal.aborted || S.editing !== ed) return;
+    box.innerHTML = ASK_CHIP;
+    toast(e instanceof AIError ? e.message : 'Bindery Assist couldn’t come up with an answer this time. Try again.', { error: true });
+  } finally { if (S.editing === ed) ed.chipCtrl = null; }
+}
+function onChipClick(e) {
+  const b = e.target.closest('[data-chip]'); if (!b || !S.editing) return;
+  e.stopPropagation();
+  if (b.dataset.chip === 'ask') { askChips(); return; }
+  const name = S.editing.chipNames?.[+b.dataset.chip]; if (!name) return;
+  const w = S.editing.where;
+  S.editing.el.querySelector('.in-t').value = name;
+  commitEdit();
+  if (w === 'list') el.list.focus({ preventScroll: true });
+}
+/* "Suggest a name" from a menu: rename in place with the suggestions loading, or the picker dialog when the folder
+   isn't on screen. */
+function aiName(id) {
+  const n = node(id); if (!n || n === S.root) return;
+  if (S.rowPos.has(id) && S.view.kind !== 'tidy') { selectOnly(id); markSel(); renderSelbar(); startEdit(id, 'list'); }
+  else if (S.view.kind === 'folder' && S.view.id === id) startEdit(id, 'head');
+  if (S.editing?.id === id && S.editing.el?.querySelector('.name-chips')) { askChips(); return; }
+  if (S.editing?.id === id) cancelEdit();
+  aiNameDialog(id);
+}
+async function aiNameDialog(id) {
   const f = node(id); if (!f || f === S.root) return;
   if (!f.children.length) { toast(`“${folderTitle(f)}” is empty. Add some bookmarks first, then ask for a name.`); return; }
   const sent = f.children.slice(0, AI_MAX.name);
   const data = await aiCall('name', { current: f.title, items: sent.map(aiItem) }, `Naming “${shortName(folderTitle(f), 40)}”`,
     `Sending the titles and addresses of the ${plural(sent.length, 'item')} inside it to Bindery Assist.`);
   if (!data || !node(id)) return;
-  const names = [...new Set((Array.isArray(data.names) ? data.names : []).map(n => String(n ?? '').trim().slice(0, 60)))].filter(n => n && n !== f.title).slice(0, 3);
+  const names = cleanNames(data, f.title);
   if (!names.length) { toast('Bindery Assist didn’t have a better name this time.'); return; }
   const pick = await new Promise(res => {
     openModal(`<h2>Name “${esc(folderTitle(f))}”</h2><p>Suggestions based on what’s inside. Pick one, or keep the name it has.</p>
@@ -1942,6 +2035,237 @@ async function aiName(id) {
   if (typeof pick !== 'string' || !node(id)) return;
   renameNode(id, pick);
   toast(`Renamed to “${pick}”`, { undo: true });
+}
+
+/* ---------- tidy review ----------
+   Tidy asks for folders, then opens a review in the main pane, laid out like duplicate review: a header per suggested
+   folder and a row per bookmark. Nothing changes until Apply, which moves everything in one undo step. The plan is
+   S.tidy = { folder, groups: [{ key, name, into }], to: Map(bookmark id → group key, '' to stay), off: Set, seq }. */
+const TIDY_MAX = 750;
+async function aiTidy(id) {
+  const f = node(id); if (!f) return;
+  if (S.tidy) {
+    if (S.tidy.folder === id) { clearSearchBox(); setView({ kind: 'tidy' }); toast('Here’s your plan for this folder. Discard it to ask for a new one.'); return; }
+    const ok = await confirmDialog({ title: 'Start a new tidy plan?', body: `<p>Your plan for “${esc(folderTitle(node(S.tidy.folder)))}” hasn’t been applied. Starting a new one discards it.</p>`, ok: 'Start new plan' });
+    if (!ok) return;
+    S.tidy = null; renderViews();
+  }
+  const links = f.children.filter(c => c.type === 'link');
+  if (links.length < 4) { toast(`Tidying needs at least 4 bookmarks directly in “${folderTitle(f)}”.`); return; }
+  const sent = links.slice(0, TIDY_MAX), batches = [];
+  for (let i = 0; i < sent.length; i += AI_MAX.tidy) batches.push(sent.slice(i, i + AI_MAX.tidy));
+  const subs = f.children.filter(c => c.type === 'folder'), names = subs.map(folderTitle);
+  const T = { folder: id, groups: [], to: new Map(), off: new Set(), seq: 1 }, byName = new Map();
+  const w = aiWaiting(`Finding folders for ${plural(sent.length, 'bookmark')}`,
+    `Sending their titles and addresses to Bindery Assist${batches.length > 1 ? `, ${AI_MAX.tidy} at a time` : ''}.`);
+  let answered = 0, failed = null;
+  for (const [b, batch] of batches.entries()) {
+    if (batches.length > 1) w.update(`Batch ${b + 1} of ${batches.length}. Sending titles and addresses to Bindery Assist.`);
+    let data;
+    try { data = await w.fetch('tidy', { folder: folderTitle(f), existing: names.slice(0, 40), items: batch.map(aiItem) }); }
+    catch (e) { failed = e; break; }
+    for (const g of Array.isArray(data?.folders) ? data.folders : []) {
+      const name = String(g?.name ?? '').trim().slice(0, 60); if (!name) continue;
+      const key = normName(name);
+      let grp = byName.get(key);
+      if (!grp) {
+        const into = subs.find(x => idx.has(x.id) && normName(folderTitle(x)) === key);
+        grp = { key: 'g' + T.seq++, name: into ? folderTitle(into) : name, into: into?.id || null };
+        byName.set(key, grp); T.groups.push(grp);
+        if (!into) names.push(grp.name);
+      }
+      for (const i of Array.isArray(g.items) ? g.items : []) {
+        const n = Number.isInteger(i) ? batch[i] : null;
+        if (n && !T.to.has(n.id) && parentOf(n.id) === f) T.to.set(n.id, grp.key);
+      }
+    }
+    answered += batch.length;
+  }
+  const cancelled = w.cancelled();
+  if (failed && !answered) w.fail(failed);
+  w.close();
+  if (cancelled || !answered || !node(id)) return;
+  if (![...T.to.values()].some(Boolean)) { toast('Bindery Assist didn’t find a useful way to group these. Nothing changed.'); return; }
+  S.tidy = T;
+  clearSearchBox(); setView({ kind: 'tidy' });
+  const unsent = links.length - answered;
+  if (unsent) toast(failed ? `Bindery Assist stopped partway, so ${plural(unsent, 'bookmark')} weren’t looked at. They stay where they are.`
+    : `Bindery Assist looks at up to ${fmt(TIDY_MAX)} bookmarks at a time, so ${plural(unsent, 'bookmark')} stay where they are for now.`, { ms: 8000 });
+}
+/* Groups in order, each with its bookmarks in folder order, then the bookmarks that stay. Also brings the plan in
+   line with the library: bookmarks that left the folder drop out, new ones stay, and empty groups go. */
+function tidyGroups() {
+  const T = S.tidy, f = node(T.folder), by = new Map(T.groups.map(g => [g.key, []]));
+  by.set('', []);
+  const here = new Set();
+  for (const c of f.children) if (c.type === 'link') {
+    here.add(c.id);
+    let k = T.to.get(c.id);
+    if (k == null || !by.has(k)) { k = ''; T.to.set(c.id, ''); }
+    by.get(k).push(c.id);
+  }
+  for (const id of [...T.to.keys()]) if (!here.has(id)) { T.to.delete(id); T.off.delete(id); }
+  for (const g of T.groups) if (g.into && !f.children.some(c => c.id === g.into)) g.into = null;
+  T.groups = T.groups.filter(g => by.get(g.key).length);
+  const out = T.groups.map(g => ({ g, ids: by.get(g.key) }));
+  if (by.get('').length) out.push({ g: null, ids: by.get('') });
+  return out;
+}
+function tidyStats(groups = tidyGroups()) {
+  const T = S.tidy; let move = 0, total = 0, made = 0, existing = 0;
+  for (const { g, ids } of groups) {
+    total += ids.length; if (!g) continue;
+    const m = ids.filter(id => !T.off.has(id)).length;
+    move += m; if (m) g.into ? existing++ : made++;
+  }
+  return { move, total, stay: total - move, made, existing, folders: made + existing };
+}
+function refreshTidy() {
+  buildRows();
+  S.sel = new Set([...S.sel].filter(id => S.rowPos.has(id)));
+  if (S.cursor && !S.rowPos.has(S.cursor)) S.cursor = null;
+  renderList(); renderHead(); renderViews(); renderSelbar(); renderMarkbar();
+}
+function tidySetOff(ids, off) { const T = S.tidy; for (const id of ids) if (T.to.get(id)) off ? T.off.add(id) : T.off.delete(id); refreshTidy(); }
+function tidyAssign(ids, key) {
+  const T = S.tidy;
+  for (const id of ids) if (T.to.has(id)) { T.to.set(id, key); T.off.delete(id); }
+  refreshTidy();
+}
+function tidyNewGroup(base = 'New folder') {
+  const T = S.tidy; let name = base, k = 2;
+  while (T.groups.some(g => normName(g.name) === normName(name))) name = `${base} ${k++}`;
+  const g = { key: 'g' + T.seq++, name, into: null }; T.groups.push(g);
+  return g.key;
+}
+function tidyRename(key) {
+  if (S.editing) commitEdit();
+  const i = S.rows.findIndex(r => r.group && r.tkey === key); if (i < 0) return;
+  ensureVisible(i);
+  S.editing = { id: 't:' + key, where: 'list', tidy: key };
+  el.rows.querySelector(`.grp[data-tk="${CSS.escape(key)}"]`)?.remove();
+  renderList();
+  const host = el.rows.querySelector(`.grp[data-tk="${CSS.escape(key)}"]`);
+  if (!host) { S.editing = null; return; }
+  host.dataset.editing = '1';
+  attachEditor(host);
+}
+/* A name matching an existing subfolder means "add to that folder". A name matching another suggestion merges the two. */
+function tidyNamed(key, value) {
+  const T = S.tidy, g = T?.groups.find(x => x.key === key);
+  const name = String(value ?? '').trim().slice(0, 60);
+  if (g && name && name !== g.name) {
+    const other = T.groups.find(x => x !== g && normName(x.name) === normName(name));
+    if (other) {
+      for (const [id, k] of T.to) if (k === key) T.to.set(id, other.key);
+      T.groups = T.groups.filter(x => x !== g);
+      toast(`Merged into “${other.name}”`);
+    } else {
+      const ex = node(T.folder).children.find(c => c.type === 'folder' && normName(folderTitle(c)) === normName(name));
+      g.into = ex?.id || null; g.name = ex ? folderTitle(ex) : name;
+    }
+  }
+  if (T) refreshTidy(); else renderList();
+}
+function tidyHeadHTML(r, i) {
+  const T = S.tidy, top = PAD + i * ROW;
+  if (!r.tkey) return `<div class="grp tgrp tstay" style="top:${top}px" data-tk=""><span class="ico fold">${I.emptyf}</span>
+    <span class="gl"><span class="tg-name">Staying in “${esc(folderTitle(node(T.folder)))}”</span></span><span class="n">${plural(r.ids.length, 'bookmark')}</span></div>`;
+  const g = T.groups.find(x => x.key === r.tkey), on = r.ids.filter(id => !T.off.has(id)).length, all = on === r.ids.length;
+  const editing = S.editing?.tidy === r.tkey;
+  return `<div class="grp tgrp${on ? '' : ' toff'}" style="top:${top}px" data-tk="${esc(r.tkey)}">
+    <button class="tcheck${all ? ' all' : on ? ' some' : ''}" data-a="tall" role="checkbox" aria-checked="${all ? 'true' : on ? 'mixed' : 'false'}" aria-label="Move the bookmarks in ${esc(g.name)}" title="${all ? 'Leave all of these where they are' : 'Move all of these'}">${all ? I.check : on ? I.dash : ''}</button>
+    <span class="ico fold">${I.folder}</span>
+    <span class="gl">${editing ? `<input class="in-t tg-in" value="${esc(g.name)}" aria-label="Folder name" spellcheck="false">` : `<button class="tg-name" data-a="trename" title="Rename">${esc(g.name)}</button>`}<span class="tbadge${g.into ? ' ex' : ''}">${g.into ? 'Existing folder' : 'New folder'}</span></span>
+    <span class="n">${all ? plural(r.ids.length, 'bookmark') : `${fmt(on)} of ${fmt(r.ids.length)} move`}</span>
+    <button class="icon-btn" data-a="tmenu" aria-label="Options for ${esc(g.name)}" title="Rename, move all, merge">${I.more}</button></div>`;
+}
+function tidyRowHTML(r, i) {
+  const T = S.tidy, n = node(r.id), off = T.off.has(n.id), staying = !r.tkey;
+  const cls = ['row', 'is-link', 'tidy-row'];
+  if (S.sel.has(n.id)) cls.push('sel');
+  if (S.cursor === n.id) cls.push('cur');
+  if (S.clip?.set.has(n.id)) cls.push('cut');
+  if (off || staying) cls.push('stays');
+  const sub = /^javascript:/i.test(n.url) ? '<span class="pill">Bookmarklet</span>' : esc(displayUrl(n.url));
+  return `<div class="${cls.join(' ')}" data-id="${n.id}" style="top:${PAD + i * ROW}px" draggable="true" role="option" aria-selected="${S.sel.has(n.id)}">
+    <span class="check" data-a="check">${I.check}</span>${iconHTML(n)}
+    <div class="main"><div class="t">${esc(nameOf(n))}</div><div class="u">${sub}</div></div>
+    ${staying ? '<span class="stay-note">Stays</span>' : `<div class="keep-seg" role="group" aria-label="Move or leave this bookmark"><button data-a="tmove" class="${off ? '' : 'on'}" aria-pressed="${!off}" title="Move it into this folder (K)">Move</button><button data-a="tstay" class="${off ? 'on' : ''}" aria-pressed="${off}" title="Leave it where it is (D)">Stay</button></div>`}
+    <button class="icon-btn tsend" data-a="tsend" aria-label="Send to another folder" title="Send to another folder (M)">${I.move}</button></div>`;
+}
+function tidySendMenu(ids, x, y, above = false) {
+  const T = S.tidy; ids = ids.filter(id => T.to.has(id)); if (!ids.length) return;
+  const cur = new Set(ids.map(id => T.to.get(id))), only = cur.size === 1 ? [...cur][0] : null;
+  const items = [{ heading: ids.length > 1 ? `Send ${fmt(ids.length)} bookmarks to` : 'Send to' }];
+  for (const g of T.groups) if (g.key !== only) items.push({ label: g.name, icon: 'folder', run: () => tidyAssign(ids, g.key) });
+  items.push({ label: 'New folder…', icon: 'plus', run: () => { const k = tidyNewGroup(); tidyAssign(ids, k); tidyRename(k); } });
+  if (only !== '') items.push('sep', { label: `Leave in “${shortName(folderTitle(node(T.folder)), 24)}”`, icon: 'x', run: () => tidyAssign(ids, '') });
+  openMenu(x, y, items, { above });
+}
+function tidyHeadMenu(key, x, y) {
+  const T = S.tidy, g = T.groups.find(z => z.key === key), r = S.rows.find(z => z.group && z.tkey === key); if (!g || !r) return;
+  const on = r.ids.filter(id => !T.off.has(id)).length;
+  openMenu(x, y, [
+    { label: 'Rename', icon: 'pencil', run: () => tidyRename(key) },
+    on < r.ids.length ? { label: 'Move all of these', icon: 'check', run: () => tidySetOff(r.ids, false) } : { label: 'Leave all of these where they are', icon: 'x', run: () => tidySetOff(r.ids, true) },
+    { label: 'Merge into another folder…', icon: 'move', run: () => tidySendMenu(r.ids, x, y) },
+    'sep',
+    { label: 'Remove this suggestion', icon: 'trash', danger: true, run: () => { tidyAssign(r.ids, ''); toast(`Removed “${g.name}”. Its bookmarks stay where they are.`); } },
+  ]);
+}
+function tidyRowMenu(id, x, y) {
+  if (!S.sel.has(id)) { selectOnly(id); markSel(); renderSelbar(); }
+  const ids = selIds(), n = node(id), many = ids.length > 1, T = S.tidy, assigned = ids.filter(x => T.to.get(x));
+  const items = [];
+  if (assigned.length) items.push(
+    { label: many ? `Move ${fmt(assigned.length)}` : 'Move', icon: 'check', kbd: 'K', run: () => tidySetOff(assigned, false) },
+    { label: many ? `Leave ${fmt(assigned.length)} where they are` : 'Leave it where it is', icon: 'x', kbd: 'D', run: () => tidySetOff(assigned, true) });
+  items.push({ label: 'Send to…', icon: 'move', kbd: 'M', run: () => tidySendMenu(ids, x, y) });
+  if (!many && /^https?:|^file:|^ftp:/i.test(n.url)) items.push('sep', { label: 'Open in new tab', icon: 'external', href: n.url });
+  openMenu(x, y, items);
+}
+function tidyDropAt(e) {
+  const t = e.target.closest?.('.grp.tgrp, .row'); if (!t) return null;
+  const key = t.classList.contains('grp') ? t.dataset.tk : S.rows[S.rowPos.get(t.dataset.id)]?.tkey;
+  return key == null ? null : { src: 'list', zone: 'into', tidyKey: key };
+}
+function tidyApply() {
+  if (S.editing) commitEdit();
+  const T = S.tidy; if (!T) return;
+  const plan = tidyGroups().filter(x => x.g).map(({ g, ids }) => ({ name: g.name, into: g.into, ids: ids.filter(id => !T.off.has(id)) })).filter(p => p.ids.length);
+  if (!plan.length) { toast('Nothing is set to move. Choose Move on some bookmarks first.'); return; }
+  const f = node(T.folder); let moved = 0;
+  const ok = mutate(`Tidying of “${folderTitle(f)}”`, () => {
+    let at = f.children.findIndex(c => c.type === 'link'); if (at < 0) at = f.children.length;
+    for (const p of plan) {
+      let dest = p.into && f.children.find(c => c.id === p.into);
+      if (!dest) { dest = { id: nid(), type: 'folder', title: p.name, attrs: { ADD_DATE: nowS(), LAST_MODIFIED: nowS() }, children: [] }; f.children.splice(at++, 0, dest); }
+      for (const cid of p.ids) {
+        const i = f.children.findIndex(c => c.id === cid); if (i < 0) continue;
+        const [n] = f.children.splice(i, 1); if (i < at) at--;
+        dest.children.push(n); moved++;
+      }
+    }
+    if (!moved) return false;
+  });
+  if (!ok) return;
+  S.tidy = null; S.expanded.add(T.folder); S.open.add(T.folder);
+  tidyLeave(T.folder);
+  toast(`Moved ${plural(moved, 'bookmark')} into ${plural(plan.length, 'folder')}`, { undo: true });
+}
+function tidyDiscard() {
+  const T = S.tidy; if (!T) return;
+  if (S.editing) cancelEdit();
+  S.tidy = null;
+  tidyLeave(T.folder);
+  toast('Discarded the tidy plan. Nothing was moved.');
+}
+function tidyLeave(folder) {
+  clearSearchBox();
+  if (!idx.has(folder)) folder = S.root.id;
+  if (S.layout === 'tree') { if (folder === S.root.id) setView({ kind: 'tree' }); else revealInTree(folder, { expand: true }); }
+  else setView({ kind: 'folder', id: folder });
 }
 
 async function aiTitles(ids) {
@@ -2011,7 +2335,7 @@ function showProblem(p) {
 function loadRoot(root, name, noFile) {
   if (S.editing) cancelEdit();
   S.root = root; S.fileName = name; S.noFile = noFile; S.dirty = false;
-  undoStack = []; redoStack = []; S.clip = null; S.recent = [];
+  undoStack = []; redoStack = []; S.clip = null; S.recent = []; S.tidy = null;
   reindex();
   S.expanded = new Set(root.children.filter(c => c.type === 'folder').map(c => c.id));
   const bar = root.children.find(isBar);
@@ -2133,7 +2457,8 @@ function setDrop(t) {
   const tl = $('treeLine'); if (tl) tl.hidden = true;
   if (!t) return;
   if (t.zone === 'into') {
-    if (t.src === 'list') el.rows.querySelector(`.row[data-id="${t.folder}"]`)?.classList.add('drop-into');
+    if (t.tidyKey != null) el.rows.querySelector(`.grp[data-tk="${CSS.escape(t.tidyKey)}"]`)?.classList.add('drop-into');
+    else if (t.src === 'list') el.rows.querySelector(`.row[data-id="${t.folder}"]`)?.classList.add('drop-into');
     else if (t.src === 'tree') t.el?.classList.add('drop-into');
     else if (t.src === 'crumb') t.el?.classList.add('drop-into');
   } else if (t.src === 'list') {
@@ -2164,6 +2489,7 @@ function treeListDropAt(e) {
 }
 function listDropAt(e) {
   if (S.view.kind === 'tree') return treeListDropAt(e);
+  if (S.view.kind === 'tidy') return tidyDropAt(e);
   const inFolder = S.view.kind === 'folder';
   const row = e.target.closest?.('.row');
   if (!row) {
@@ -2198,6 +2524,7 @@ function autoscroll(box, e) {
 function performDrop() {
   const t = S.drop, ids = S.drag?.ids; endDrag();
   if (!t || !ids) return;
+  if (t.tidyKey != null) { tidyAssign(ids, t.tidyKey); return; }
   moveItems(ids, t.folder, t.zone === 'into' ? null : t.before);
 }
 el.rows.addEventListener('dragstart', e => {
@@ -2259,9 +2586,19 @@ addEventListener('drop', e => {
 /* ---------- pointer events ---------- */
 el.rows.addEventListener('click', e => {
   const g = e.target.closest('.grp');
+  if (g?.classList.contains('tgrp')) {
+    if (g.dataset.editing) return;
+    const key = g.dataset.tk, a = e.target.closest('[data-a]')?.dataset.a, r = S.rows.find(x => x.group && x.tkey === key);
+    if (a === 'tall' && r) tidySetOff(r.ids, r.ids.every(id => !S.tidy.off.has(id)));
+    else if (a === 'trename') tidyRename(key);
+    else if (a === 'tmenu') { const b = e.target.closest('button').getBoundingClientRect(); tidyHeadMenu(key, b.right - 240, b.bottom + 4); }
+    return;
+  }
   if (g) { const b = e.target.closest('[data-a="gmenu"]'); if (b) { const r = b.getBoundingClientRect(); groupMenu(S.rows[+g.dataset.gi], r.right - 230, r.bottom + 4); } return; }
   const row = e.target.closest('.row'); if (!row || row.dataset.editing) return;
   const id = row.dataset.id, act = e.target.closest('[data-a]')?.dataset.a;
+  if (act === 'tmove' || act === 'tstay') { tidySetOff(S.sel.has(id) && S.sel.size > 1 ? selIds() : [id], act === 'tstay'); return; }
+  if (act === 'tsend') { const r = e.target.closest('button').getBoundingClientRect(); tidySendMenu(S.sel.has(id) && S.sel.size > 1 ? selIds() : [id], r.right - 240, r.bottom + 4); return; }
   if (act === 'keep' || act === 'del') { setMarks(S.sel.has(id) && S.sel.size > 1 ? selIds() : [id], act === 'del'); return; }
   if (act === 'edit') { selectOnly(id); markSel(); renderSelbar(); startEdit(id, 'list'); return; }
   if (act === 'open') { openFolder(id); return; }
@@ -2275,6 +2612,7 @@ el.rows.addEventListener('click', e => {
   markSel(); renderSelbar();
 });
 el.rows.addEventListener('dblclick', e => {
+  if (S.view.kind === 'tidy') { const g = e.target.closest('.grp.tgrp'); if (g?.dataset.tk && !g.dataset.editing && !e.target.closest('[data-a]')) tidyRename(g.dataset.tk); return; }
   const row = e.target.closest('.row'); if (!row || row.dataset.editing || e.target.closest('[data-a]')) return;
   const n = node(row.dataset.id); if (!n) return;
   if (n.type === 'folder') S.view.kind === 'tree' ? toggleOpen(n.id, e.altKey) : openFolder(n.id);
@@ -2282,6 +2620,7 @@ el.rows.addEventListener('dblclick', e => {
 });
 el.rows.addEventListener('contextmenu', e => {
   const g = e.target.closest('.grp');
+  if (g?.classList.contains('tgrp')) { e.preventDefault(); if (g.dataset.tk && !g.dataset.editing) tidyHeadMenu(g.dataset.tk, e.clientX, e.clientY); return; }
   if (g) { e.preventDefault(); groupMenu(S.rows[+g.dataset.gi], e.clientX, e.clientY); return; }
   const row = e.target.closest('.row'); if (!row || row.dataset.editing) return;
   e.preventDefault(); rowMenu(row.dataset.id, e.clientX, e.clientY);
@@ -2334,6 +2673,8 @@ el.phead.addEventListener('click', e => {
   else if (h === 'collapseall') setAllOpen(false);
   else if (h === 'sort') { const r = e.target.closest('button').getBoundingClientRect(); sortMenu(r.left, r.bottom + 6); }
   else if (h === 'paste') paste();
+  else if (h === 'tapply') tidyApply();
+  else if (h === 'tdiscard') tidyDiscard();
   else if (h === 'selectall') selectAll();
   else if (h === 'marks') { const r = e.target.closest('button').getBoundingClientRect(); marksMenu(r.right - 260, r.bottom + 6); }
 });
@@ -2341,7 +2682,9 @@ el.phead.addEventListener('dblclick', e => { const t = e.target.closest('[data-r
 el.selbar.addEventListener('click', e => {
   const a = e.target.closest('[data-sa]')?.dataset.sa; if (!a) return;
   const ids = selIds();
-  if (a === 'move') openMovePicker(ids);
+  if (a === 'tmove' || a === 'tstay') tidySetOff(ids, a === 'tstay');
+  else if (a === 'tsend') { const r = e.target.closest('button').getBoundingClientRect(); tidySendMenu(ids, r.left, r.top - 6, true); }
+  else if (a === 'move') openMovePicker(ids);
   else if (a === 'group') group(ids);
   else if (a === 'cut') cut(ids);
   else if (a === 'delete') requestDelete(ids);
@@ -2349,7 +2692,9 @@ el.selbar.addEventListener('click', e => {
 });
 el.markbar.addEventListener('click', e => {
   const a = e.target.closest('[data-mb]')?.dataset.mb;
-  if (a === 'delete') deleteMarked();
+  if (a === 'tapply') tidyApply();
+  else if (a === 'tdiscard') tidyDiscard();
+  else if (a === 'delete') deleteMarked();
   else if (a === 'clear') setMarks(visibleMarks(), false);
 });
 $('importBtn').addEventListener('click', () => el.fileIn.click());
@@ -2387,6 +2732,16 @@ document.addEventListener('keydown', e => {
   if (e.altKey && k === 'ArrowUp') { e.preventDefault(); goUp(); return; }
   if (mod || e.altKey) return;
   if ((k === 'Enter' || k === ' ') && e.target.closest?.('button,a')) return;
+  if (S.view.kind === 'tidy') {
+    const ids = S.sel.size ? selIds() : S.cursor ? [S.cursor] : [];
+    if (lk === 'k' || lk === 'd') { e.preventDefault(); if (ids.length) tidySetOff(ids, lk === 'd'); return; }
+    if (lk === 'm') {
+      e.preventDefault(); if (!ids.length) return;
+      const row = el.rows.querySelector(`.row[data-id="${S.cursor || ids[0]}"]`)?.getBoundingClientRect();
+      tidySendMenu(ids, row ? row.right - 280 : innerWidth / 2, row ? row.bottom + 4 : innerHeight / 2); return;
+    }
+    if (['Enter', 'F2', 'Delete', 'Backspace', 'g', 'n'].includes(lk)) return;
+  }
   switch (lk) {
     case 'ArrowDown': case 'ArrowUp': e.preventDefault(); el.list.focus({ preventScroll: true }); moveCursor(k === 'ArrowDown' ? 1 : -1, e.shiftKey); break;
     case 'Home': case 'End': e.preventDefault(); S.cursor = null; moveCursor(k === 'Home' ? 1 : -1, false); break;
