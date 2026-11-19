@@ -1,7 +1,8 @@
 # How Bookmark Bindery works
 
-This is the engineer's tour: how a file gets in, how it's checked, how edits, undo and duplicate review work, how the
-optional AI help talks to its Worker, what's stored, and how it gets back out. For what it does and how to use it, see
+This is the engineer's tour: how a file gets in, how it's checked, how edits, undo and duplicate review work, how tags,
+separators and browser-specific exports work, how the optional AI help talks to its Worker, what's stored, and how it
+gets back out. For what it does and how to use it, see
 the [README](../README.md).
 
 - [One file, no build](#one-file-no-build)
@@ -14,6 +15,9 @@ the [README](../README.md).
 - [Duplicate review](#duplicate-review)
 - [Removing query strings](#removing-query-strings)
 - [The details panel](#the-details-panel)
+- [Tags](#tags)
+- [Separators](#separators)
+- [Firefox and other browsers](#firefox-and-other-browsers)
 - [Bindery Assist](#bindery-assist)
 - [Exporting](#exporting)
 - [Saving in the browser](#saving-in-the-browser)
@@ -66,11 +70,14 @@ Checks on the raw text, before parsing:
 | Damaged structure | More `</DL>` than `<DL>`. |
 
 Then `DOMParser` builds a document. `readDL()` and `readDT()` walk it into a tree, tolerating the format's quirks:
-`<p>` wrappers, `<DD>` descriptions and lists nested in odd places. `<HR>` separators (Firefox writes them) are
-ignored, so they're dropped and never exported. Finally the parse is **audited**: the number of folders and links in
-the tree must match the number of `<H3>` and `<A>` tags in the text. If any entry fell outside the structure, the file
-is refused rather than opened with bookmarks silently missing. Separators aren't counted, so dropping them doesn't
-trip the audit.
+`<p>` wrappers, `<DD>` descriptions, lists nested in odd places, and `<HR>` separators wherever the parser puts them
+(see [Separators](#separators)). Finally the parse is **audited**: the number of folders and links in the tree must
+match the number of `<H3>` and `<A>` tags in the text. If any entry fell outside the structure, the file is refused
+rather than opened with bookmarks silently missing. Separators aren't counted as links, so they can't hide a missing
+bookmark.
+
+After opening, `detectSource()` guesses whether the file came from Firefox, and `firefoxNotice()` says once what
+Firefox-only content it has (see [Firefox and other browsers](#firefox-and-other-browsers)).
 
 If the open file has edits that haven't been exported, opening another asks first.
 
@@ -81,15 +88,18 @@ The library is a plain tree held in `S.root`:
 ```js
 { id, type: 'folder', title, attrs, children: [...], root?: true, desc? }
 { id, type: 'link',   title, url,   attrs,                       desc? }
+{ id, type: 'sep',    title: '',    attrs }
 ```
 
 `attrs` keeps **every attribute the browser wrote**, upper-cased: `ADD_DATE`, `LAST_MODIFIED`, `ICON`,
-`PERSONAL_TOOLBAR_FOLDER` and anything else, such as Firefox's `TAGS` and `SHORTCUTURL`. That's how dates, favicons and
-the bookmarks-bar flag survive a round trip. `desc` and attributes other than dates and icons are kept and exported but
-never shown or edited. Ids are session-only (`n1`, `n2`…) and are reassigned when a saved library is restored.
+`PERSONAL_TOOLBAR_FOLDER` and anything else, such as Firefox's `TAGS` (comma-separated tags), `SHORTCUTURL` (keyword)
+and `UNFILED_BOOKMARKS_FOLDER`. That's how dates, favicons, tags, keywords and the bookmarks-bar flag survive a round
+trip. `desc` is the `<DD>` description, shown as a note. `attrs` objects are shared with undo snapshots, so they're
+always replaced, never changed in place (`setAttr()`). Ids are session-only (`n1`, `n2`…) and are reassigned when a
+saved library is restored.
 
 All other app state (view, selection, cursor, clipboard, open folders, duplicate marks, settings, the folder filter,
-Assist consent and any Tidy plan) lives in one object, `S`.
+Assist consent, any Tidy plan, tag view state, and the file's source and export choice) lives in one object, `S`.
 
 ## The index
 
@@ -103,20 +113,26 @@ Assist consent and any Tidy plan) lives in one object, `S`.
     Bookmarklets (`javascript:`) are never duplicates by address.
   - **name:** the title, NFKC-normalized, trimmed, with runs of spaces collapsed, lower-cased.
   - **both:** name and address together.
-- `stats`: counts for the header, sidebar and duplicate tabs, plus the empty folders. A folder is empty if it contains
-  no bookmarks at any depth.
+- `tagIdx`: tag key (lower-cased) → `{ name, ids, spell }`. `ids` are the tagged bookmarks in document order, `spell`
+  counts each spelling, and `name` is the most used spelling.
+- `stats`: counts for the header, sidebar and duplicate tabs, plus the empty folders, tags (`tags`, `tagged`) and
+  separators (`seps`). A folder is empty if it contains no bookmarks at any depth. Separators are never counted as
+  bookmarks.
 
 ## Views and rows
 
-`S.view.kind` is one of `tree`, `folder`, `search`, `all`, `dupes`, `empty` or `tidy`. `buildRows()` turns the current
-view into a flat array of rows, which is all the list renders:
+`S.view.kind` is one of `tree`, `folder`, `search`, `all`, `dupes`, `empty`, `tags`, `tag` or `tidy`. `buildRows()`
+turns the current view into a flat array of rows, which is all the list renders:
 
 - **tree:** depth-first, descending only into folders in `S.open`, with each row's depth for indentation.
 - **folder:** the open folder's direct children.
-- **search:** every item at any depth whose title plus address contains **all** the search words, ignoring case.
+- **search:** every item at any depth whose title, address and tags contain **all** the search words, ignoring case.
+  A word starting with `#` instead has to be the start of one of the item's tags.
 - **all:** every bookmark.
 - **dupes:** a header row per group, in document order, followed by its copies.
 - **empty:** the empty folders.
+- **tags:** the look-alike groups, then every tag (see [Tags](#tags)).
+- **tag:** the bookmarks with one tag (`S.view.key`), in document order.
 - **tidy:** a header row per suggested folder, then its bookmarks, then the bookmarks that stay (see
   [Tidy review](#tidy-review)).
 
@@ -147,18 +163,19 @@ items" come for free. Snapshots copy only structure and strings, which is cheap 
 bookmarks.
 
 Operations: rename (title, and address with Tab), editing in the [details panel](#the-details-panel), new folder,
-new bookmark, move (drag and drop,
-cut and paste, or **Move to…**), group into a new folder, sort a folder once (name, newest, oldest, domain, with folders
-first), and delete. Deleting more than one item, counting everything inside folders, asks first and lists what goes.
+new bookmark, new separator, move (drag and drop, cut and paste, or **Move to…**), group into a new folder, sort a
+folder once (name, newest, oldest, domain, with folders first, section by section), every [tag](#tags) operation, and
+delete. Deleting more than one item, counting everything inside folders, asks first and lists what goes.
 
 **Keep everything A to Z** (`S.autoSort`, in the Sort menu) rewrites the tree itself, so the export is sorted too.
 `azOrder` puts the bookmarks bar first, then folders, then bookmarks, each compared by name with an `Intl.Collator`
-(case-insensitive, numbers in numeric order). While it's on, `mutate()` runs `sortAll()` after every change, inside the
-same undo step, so new, renamed, grouped and moved items land in place. `moveItems()` sorts the affected folders before
-its "did anything change?" check, so a by-hand reorder is a no-op with a toast explaining why. Turning it on is itself
-an undo step flagged `autoSortOn`. Undoing that step turns the setting off and redoing it turns it back on, so whenever
-the setting is on, the tree is sorted. A file opened while it's on is sorted as its first undo step, and the one-off
-sorts are hidden from the Sort menu.
+(case-insensitive, numbers in numeric order). `bySections()` applies it between separators, which stay put. While it's
+on, `mutate()` runs `sortAll()` after every change, inside the same undo step, so new, renamed, grouped and moved items
+land in place. `moveItems()` sorts the affected folders before its "did anything change?" check, so a by-hand reorder is
+a no-op with a toast explaining why. Turning it on is always an undo step flagged `autoSortOn`, even when nothing needs
+to move (then the file isn't marked edited). Undoing that step turns the setting off and redoing it turns it back on, so
+whenever the setting is on, the tree is sorted, and undoing never shows an older, unsorted order while it's on. A file
+opened while it's on is sorted as its first undo step, and the one-off sorts are hidden from the Sort menu.
 
 ## Duplicate review
 
@@ -182,16 +199,19 @@ The editor is one panel, `#insp`, rendered by `renderInspector()` from `S.insp`:
 
 - `null`: closed.
 - `{ mode: 'edit', for }`: shows the single selected bookmark or folder. `renderSelbar()` calls `renderInspector()`, so
-  the panel follows the selection. With several items selected it offers Move to…, Group and Delete. With nothing
+  the panel follows the selection. With several items selected (`many`) it edits their tags together, through
+`fillMany()`: tags on all of them are solid chips with ×; tags on some are dashed with a count and a **+** that adds
+them to the rest; the input adds to all. It also offers Move to…, Group and Delete. A separator shows a short
+explanation and Delete. With nothing
   selected it says so and offers New bookmark. After an edit made in the panel (`sticky`), it stays on the item even
   if the edit moved it out of the list, until something else is selected.
 - `{ mode: 'new', st }`: the New bookmark form, kept in `st` until **Add bookmark**. Then the panel switches to edit
   mode on the new bookmark.
 
 It docks as a third grid column above 1180 px (`.app.insp-open`), slides in over the list below that, and is a bottom
-sheet under 600 px. **E**, double-clicking a bookmark, the row's pencil and **Edit details…** in a menu open it.
-Inline renaming (**Enter**/**F2**) is unchanged. **+ Add** in the header (`addMenu()`) offers New bookmark (**B**) and
-New folder (**N**).
+sheet under 600 px. **E**, double-clicking a bookmark, the row's pencil and **Edit details…** in a menu open it. Inline
+renaming (**Enter**/**F2**) is unchanged. **+ Add** in the header (`addMenu()`) offers New bookmark (**B**), New folder
+(**N**) and Separator. The panel closes when switching to Tags, and on screens 820 px wide or less when switching views.
 
 **Rendering without losing your place.** The panel's structure is rebuilt only when its key changes: mode, item, type,
 and which optional fields show. Otherwise `fillInspector()` updates values in place and skips the field you're typing
@@ -236,6 +256,73 @@ or the bookmarks bar.
 Worker's `describe` endpoint and saves the answer as the note. That's one undo step in edit mode, or fills the field
 in new mode.
 
+## Tags
+
+Tags are kept where Firefox keeps them, in each bookmark's `TAGS` attribute, and indexed by `reindex()` as `tagIdx`.
+Every change goes through `retag(ids, label, fn)`, one `mutate()` that gives each bookmark `fn(tags, id)`, cleaned and
+de-duplicated ignoring case (`cleanTag()`, `mergeTags()`). Tags can't contain commas.
+
+- **Rename and merge** are the same operation: `mergeTagKeys(keys, target)` replaces every spelling of the given tags
+  with `target`. Renaming to an existing tag's name merges them. If a tag's view is open, it follows the new key.
+  `dropTag()` removes a tag from every bookmark. Rename and merge-into use `promptDialog()`, which suggests existing
+  tags.
+- **Look-alikes.** `similarTagGroups()` finds three kinds of group, cached until the library or the dismissed set
+  changes (`tagVer`):
+  - `case`: one tag with several spellings (`Travel`/`travel`). Merging spells it the most used way.
+  - `alike`: tags that are equal after `fuzzyTag()` (accents, spaces, `-`, `_`, `.`, `/` removed; `ies` → `y`; a final
+    `s` dropped unless it's `ss`), or one edit apart (`oneEdit()`) when both are five letters or more with no digits.
+    Groups are joined with union-find. The typo check is skipped above 3,000 tags.
+  - `ai`: groups from **Find similar**, which sends the 600 most used tag names to the Worker's `tagsim` endpoint and
+    keeps the answer in `S.tagAI` for the session.
+
+  Each group merges into its most used tag, or any tag from its ⋯ menu. "They're different" adds the group's
+  signature to `S.tagIgnore` for the session.
+- **Views.** `tags` rows are section headers, look-alike rows (`r.sim`, skipped by the cursor) and one row per tag
+  (`tag:<key>`). Tag rows take the cursor but not the selection tray. **Enter**/**→** opens a tag, **F2** renames,
+  **Del** removes, and editing keys do nothing. The `tag` view lists its bookmarks as normal rows, so everything else
+  works there, and **←** goes back.
+- **Moving between browsers.** `chooseFolderDialog()` is a folder picker with extra form fields.
+  - `tagToFolder()` makes a folder from one tag, with copies (`reassignIds(cloneTree(n))`) or by moving the bookmarks,
+    and can remove the tag.
+  - `allTagsToFolders()` makes one folder holding a folder per tag, with copies.
+  - `foldersToTags()` tags every bookmark below a chosen folder with the names of the folders on its path.
+  - `tagsToTitles()` appends `#tag` (spaces become hyphens) to titles that don't already contain it.
+
+  Each is one undo step and changes the library. The export choice can do the same to the exported file only.
+
+## Separators
+
+Firefox writes separators as `<HR>`. `<DT>` is never closed in this format, so after a bookmark the HTML parser puts the
+`<HR>` *inside* that bookmark's `<DT>`. `readDT()` handles that case and `readDL()` handles `<HR>` directly in a list,
+both creating `{ type: 'sep' }` nodes in the right place. `exportHTML()` writes them back as `<HR>`, so export →
+import → export is stable.
+
+`isSep()` keeps separators out of everything that means bookmarks: counts, All bookmarks, duplicates, tags, Tidy,
+search, and what Bindery Assist is sent. They render as a dashed "Separator" row (`.is-sep`). They can be selected,
+dragged, moved, cut and deleted, but not renamed. `describe()` names them in confirmations. `bySections()` sorts the
+items between separators and leaves the separators in place, for one-off sorts and A to Z. `addSeparator()` (**+ Add →
+Separator**) inserts one after the selected item, or at the end of the open folder (the top level in the tree).
+
+## Firefox and other browsers
+
+`firefoxOnly()` counts what only Firefox understands: tagged bookmarks and tags, keywords (`SHORTCUTURL`), separators,
+and `place:` items (`isPlace()`, Firefox's own queries such as Most Visited, marked "Firefox only" in the list).
+
+- **Source.** `detectSource()` calls a file `firefox` when its root is titled "Bookmarks Menu", or anything in it has
+  `UNFILED_BOOKMARKS_FOLDER`, `TAGS`, `SHORTCUTURL`, `ICON_URI` or `LAST_CHARSET`, or is a separator or a `place:`
+  item. Otherwise it's `other`.
+- **Notice.** After `importFile()`, `firefoxNotice()` lists what was found and where it lives, once per open. Restoring
+  a saved library doesn't show it again.
+- **Export choice.** `doExport()` asks only when `firefoxOnly().any`, and only while `S.exportPrefs.ask` is true (or
+  **Choose another browser** asks again). `exportChoice()` returns `{ target: 'firefox' | 'other', tagsAs: 'none' |
+  'folders' | 'titles', dropPlace, ask }`. The defaults are the source, nothing, true and true.
+- **The exported file.** `exportRootFor(prefs)` returns the library as-is for Firefox. For other browsers it works on
+  a `cloneTree()` copy: separators are removed; `place:` items are removed if `dropPlace`; tags are added to titles, or
+  a "Tags" folder of copies is added at the top level. The library itself is never changed.
+- **Remembered.** `S.source` and `S.exportPrefs` are saved with the library and restored with it. A newly opened file
+  starts again from its own source.
+- The message after exporting gives Firefox's or Chrome's import steps to match (`TARGETS`).
+
 ## Bindery Assist
 
 Optional AI help, served by the Cloudflare Worker in `worker/` (see [worker/README.md](../worker/README.md)). The page
@@ -250,7 +337,8 @@ renders.
   a solid gradient.
 - **What's sent.** `aiItem()` sends a title and `sendableUrl()`: host and path only, with no query string or
   fragment, and nothing for non-web addresses. Subfolders are sent as `"Name (folder)"` when naming a folder. The only
-  exceptions are a bookmark's full address (for `page` and `describe`) and folder paths (for `place`).
+    exceptions are a bookmark's full address (for `page` and `describe`), folder paths (for `place`) and tag names (for
+  `tagsim`). Separators are never sent, and `place:` items send no address.
 - **Calling.** `aiFetch()` makes one request and turns failures into readable messages: busy (429), too much
   (400/413), no answer (other statuses) or unreachable. `aiWaiting()` is the waiting sheet around it: Cancel, Esc,
   closing the sheet or a 45-second timeout per request aborts. `aiCall()` is the two together for single requests.
@@ -277,6 +365,7 @@ renders.
   moves the bookmarks. **Discard** drops the plan. Deleting the folder, or opening another file, discards it too. The
   plan lives only in memory, so a reload loses it. Only bookmarks directly in the folder are considered; subfolders
   and their contents stay put.
+- **Find similar tags** is described under [Tags](#tags).
 - **Clean up titles** sends up to 100 bookmarks (bookmarklets are skipped) and opens `aiReview()`, a checklist where
   every suggestion starts ticked. Everything accepted goes through `mutate()`, so each action is one undo step and
   respects A to Z order.
@@ -285,18 +374,22 @@ renders.
 
 `exportHTML()` writes a standard Netscape bookmarks file: the doctype and "DO NOT EDIT" comment browsers expect, a UTF-8
 meta tag, then `<DL><p>` lists with four-space indentation. Every saved attribute and description is written back,
-escaped. The file is named the way Chrome names exports, `bookmarks_<month>_<day>_<yy>.html`, and downloaded through a
-`blob:` link. Inside Claude's artifact viewer, where downloads work differently, it uses the host's downloads API
-instead. A successful export clears the "unsaved edits" state.
+escaped, and separators are written as `<HR>`. When the library has Firefox-only content, the tree written is
+`exportRootFor()` of the browser chosen (see [Firefox and other browsers](#firefox-and-other-browsers)). The file is
+named the way Chrome names exports, `bookmarks_<month>_<day>_<yy>.html`, and downloaded through a `blob:` link. Inside
+Claude's artifact viewer, where downloads work differently, it uses the host's downloads API instead. A successful
+export clears the "unsaved edits" state.
 
 ## Saving in the browser
 
-- `bindery.session.v1` holds `{ v: 1, root, fileName, dirty }`, written 600 ms after the last change. If the JSON is
+- `bindery.session.v1` holds `{ v: 1, root, fileName, dirty, source, exportPrefs }`, written 600 ms after the last
+  change. If the JSON is
   over about 4.5 million characters, or the browser refuses (quota, private mode), nothing is saved and the sidebar
   says so.
 - `bindery.ui.v1` holds settings: duplicate mode, layout, **Remember my file**, **Keep everything A to Z** and
   whether Bindery Assist is on. **Forget on this device** leaves these alone.
-- Undo history and Tidy plans are never saved. They last as long as the tab.
+- Undo history, Tidy plans, dismissed look-alike tags and Assist's similar-tag groups are never saved. They last as long
+  as the tab.
 - With **Remember my file** off, the session key is deleted and never written. **Forget on this device** deletes it,
   closes the file and clears undo history.
 - On load, `restore()` reopens the saved library with fresh ids and says so in a toast.
@@ -325,13 +418,14 @@ actions give way to the ⋯ menu). Animations stop for anyone who prefers reduce
 Press **?** or open **Keyboard shortcuts** in the sidebar for the full list. Highlights:
 
 - **↑ ↓** move, with Shift to extend the selection. **→ ←** open and close folders.
-- **/** or Ctrl/⌘ + **K** searches. **F** filters the sidebar's folder list. **T** switches layout. Alt + **↑** goes up
-  a folder.
+- **/** or Ctrl/⌘ + **K** searches (a word starting with `#` matches tags). **F** filters the sidebar's folder list.
+  **T** switches layout. Alt + **↑** goes up a folder.
 - **E** opens the details panel. **Enter** or **F2** renames in place. **N** makes a folder, **B** a bookmark. **M**
   moves, **G** groups.
 - Ctrl/⌘ + **X** and **V** cut and paste. **Del** deletes. Ctrl/⌘ + **Z** undoes, with Shift (or Ctrl + **Y**) to redo.
-- **K** and **D** keep or mark copies in duplicate review. In a Tidy review they set Move and Stay, and **M** opens
-  Send to; editing keys are ignored there.
+- **K** and **D** keep or mark copies in duplicate review. In a Tidy review they set Move and Stay, and **M** opens Send
+  to; editing keys are ignored there.
+- In Tags, **Enter**/**→** opens a tag, **F2** renames it and **Del** removes it. **←** goes back from a tag's view.
 - **Esc** in a panel field puts the value back. Otherwise it clears the cut, then the selection, then the search, then
   closes the panel.
 
@@ -361,6 +455,8 @@ opens every action for a row.
 | Writing a note | the page's own description and its first 2,500 characters of text; notes up to 300 characters |
 | Details panel | docked above 1180 px wide (372 px), a drawer below that, a bottom sheet under 600 px |
 | Typing pause before reading a page | 550 ms |
+| Find similar tags | up to 600 tag names sent, up to 60 groups back |
+| Look-alike typo check | tags of 5+ letters without digits, in libraries of up to 3,000 tags |
 
 ## Code map
 
@@ -368,25 +464,28 @@ The script in `index.html` is in labelled sections, in this order:
 
 ```
 icons                      inline SVG strings
-state                      S, the index, undo and redo stacks, element handles
-small helpers              URL and name normalization, A to Z order, dates, paths
-parse & export             file checks, parsing, the audit, exportHTML
-index                      reindex, empty folders
+state                      S, the index, the tag index, undo and redo stacks, element handles
+small helpers              URL and name normalization, A to Z order and sections, dates, paths
+parse & export             file checks, parsing (separators too), the audit, exportHTML
+index                      reindex (with tags), empty folders
 rows for the current view  buildRows for each view
 mutations & history        mutate, undo, redo, move, rename, group, sort, A to Z, delete, cut and paste
 views & selection          setView, search, selection
 tree layout                tree view, open folders, expand and collapse all
 duplicate review           modes, keeper rules, marks
-rendering                  rows, sidebar tree, header, empty states, selection and mark trays
+rendering                  rows (separators too), sidebar tree, header, empty states, selection and mark trays
 folder filter & tools      the sidebar's filter and its expand/collapse buttons
 inline editing             rename in place, name chips' host
 menus                      context menus, Sort, Add and Assist menus
 dialogs                    confirm, Move to…, shortcuts
 new bookmark helpers       default folder, folder list and paths, address checks
-bookmark editor            the details panel: both modes, folder picker, tags, keyword, note, Assist, + Add
+bookmark editor            the details panel: both modes, several items, folder picker, tags, keyword, note, + Add
 bindery assist             consent sheet, aiFetch, waiting sheet, review checklist, Clean up titles
 folder name suggestions    name chips, Suggest a name
 tidy review                aiTidy, the plan, its rows, menus, drop targets, Apply and Discard
+tags                       retag, rename and merge, look-alike groups, Find similar, the Tags rows and menus
+moving tags                folder picker dialog, tag ↔ folder conversions, tags in titles, Convert menu
+browsers                   Firefox-only content, source detection, import notice, export choice, exportRootFor
 toasts
 import / export            importFile, showProblem, loadRoot, doExport
 persistence                localStorage, Remember my file, Forget on this device
@@ -398,16 +497,17 @@ static chrome, boot        button icons, then restore or start blank
 ## Worker
 
 `worker/` holds the Bindery Assist Worker (`src/index.js`), its `wrangler.toml` and tests (`node --test
-worker/test/*.mjs`). It has no dependencies. Six `POST` endpoints: `tidy`, `name`, `titles` and `place` ask a Workers AI
-model for JSON (JSON mode, with a plain-text fallback) and validate the answer; `page` reads a page's name and icon
-without AI; and `describe` reads a page and asks the model for a short note, falling back to the page's own description.
-It only answers origins in `ALLOWED_ORIGINS`, caps request size, is rate limited, and stores nothing. See
+worker/test/*.mjs`). It has no dependencies. Seven `POST` endpoints: `tidy`, `name`, `titles`, `place` and `tagsim` ask
+a Workers AI model for JSON (JSON mode, with a plain-text fallback) and validate the answer; `page` reads a page's name
+and icon without AI; and `describe` reads a page and asks the model for a short note, falling back to the page's own
+description. It only answers origins in `ALLOWED_ORIGINS`, caps request size, is rate limited, and stores nothing. See
 [worker/README.md](../worker/README.md) for endpoints, limits, deployment and pointing a copy of Bindery at it. The
 official site's Worker runs at `https://bookmark-bindery-ai.azureus.workers.dev`.
 
 ## Screenshots
 
 `node scripts/screenshots.mjs` regenerates `docs/screenshots/`. It serves the repo locally, opens the made-up library in
-`scripts/demo-bookmarks.html`, and captures the library, duplicate review, the details panel, the Bindery Assist welcome
+`scripts/demo-bookmarks.html`, and captures the library, duplicate review, the details panel, the Tags view and the
+export dialog (after tagging a few bookmarks through the app, with some look-alike tags), the Bindery Assist welcome
 sheet and a phone view in light and dark with Playwright, saving WebP. The welcome sheet only appears when `index.html`
 points at a Worker; nothing is sent to take it. It needs Node and Playwright with Chromium, and nothing else.
