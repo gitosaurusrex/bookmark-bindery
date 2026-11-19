@@ -1,7 +1,7 @@
 # Bindery Assist Worker
 
-The Cloudflare Worker behind Bookmark Bindery's optional AI features: **Tidy into folders**, **Suggest a name** and
-**Clean up titles**. Bindery works fully without it. Until a site is pointed at a Worker, the AI features don't appear.
+The Cloudflare Worker behind Bookmark Bindery's optional AI features: **Tidy into folders**, **Suggest a name**,
+**Clean up titles** and, for **New bookmark**, reading a page's name and icon and suggesting a folder. Bindery works fully without it. Until a site is pointed at a Worker, the AI features don't appear.
 
 ## What it does with bookmarks
 
@@ -19,6 +19,13 @@ limit binding in `wrangler.toml`, allows 20 requests a minute per visitor.
 | `POST /v1/tidy` | `{ folder, existing: [subfolder names], items: [{ title, url }] }` (up to 150) | `{ folders: [{ name, items: [index] }] }` |
 | `POST /v1/name` | `{ current, items }` (up to 60) | `{ names: [up to 3] }` |
 | `POST /v1/titles` | `{ items }` (up to 100) | `{ titles: [{ item: index, title }] }`, changed titles only |
+| `POST /v1/place` | `{ items: [one bookmark], folders: [folder paths] }` (up to 400) | `{ folders: [up to 3 indexes] }` |
+| `POST /v1/page` | `{ url }` | `{ title, icon }`. Not AI: see below |
+
+`page` fetches the address server-side (8-second limit, the first 400 KB of HTML) and returns its `og:title`,
+`twitter:title` or `<title>`, and its best small icon as a `data:` URL (at most 48 KB, falling back to `/favicon.ico`).
+It only fetches public `http`/`https` addresses: no local names, private networks, raw IP addresses, unusual ports or
+addresses with a username. A site that's down or refuses gets an empty answer, not an error.
 
 ## Deploy
 

@@ -4,7 +4,9 @@
 
 const DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const MAX_BODY = 96 * 1024; // characters
-const MAX_ITEMS = { tidy: 150, name: 60, titles: 100 };
+const MAX_ITEMS = { tidy: 150, name: 60, titles: 100, place: 1 };
+const MAX_FOLDERS = 400;
+const UA = 'Mozilla/5.0 (compatible; BookmarkBindery/1.0; +https://bookmark-bindery.onrender.com)';
 
 export default { fetch: handle };
 
@@ -32,8 +34,10 @@ export async function handle(req, env) {
   if (text.length > MAX_BODY) return reply({ error: 'too_big' }, 413);
   let body;
   try { body = JSON.parse(text); } catch { return reply({ error: 'bad_request' }, 400); }
-  const items = cleanItems(body?.items, MAX_ITEMS[task]);
+  // "page" takes one address; every other task takes a list of bookmarks.
+  const items = task === 'page' ? [] : cleanItems(body?.items, MAX_ITEMS[task]);
   if (!items) return reply({ error: 'bad_request' }, 400);
+  if (task === 'page' && !pageUrl(body?.url)) return reply({ error: 'bad_request' }, 400);
 
   try {
     return reply(await TASKS[task](env, items, body));
@@ -73,6 +77,41 @@ const TASKS = {
     // A new folder for a single bookmark isn't tidying. Those bookmarks stay where they are.
     const keep = new Set(existing.map(x => x.toLowerCase()));
     return { folders: [...byName.values()].filter(f => f.items.length > 1 || keep.has(f.name.toLowerCase())).slice(0, 12) };
+  },
+
+  /* Picks up to three existing folders for a new bookmark, best first. */
+  async place(env, items, body) {
+    const folders = Array.isArray(body.folders) ? body.folders.slice(0, MAX_FOLDERS).map(x => clip(x, 160)) : [];
+    if (folders.length < 2 || folders.some(f => !f)) return { folders: [] };
+    const b = items[0];
+    const system = 'You file browser bookmarks into folders. Reply with JSON only.';
+    const user = [
+      `Which of these folders fits this bookmark best? Bookmark: ${b.title || '(no title)'}${b.url ? ` — ${b.url}` : ''}`,
+      'Pick up to 3 folders, best first. Prefer a specific folder over a general one. Folder paths use " / " between levels.',
+      'Reply as {"folders":[4,12]}, where the numbers are folder numbers from the list.',
+      '',
+      folders.map((f, i) => `${i}. ${f}`).join('\n'),
+    ].join('\n');
+    const out = await ask(env, system, user, {
+      type: 'object', properties: { folders: { type: 'array', items: { type: 'integer' } } }, required: ['folders'],
+    }, 128);
+    const picks = [];
+    for (const i of Array.isArray(out?.folders) ? out.folders : []) if (Number.isInteger(i) && i >= 0 && i < folders.length && !picks.includes(i)) picks.push(i);
+    return { folders: picks.slice(0, 3) };
+  },
+
+  /* Reads a page's name and icon for a new bookmark. Not AI: the Worker fetches the page because the Bindery page
+     can't (its CSP allows no other connections, and most sites don't allow cross-site reads). */
+  async page(env, items, body) {
+    const u = pageUrl(body.url);
+    let res;
+    try { res = await fetch(u.href, { headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5' }, redirect: 'follow', signal: AbortSignal.timeout(8000) }); }
+    catch { return { title: '', icon: await findIcon([], u) }; }
+    const final = safeUrl(res.url) || u;
+    const type = res.headers.get('Content-Type') || '';
+    const html = res.ok && /html|xml/i.test(type) ? await readText(res, 400_000, type) : '';
+    if (!html) res.body?.cancel?.();
+    return { title: pageTitle(html), icon: await findIcon(iconLinks(html, final), final) };
   },
 
   /* Suggests up to three names for a folder from what's inside it. */
@@ -142,6 +181,93 @@ export function readJSON(r) {
   const a = s.indexOf('{'), b = s.lastIndexOf('}');
   if (a < 0 || b < a) throw new Error('No JSON in the reply');
   return JSON.parse(s.slice(a, b + 1));
+}
+
+/* ---------- reading pages ---------- */
+function safeUrl(s) { try { return new URL(s); } catch { return null; } }
+/* Only public web addresses: no local names, private networks or raw IP addresses. */
+export function pageUrl(raw) {
+  if (typeof raw !== 'string' || raw.length > 2048) return null;
+  const u = safeUrl(raw.trim());
+  if (!u || !/^https?:$/.test(u.protocol) || u.username || u.password) return null;
+  const h = u.hostname.toLowerCase();
+  if (!h.includes('.') || h.startsWith('[') || /^[\d.]+$/.test(h) || /(^|\.)(localhost|local|internal|lan|home|arpa)$/.test(h)) return null;
+  if (u.port && !['80', '443', '8080', '8443'].includes(u.port)) return null;
+  return u;
+}
+async function readBytes(res, max) {
+  const reader = res.body?.getReader(); if (!reader) return null;
+  const chunks = []; let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) { await reader.cancel(); return { chunks, size: size - value.byteLength, cut: true, last: value }; }
+    chunks.push(value);
+  }
+  return { chunks, size, cut: false };
+}
+const join = (chunks, size) => { const out = new Uint8Array(size); let at = 0; for (const c of chunks) { out.set(c, at); at += c.byteLength; } return out; };
+async function readText(res, max, type) {
+  const r = await readBytes(res, max); if (!r) return '';
+  const chunks = r.cut ? [...r.chunks, r.last.subarray(0, max - r.size)] : r.chunks;
+  const bytes = join(chunks, Math.min(r.size + (r.cut ? max - r.size : 0), max));
+  const charset = /charset=["']?([\w-]+)/i.exec(type)?.[1] || /<meta[^>]+charset=["']?([\w-]+)/i.exec(new TextDecoder('latin1').decode(bytes.subarray(0, 2048)))?.[1] || 'utf-8';
+  try { return new TextDecoder(charset).decode(bytes); } catch { return new TextDecoder().decode(bytes); }
+}
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', middot: '·', bull: '•', copy: '©', reg: '®', trade: '™', raquo: '»', laquo: '«' };
+export function decodeEntities(s) {
+  return s.replace(/&(#x[\da-f]+|#\d+|\w+);/gi, (m, e) => {
+    if (e[0] === '#') { const n = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10); try { return String.fromCodePoint(n); } catch { return m; } }
+    return ENTITIES[e.toLowerCase()] ?? m;
+  });
+}
+function attrs(tag) {
+  const out = {};
+  for (const m of tag.matchAll(/([\w:-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g)) out[m[1].toLowerCase()] = decodeEntities(m[3] ?? m[4] ?? m[5] ?? '');
+  return out;
+}
+/* og:title, then twitter:title, then <title>. */
+export function pageTitle(html) {
+  if (!html) return '';
+  const head = html.slice(0, 200_000), meta = {};
+  for (const m of head.matchAll(/<meta\b[^>]*>/gi)) { const a = attrs(m[0]), k = (a.property || a.name || '').toLowerCase(); if (k && a.content && !meta[k]) meta[k] = a.content; }
+  const t = /<title\b[^>]*>([\s\S]*?)<\/title>/i.exec(head)?.[1];
+  return clip(meta['og:title'] || meta['twitter:title'] || (t ? decodeEntities(t) : ''), 200);
+}
+/* Icon links from the page, best first: small PNG/ICO icons, then SVG, then larger or Apple touch icons. */
+export function iconLinks(html, base) {
+  const found = [];
+  for (const m of (html || '').slice(0, 200_000).matchAll(/<link\b[^>]*>/gi)) {
+    const a = attrs(m[0]), rel = (a.rel || '').toLowerCase().split(/\s+/);
+    if (!a.href || !(rel.includes('icon') || rel.includes('apple-touch-icon')) || rel.includes('mask-icon')) continue;
+    let url; try { url = new URL(a.href, base); } catch { continue; }
+    if (!/^https?:$/.test(url.protocol)) continue;
+    const size = Math.max(0, ...String(a.sizes || '').split(/\s+/).map(x => parseInt(x, 10) || 0));
+    const svg = /svg/i.test(a.type || '') || /\.svg($|\?)/i.test(url.pathname);
+    let score = rel.includes('apple-touch-icon') ? 40 : svg ? 20 : 10;
+    if (size) score += Math.abs(size - 32) / 8;
+    found.push({ url: url.href, score });
+  }
+  return found.sort((a, b) => a.score - b.score).map(x => x.url);
+}
+const ICON_MAX = 48 * 1024;
+async function findIcon(links, base) {
+  const tries = [...new Set([...links, new URL('/favicon.ico', base).href])].slice(0, 4);
+  for (const url of tries) {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'image/*' }, redirect: 'follow', signal: AbortSignal.timeout(5000) });
+      if (!res.ok) { res.body?.cancel?.(); continue; }
+      let type = (res.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+      if (!type.startsWith('image/')) { if (/\.ico($|\?)/i.test(url) && /octet-stream|^$/.test(type)) type = 'image/x-icon'; else { res.body?.cancel?.(); continue; } }
+      const r = await readBytes(res, ICON_MAX);
+      if (!r || r.cut || !r.size) continue;
+      const bytes = join(r.chunks, r.size);
+      let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      return `data:${type};base64,${btoa(bin)}`;
+    } catch { /* try the next one */ }
+  }
+  return '';
 }
 
 function cleanItems(raw, max) {

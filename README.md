@@ -23,6 +23,8 @@ drag and drop, and export a clean file that Chrome imports straight back. No acc
   once.
 - **Clear out duplicates safely.** Find copies by address, name or both. Choose which to keep, one by one or with "keep
   the oldest in each group", and check before anything is deleted.
+- **Add bookmarks.** **New bookmark** (or **B**) takes an address, a name and a folder. With Bindery Assist on, the
+  page's name and icon fill in by themselves, and Assist can suggest a folder.
 - **Reorganize fast.** Drag and drop, cut and paste, **Move to…**, group a selection into a new folder, sort by name,
   date or site. Or turn on **Keep everything A to Z**: every folder lists its subfolders first, then its bookmarks,
   each A to Z, stays that way as you edit, and exports in that order. There are keyboard shortcuts for all of it.
@@ -108,9 +110,12 @@ each feature and what gets sent. Nothing is sent unless you choose **Turn on Bin
   the name field and then tap a suggestion. Also in a folder's menu.
 - **Clean up titles** (a bookmark's menu, a selection, or a whole folder from ✦): shortens titles stuffed with site
   names, “(3)” counts and SEO filler. You choose which to accept.
+- **Fill in new bookmarks**: in **New bookmark**, paste an address and the page's name and icon fill in (you can still
+  edit the name). Tap **Suggest a folder** for up to three folders that fit, then tap one.
 
 What's sent: for the bookmarks an action is for, their titles and their addresses cut down to site and path (nothing
-after “?” or “#”, nothing for bookmarklets or local files). It goes to a small Cloudflare Worker that asks a Workers AI
+after “?” or “#”, nothing for bookmarklets or local files). A new bookmark's full address is sent so the helper can
+read that page, and **Suggest a folder** also sends your folder names. It goes to a small Cloudflare Worker that asks a Workers AI
 model and doesn't store anything. Turn Assist off any time from ✦ → **Turn off Bindery Assist**.
 
 Assist needs a deployed Worker. A copy of Bindery without one shows no AI features at all, and its security policy

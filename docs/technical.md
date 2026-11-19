@@ -197,6 +197,17 @@ renders.
   group (`tidyDropAt`). In this view **K**/**D** set Move/Stay and **M** opens Send to. Editing keys are ignored.
   **Apply** runs one `mutate()` that creates or reuses folders and moves the bookmarks. **Discard** drops the plan.
   Deleting the folder, or opening another file, discards it too.
+- **New bookmark.** `openNewBookmark()` is a dialog with address, name and folder. `normalizeAddress()` adds
+  `https://` to bare addresses like `example.com/x` and refuses things that aren't addresses. `savedCopy()` warns when
+  the address is already saved (by `normUrl`). The folder picker is a searchable list of every folder (`folderList()`,
+  `folderPath()`), opening on the current folder. With Assist on, the address is sent to the Worker's `page` endpoint
+  550 ms after typing stops (or on blur). The Worker reads the page and returns its name and icon, because the page
+  itself can't: its CSP allows no other connections, and most sites forbid cross-site reads. The name only fills in
+  if you haven't typed one; otherwise the page's name is offered as a link. The icon is kept as the bookmark's `ICON`
+  data URL, like browser exports do. **Suggest a folder** sends the bookmark's title and trimmed address with up to 400
+  folder paths to `place`, and shows up to three folder chips. The first one is picked for you. Adding is one
+  `mutate()`, so it respects A to Z order and can be undone. If Assist isn't on, the dialog offers to turn it on and
+  reopens with what you typed. With no Worker configured, the dialog works without any of this.
 - **Clean up titles** opens `aiReview()`, a checklist where every suggestion starts ticked. Everything accepted goes
   through `mutate()`, so each action is one undo step and respects A to Z order.
 
