@@ -1,0 +1,25 @@
+# Bindery Assist: the Cloudflare Worker behind Bookmark Bindery's optional AI features.
+# Deploy with `npx wrangler@4 deploy` from this folder. See README.md.
+name = "bookmark-bindery-ai"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+# Workers AI.
+[ai]
+binding = "AI"
+
+[vars]
+# Pages allowed to call this Worker, comma-separated, with no trailing slash.
+ALLOWED_ORIGINS = "https://bookmark-bindery.onrender.com"
+# Optional: a different Workers AI text model.
+# MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+
+# 20 requests a minute per visitor (per IP address, per Cloudflare location).
+# namespace_id must be unique within your Cloudflare account.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "4207"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60

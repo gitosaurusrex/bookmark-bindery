@@ -12,12 +12,14 @@ stored, and how it gets back out. For what it does and how to use it, see the [R
 - [Editing and undo](#editing-and-undo)
 - [Duplicate review](#duplicate-review)
 - [Removing query strings](#removing-query-strings)
+- [Bindery Assist](#bindery-assist)
 - [Exporting](#exporting)
 - [Saving in the browser](#saving-in-the-browser)
 - [Rendering](#rendering)
 - [Keyboard and pointer](#keyboard-and-pointer)
 - [Numbers worth knowing](#numbers-worth-knowing)
 - [Code map](#code-map)
+- [Worker](#worker)
 - [Screenshots](#screenshots)
 
 ## One file, no build
@@ -36,7 +38,9 @@ font-src https://fonts.gstatic.com; img-src 'self' data: blob:; manifest-src 'se
 form-action 'none'; base-uri 'none'
 ```
 
-`connect-src 'none'` means the page can't make fetch, XHR, WebSocket or beacon requests at all. Images are limited to
+`connect-src 'none'` means the page can't make fetch, XHR, WebSocket or beacon requests at all. When a site sets up
+[Bindery Assist](#bindery-assist), `scripts/set-ai-endpoint.mjs` replaces `'none'` with the Worker's origin, and
+that origin becomes the only one the page can reach. Images are limited to
 the site itself and `data:`/`blob:` URLs, so favicons stored in a bookmarks file display, but nothing is loaded from the
 sites you bookmarked. The only outside requests are the Google Fonts stylesheet and font files.
 
@@ -159,6 +163,27 @@ Each copy is marked **Keep** or **Delete** (`S.marks`), by clicking, by **K** an
 `splitQuery()` takes everything from `?` up to `#` (a fragment, if any, is kept). **Remove query string** shows the
 before and after, warns that some sites need their query string, and applies it as an undoable edit.
 
+## Bindery Assist
+
+Optional AI help, served by the Cloudflare Worker in `worker/` (see [worker/README.md](../worker/README.md)). The page
+reads the Worker's address from `<meta name="bindery-ai">`. Empty means off, and then no AI button or menu item
+renders.
+
+- **Consent.** `S.ai` is `null` (never asked), `'on'` or `'off'`, saved in `bindery.ui.v1`. Every entry point goes
+  through `withAI(run)`, which shows the welcome sheet (`aiOnboarding()`) unless Assist is on. "Not now" leaves it
+  unset, so the sheet comes back next time. Opened from ✦ → **About Bindery Assist** while on, the same sheet offers
+  **Turn off Bindery Assist**. On phones the sheet rises from the bottom with its buttons pinned.
+- **What's sent.** `aiItem()` sends a title and `sendableUrl()`: host and path only, with no query string or
+  fragment, and nothing for non-web addresses. Subfolders are sent as `"Name (folder)"` when naming a folder.
+- **Calling.** `aiCall()` shows a waiting sheet with Cancel. Cancel, Esc, closing the sheet or a 45-second timeout
+  aborts the request. Errors become a toast: busy (429), too much (400/413), no answer (other statuses) or unreachable.
+- **Checking.** The Worker validates replies, and the page checks again against the current tree: bookmark numbers
+  must point at items still in the folder, each used once. Tidy merges folders whose names match and moves into an
+  existing subfolder when one has the same name.
+- **Applying.** Tidy and Clean up titles open `aiReview()`, a checklist where every suggestion starts ticked. Suggest a
+  name offers up to three buttons. Whatever you accept is applied through `mutate()`, so it's one undo step and it
+  respects A to Z order.
+
 ## Exporting
 
 `exportHTML()` writes a standard Netscape bookmarks file: the doctype and "DO NOT EDIT" comment browsers expect, a UTF-8
@@ -239,6 +264,7 @@ duplicate review      modes, keeper rules, marks
 rendering             rows, sidebar tree, folder filter and tools, header, empty states, selection tray
 inline editing        rename in place
 menus, dialogs        context menus, confirm, Move to…, shortcuts
+bindery assist        consent sheet, aiCall, review dialogs, tidy, name, titles
 toasts
 import / export       importFile, showProblem, loadRoot, doExport
 persistence           localStorage, Remember my file, Forget on this device
@@ -246,6 +272,11 @@ drag & drop           drop targets, reorder lines, autoscroll
 pointer, keyboard     event wiring
 boot                  restore or start blank
 ```
+
+## Worker
+
+`worker/` holds the Bindery Assist Worker, its `wrangler.toml` and tests (`node --test worker/test/*.mjs`). It has no
+dependencies. See [worker/README.md](../worker/README.md) to deploy it and point a copy of Bindery at it.
 
 ## Screenshots
 

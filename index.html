@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; manifest-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
+<!-- Bindery Assist (optional AI). Empty means off. Set with: node scripts/set-ai-endpoint.mjs <worker URL> -->
+<meta name="bindery-ai" content="">
 <meta name="description" content="Open a browser bookmarks export, inspect and reorganize every folder and link, review duplicates, and export a Chrome-ready file. Runs entirely in your browser.">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -27,7 +29,7 @@
   --rule:#E1E5E1; --rule-2:#CFD5D0;
   --cloth:#2F4E9E; --cloth-ink:#253F80; --cloth-soft:#E7ECF8; --on-cloth:#FFFFFF;
   --hover:#EEF0EC; --select:#E2E8F7; --focus:#2F4E9E;
-  --manila:#A97E2F; --manila-fill:#F5E9CF;
+  --manila:#A97E2F; --manila-fill:#F5E9CF; --leaf:#2F7D52; --violet:#6B48C6;
   --danger:#B13A2E; --danger-soft:#FAE9E6; --on-danger:#FFFFFF;
   --tray:#1D2422; --tray-ink:#F1F3F0; --tray-dim:#9AA49F; --tray-hover:#2C3532; --tray-danger:#F2907F;
   --scrim:rgba(18,24,22,.38);
@@ -43,7 +45,7 @@
   --rule:#252B29; --rule-2:#343B38;
   --cloth:#93A8F0; --cloth-ink:#B8C6F6; --cloth-soft:#1E2640; --on-cloth:#0F1630;
   --hover:#1F2523; --select:#1F2944; --focus:#93A8F0;
-  --manila:#D4AD62; --manila-fill:#3A3020;
+  --manila:#D4AD62; --manila-fill:#3A3020; --leaf:#73C99B; --violet:#B39EF5;
   --danger:#EC7A6E; --danger-soft:#3A1F1C; --on-danger:#24100D;
   --tray:#E7EBE8; --tray-ink:#151A18; --tray-dim:#5E6763; --tray-hover:#D3D9D5; --tray-danger:#A9322A;
   --scrim:rgba(0,0,0,.55);
@@ -56,7 +58,7 @@
   --rule:#252B29; --rule-2:#343B38;
   --cloth:#93A8F0; --cloth-ink:#B8C6F6; --cloth-soft:#1E2640; --on-cloth:#0F1630;
   --hover:#1F2523; --select:#1F2944; --focus:#93A8F0;
-  --manila:#D4AD62; --manila-fill:#3A3020;
+  --manila:#D4AD62; --manila-fill:#3A3020; --leaf:#73C99B; --violet:#B39EF5;
   --danger:#EC7A6E; --danger-soft:#3A1F1C; --on-danger:#24100D;
   --tray:#E7EBE8; --tray-ink:#151A18; --tray-dim:#5E6763; --tray-hover:#D3D9D5; --tray-danger:#A9322A;
   --scrim:rgba(0,0,0,.55);
@@ -347,6 +349,51 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .keys .h{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
 @keyframes fade{from{opacity:0}}
 
+/* ---------- bindery assist ---------- */
+.ai-btn.on{color:var(--violet)}
+.mi.ai svg{color:var(--violet)}
+.mnote{padding:8px 10px;max-width:260px;font-size:12.5px;line-height:1.4;color:var(--ink-3)}
+.dialog.wide{width:min(560px,100%)}
+.dialog.onboard{width:min(440px,100%);padding:36px 30px 18px;border-radius:22px;text-align:center}
+.onboard .ob-mark{width:68px;height:68px;margin:0 auto 18px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#3E5FC6,#7C50D8);box-shadow:0 10px 24px rgba(92,72,200,.32)}
+.onboard .ob-mark svg{width:36px;height:36px;stroke-width:1.25;color:#fff}
+.onboard h2{font-size:30px;line-height:1.1;margin:0 0 8px}
+.onboard .ob-sub{margin:0 auto 26px;max-width:30ch;font-size:15px}
+.ob-list{list-style:none;margin:0 0 22px;padding:0 4px;display:grid;gap:20px;text-align:left}
+.ob-list li{display:flex;gap:16px;align-items:flex-start;animation:obIn .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(.12s + var(--i) * .07s)}
+.ob-ic{flex:none;width:38px;display:grid;place-items:center;color:var(--c);padding-top:1px}
+.ob-ic svg{width:30px;height:30px;stroke-width:1.3}
+.ob-list b{display:block;font-weight:600;font-size:15px;color:var(--ink);margin-bottom:2px}
+.ob-list .ob-d{display:block;color:var(--ink-2);font-size:13.5px;line-height:1.45}
+.onboard .ob-fine{display:flex;gap:9px;align-items:flex-start;text-align:left;margin:0 0 16px;padding:10px 12px;border-radius:10px;background:var(--paper);font-size:12px;line-height:1.45;color:var(--ink-3)}
+.ob-fine svg{width:14px;height:14px;margin-top:1px}
+.ob-go{width:100%;height:46px;justify-content:center;font-size:15px;border-radius:12px}
+.ob-alt{display:block;margin:6px auto 0;border:0;background:transparent;color:var(--cloth-ink);font-weight:500;padding:9px 14px;border-radius:8px}
+.ob-alt:hover{background:var(--hover)}
+.ob-alt.danger{color:var(--danger)}
+@keyframes obIn{from{opacity:0;transform:translateY(10px)}}
+.dialog.aiwait{width:min(380px,100%);text-align:center;padding:30px 24px 18px}
+.aiwait .actions{justify-content:center}
+.ai-orb{width:54px;height:54px;margin:0 auto 16px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#3E5FC6,#7C50D8);animation:orb 1.6s ease-in-out infinite}
+.ai-orb svg{width:26px;height:26px;color:#fff;stroke-width:1.4}
+@keyframes orb{50%{transform:scale(1.07);box-shadow:0 0 0 10px rgba(124,80,216,.14)}}
+.ai-list{margin:14px 0 6px;max-height:min(50vh,420px);overflow:auto;border:1px solid var(--rule);border-radius:10px;padding:4px}
+.ai-row{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.ai-row:hover{background:var(--hover)}
+.ai-row input{margin:4px 0 0;width:16px;height:16px;flex:none;accent-color:var(--cloth)}
+.ai-row .ico{margin-top:-1px}
+.ai-row .nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ai-row .nm b{font-weight:500}
+.ai-row .nm small{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ai-row .new{font-weight:500;overflow-wrap:anywhere}
+.ai-row .old{font-size:12.5px;color:var(--ink-3);text-decoration:line-through;overflow-wrap:anywhere}
+.ai-row .tag{font-size:12px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums;padding-top:1px}
+.ai-row:has(input:not(:checked)) .nm{opacity:.5}
+.picks{display:grid;gap:8px;margin-top:14px}
+.pick{display:flex;align-items:center;gap:11px;min-height:46px;padding:8px 14px;border-radius:11px;border:1px solid var(--rule-2);background:var(--sheet);font-weight:500;font-size:15px;text-align:left}
+.pick:hover,.pick:focus-visible{border-color:var(--cloth);background:var(--cloth-soft)}
+.pick svg{color:var(--violet)}
+
 .filedrop{position:fixed;inset:10px;z-index:70;border:2px dashed var(--cloth);border-radius:18px;background:color-mix(in srgb,var(--sheet) 88%,transparent);display:grid;place-items:center;text-align:center;pointer-events:none}
 .filedrop div{font:500 26px/1.2 var(--f-display);color:var(--cloth-ink)}
 .filedrop small{display:block;font:14px var(--f-ui);color:var(--ink-2);margin-top:6px}
@@ -383,7 +430,14 @@ body.dragging .row.sel:hover{background:var(--select)}
   .keep-seg button{padding:0 7px}
   :root{--ind-w:16px}
   .seg button{padding:0 8px}
+  .scrim.sheet{place-items:end center;padding:0}
+  .scrim.sheet .dialog{width:100%;max-height:94%;border-radius:22px 22px 0 0;padding:30px 22px 0;animation:sheetUp .3s cubic-bezier(.2,.7,.2,1)}
+  .onboard .ob-mark{width:60px;height:60px;margin-bottom:14px}
+  .onboard .ob-sub{margin-bottom:20px}
+  .ob-list{gap:16px}
+  .ob-actions{position:sticky;bottom:0;margin:0 -22px;padding:12px 22px calc(10px + env(safe-area-inset-bottom,0px));background:var(--sheet);box-shadow:0 -1px 0 var(--rule)}
 }
+@keyframes sheetUp{from{transform:translateY(48px);opacity:0}}
 @media (hover:none){
   .check{opacity:1}
   .side-tools{opacity:1}
@@ -401,6 +455,7 @@ body.dragging .row.sel:hover{background:var(--select)}
     <div class="file" id="fileChip"></div>
     <label class="search" id="searchBox"><span id="searchIco"></span><input id="q" type="search" placeholder="Search titles and addresses" autocomplete="off" spellcheck="false" aria-label="Search bookmarks"><kbd>/</kbd></label>
     <div class="tools">
+      <button class="icon-btn ai-btn" id="aiBtn" aria-label="Bindery Assist" aria-haspopup="menu" hidden></button>
       <button class="icon-btn" id="undoBtn" aria-label="Undo"></button>
       <button class="icon-btn redo-btn" id="redoBtn" aria-label="Redo"></button>
       <span class="sep"></span>
@@ -487,6 +542,12 @@ const I = {
   reveal: sv(`<path d="${FOLDER_D}"/><circle cx="8" cy="8.75" r="1.6"/>`),
   filter: sv('<path d="M2.25 3.25h11.5l-4.5 5.5v4.25l-2.5 1.25V8.75z"/>'),
   az: sv('<path d="M2 12.5 4.75 4l2.75 8.5M3 9.75h3.5"/><path d="M9.5 4h4.25L9.5 12.5h4.5"/>'),
+  sparkles: sv('<path d="M7 2.5 8.15 6.35 12 7.5 8.15 8.65 7 12.5 5.85 8.65 2 7.5 5.85 6.35z"/><path d="M12.25 9.75v3.5M10.5 11.5H14"/>'),
+  tidy: sv('<path d="M1.75 6.4c0-.55.45-1 1-1h2.6l1.25 1.25h4.65c.55 0 1 .45 1 1v4.6c0 .55-.45 1-1 1h-8.5c-.55 0-1-.45-1-1z"/><path d="M4.25 3.5c0-.55.45-1 1-1h2.1l1.15 1.15h4.25c.55 0 1 .45 1 1v4.6"/>'),
+  tag: sv('<path d="M2.25 3.25c0-.55.45-1 1-1h4.1c.27 0 .52.1.71.29l5.4 5.4a1 1 0 0 1 0 1.42l-4.1 4.1a1 1 0 0 1-1.42 0l-5.4-5.4a1 1 0 0 1-.29-.71z"/><circle cx="5.5" cy="5.5" r="1"/>'),
+  retitle: sv('<path d="M2.5 4h6.5M2.5 8h4.5M2.5 12h6"/><path d="M12 4.5l.65 1.85 1.85.65-1.85.65L12 9.5l-.65-1.85L9.5 7l1.85-.65z"/>'),
+  shield: sv('<path d="M8 1.75 13 3.6v3.9c0 3.05-2.05 5.55-5 6.75-2.95-1.2-5-3.7-5-6.75V3.6z"/><path d="m5.75 8 1.6 1.6 2.9-3.1"/>'),
+  lock: sv('<rect x="3.25" y="7" width="9.5" height="6.75" rx="1.5"/><path d="M5.25 7V5a2.75 2.75 0 0 1 5.5 0v2"/>'),
   device: sv('<rect x="2.75" y="3.25" width="10.5" height="7" rx="1"/><path d="M1.25 12.75h13.5"/>'),
 };
 
@@ -500,7 +561,7 @@ const S = {
   drag: null, drop: null, recent: [],
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
-  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null,
+  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null,
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
 let undoStack = [], redoStack = [];
@@ -850,6 +911,7 @@ function group(ids) {
   if (S.layout === 'tree') { S.open.add(nf.id); revealInTree(nf.id); }
   else { setView({ kind: 'folder', id: parent.id }); selectOnly(nf.id); renderList(); }
   startEdit(nf.id, 'list');
+  if (AI_URL && S.ai === 'on') toast(`Grouped ${plural(ids.length, 'item')} into a new folder`, { action: { label: 'Suggest a name', run: () => aiName(nf.id) } });
 }
 function sortFolder(id, mode) {
   const f = node(id);
@@ -1372,6 +1434,9 @@ function renderTop() {
   el.undo.title = undoStack.length ? `Undo ${lc1(undoStack.at(-1).label)} (${MOD}+Z)` : 'Nothing to undo';
   el.redo.title = redoStack.length ? `Redo ${lc1(redoStack.at(-1).label)} (${MOD}+Shift+Z)` : 'Nothing to redo';
   el.exportBtn.disabled = blank;
+  const ab = $('aiBtn');
+  ab.hidden = !AI_URL; ab.disabled = blank; ab.classList.toggle('on', S.ai === 'on');
+  ab.title = blank ? 'Open a bookmarks file to use Bindery Assist' : S.ai === 'on' ? 'Bindery Assist' : 'Bindery Assist: optional AI help';
   el.exportBtn.title = S.noFile ? 'Import a bookmarks file first' : blank ? 'This file has nothing to export' : 'Save a bookmarks .html file you can import into Chrome';
   el.q.disabled = blank;
   el.app.classList.toggle('blank', blank);
@@ -1467,9 +1532,10 @@ function openMenu(x, y, items) {
   const m = el.menu;
   m.innerHTML = items.map((it, i) => it === 'sep' ? '<div class="msep"></div>'
     : it.heading ? `<div class="mlabel">${esc(it.heading)}</div>`
+    : it.label == null ? `<div class="mnote">${esc(it.note)}</div>`
     : it.checked != null ? `<button class="mi${it.note ? ' tall' : ''}" role="menuitemcheckbox" aria-checked="${it.checked}" data-i="${i}"><i class="mcheck">${it.checked ? I.check : ''}</i><span>${esc(it.label)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</span></button>`
     : it.href ? `<a class="mi" role="menuitem" href="${esc(it.href)}" target="_blank" rel="noopener noreferrer" data-i="${i}">${I[it.icon] || ''}<span>${esc(it.label)}</span></a>`
-    : `<button class="mi${it.danger ? ' danger' : ''}" role="menuitem" data-i="${i}">${I[it.icon] || ''}<span>${esc(it.label)}</span>${it.kbd ? `<kbd>${esc(it.kbd)}</kbd>` : ''}</button>`).join('');
+    : `<button class="mi${it.danger ? ' danger' : ''}${it.ai ? ' ai' : ''}" role="menuitem" data-i="${i}">${I[it.icon] || ''}<span>${esc(it.label)}</span>${it.kbd ? `<kbd>${esc(it.kbd)}</kbd>` : ''}</button>`).join('');
   m.hidden = false;
   const r = m.getBoundingClientRect();
   m.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
@@ -1514,6 +1580,14 @@ function rowMenu(id, x, y) {
     if (S.view.kind !== 'folder') items.push({ label: 'Show in its folder', icon: 'reveal', run: () => reveal(id) });
     items.push('sep');
   }
+  if (AI_URL) {
+    const ai = [], links = ids.filter(x => node(x).type === 'link' && !/^javascript:/i.test(node(x).url));
+    if (!many && n.type === 'folder') ai.push(
+      { label: 'Tidy into folders…', icon: 'tidy', ai: true, run: () => withAI(() => aiTidy(id)) },
+      { label: 'Suggest a name…', icon: 'tag', ai: true, run: () => withAI(() => aiName(id)) });
+    if (links.length) ai.push({ label: links.length > 1 ? `Clean up ${fmt(links.length)} titles…` : 'Clean up the title…', icon: 'retitle', ai: true, run: () => withAI(() => aiTitles(links)) });
+    if (ai.length) items.push(...ai, 'sep');
+  }
   items.push({ label: many ? `Move ${fmt(ids.length)} items to…` : 'Move to…', icon: 'move', kbd: 'M', run: () => openMovePicker(ids) });
   items.push({ label: 'Group into new folder', icon: 'group', kbd: 'G', run: () => group(ids) });
   items.push({ label: 'Cut', icon: 'cut', kbd: `${MOD}+X`, run: () => cut(ids) });
@@ -1526,6 +1600,10 @@ function treeMenu(id, x, y) {
   if (!isRoot) items.push({ label: 'Rename', icon: 'pencil', run: () => startEdit(id, 'tree') });
   items.push({ label: 'New folder inside', icon: 'plus', run: () => newFolder(id, 0) });
   if (S.clip) items.push({ label: `Paste ${S.clip.ids.length} here`, icon: 'paste', run: () => { openFolder(id); paste(); } });
+  if (AI_URL) {
+    items.push('sep', { label: 'Tidy into folders…', icon: 'tidy', ai: true, run: () => withAI(() => aiTidy(id)) });
+    if (!isRoot) items.push({ label: 'Suggest a name…', icon: 'tag', ai: true, run: () => withAI(() => aiName(id)) }, 'sep');
+  }
   if (!isRoot) {
     items.push({ label: 'Move to…', icon: 'move', run: () => openMovePicker([id]) });
     items.push({ label: 'Cut', icon: 'cut', run: () => cut([id]) });
@@ -1578,20 +1656,23 @@ function copyText(t) {
 
 /* ---------- dialogs ---------- */
 let modalDone = null, lastFocus = null;
-function openModal(html) {
+function openModal(html, cls = '', sheet = false) {
   lastFocus = document.activeElement;
+  el.dialog.className = 'dialog' + (cls ? ' ' + cls : '');
+  el.modal.classList.toggle('sheet', sheet);
   el.dialog.innerHTML = html; el.modal.hidden = false;
 }
 function closeModal(result) {
   if (el.modal.hidden) return;
-  el.modal.hidden = true; el.dialog.innerHTML = '';
+  el.modal.hidden = true; el.dialog.innerHTML = ''; el.dialog.className = 'dialog'; el.modal.classList.remove('sheet');
   const d = modalDone; modalDone = null; d && d(result);
   if (lastFocus && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true }); else el.list.focus({ preventScroll: true });
 }
 el.modal.addEventListener('pointerdown', e => { if (e.target === el.modal) closeModal(false); });
 el.dialog.addEventListener('click', e => {
   const b = e.target.closest('[data-m]'); if (!b) return;
-  closeModal(b.dataset.m === 'ok');
+  const m = b.dataset.m;
+  closeModal(m === 'ok' ? true : m === 'cancel' ? false : m);
 });
 function confirmDialog({ title, body, ok, danger, focusOk = true }) {
   return new Promise(res => {
@@ -1678,16 +1759,228 @@ function openKeys() {
   el.dialog.querySelector('[data-m="ok"]').focus();
 }
 
+/* ---------- bindery assist (optional AI) ----------
+   Off until the person turns it on in the welcome sheet. Each action sends only the bookmarks it's for: titles, and
+   addresses cut down to site and path (no query string, no fragment, nothing for bookmarklets or local files). The
+   page's CSP allows connections to this one address and nowhere else. */
+const AI_URL = (document.querySelector('meta[name="bindery-ai"]')?.content || '').trim().replace(/\/+$/, '');
+const AI_MAX = { tidy: 150, name: 60, titles: 100 };
+class AIError extends Error {}
+const shortName = (s, n = 32) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+function sendableUrl(u) {
+  try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.hostname.replace(/^www\./, '') + x.pathname.replace(/\/$/, '') : ''; }
+  catch { return ''; }
+}
+const aiItem = n => n.type === 'folder' ? { title: `${folderTitle(n)} (folder)`, url: '' } : { title: n.title || '', url: sendableUrl(n.url) };
+
+function onboardHTML(on) {
+  const feat = (i, icon, color, title, text) => `<li style="--i:${i}"><span class="ob-ic" style="--c:var(${color})">${I[icon]}</span><div><b>${title}</b><span class="ob-d">${text}</span></div></li>`;
+  return `<div class="ob-mark">${I.sparkles}</div>
+    <h2 id="obTitle">${on ? 'Bindery Assist' : 'Meet Bindery Assist'}</h2>
+    <p class="ob-sub">Optional AI help for the slow parts of tidying up.</p>
+    <ul class="ob-list">
+      ${feat(0, 'tidy', '--cloth', 'Tidy into folders', 'Turns a cluttered folder into a few clearly named ones. You see the plan, and nothing moves until you say so.')}
+      ${feat(1, 'tag', '--manila', 'Name folders for you', 'Suggests names that fit what’s inside, for that “New folder” you just made.')}
+      ${feat(2, 'retitle', '--leaf', 'Clean up titles', 'Trims site names, “(3)” counts and SEO clutter from bookmark names. Pick which to keep.')}
+      ${feat(3, 'shield', '--violet', 'You stay in charge', 'Nothing is sent until you choose an action, and only the bookmarks it’s for. Every change can be undone.')}
+    </ul>
+    <p class="ob-fine">${I.lock}<span>When you use an action, those bookmarks’ titles and web addresses, without anything after “?”, go to Bindery’s helper on Cloudflare Workers AI to get an answer. The helper doesn’t store them.</span></p>
+    <div class="ob-actions">${on ? `<button class="btn primary ob-go" data-m="ok">Done</button><button class="ob-alt danger" data-m="off">Turn off Bindery Assist</button>`
+         : `<button class="btn primary ob-go" data-m="ok">Turn on Bindery Assist</button><button class="ob-alt" data-m="cancel">Not now</button>`}</div>`;
+}
+/* Shows the welcome sheet. Resolves true when Assist is (still) on afterwards. */
+async function aiOnboarding() {
+  const on = S.ai === 'on';
+  const r = await new Promise(res => {
+    openModal(onboardHTML(on), 'onboard', true);
+    el.dialog.setAttribute('aria-labelledby', 'obTitle');
+    modalDone = res;
+    el.dialog.querySelector('.ob-go').focus();
+  });
+  el.dialog.removeAttribute('aria-labelledby');
+  if (r === 'off') { aiOff(); return false; }
+  if (on) return true;
+  if (r !== true) return false;
+  S.ai = 'on'; saveUI(); renderTop();
+  toast('Bindery Assist is on. Find it under ✦ at the top, and in right-click menus.', { ms: 6000 });
+  return true;
+}
+function aiOff() { S.ai = 'off'; saveUI(); renderTop(); toast('Bindery Assist is off. Nothing is sent unless you turn it on again.'); }
+/* Every AI action goes through here: it asks first, then runs. */
+async function withAI(run) {
+  if (!AI_URL || isBlank()) return;
+  if (S.ai !== 'on' && !(await aiOnboarding())) return;
+  run();
+}
+function assistFolder() {
+  if (S.view.kind === 'folder') return S.view.id;
+  if (S.view.kind === 'tree') return treeFolderOfCursor() || S.root.id;
+  return null;
+}
+function assistMenu(x, y) {
+  const items = [], fid = assistFolder(), f = fid && node(fid);
+  const links = selIds().filter(id => node(id).type === 'link' && !/^javascript:/i.test(node(id).url));
+  if (links.length) items.push({ label: `Clean up ${links.length > 1 ? fmt(links.length) + ' selected titles' : 'the selected title'}`, icon: 'retitle', ai: true, run: () => aiTitles(links) });
+  if (f) {
+    const nm = shortName(folderTitle(f), 26);
+    items.push({ label: `Tidy “${nm}” into folders`, icon: 'tidy', ai: true, run: () => aiTidy(fid) });
+    if (f !== S.root) items.push({ label: `Suggest a name for “${nm}”`, icon: 'tag', ai: true, run: () => aiName(fid) });
+    if (!links.length) items.push({ label: `Clean up titles in “${nm}”`, icon: 'retitle', ai: true, run: () => aiTitles(f.children.map(c => c.id)) });
+  }
+  if (!items.length) items.push({ note: 'Open a folder or select some bookmarks, then come back here.' });
+  items.push('sep', { label: 'About Bindery Assist', icon: 'sparkles', run: aiOnboarding }, { label: 'Turn off Bindery Assist', icon: 'x', run: aiOff });
+  openMenu(x, y, items);
+}
+/* Shows a waiting sheet while the helper thinks. Cancel, Esc or a timeout stops the request. Returns the reply, or
+   null after saying what went wrong. */
+async function aiCall(task, payload, heading, detail) {
+  const ctrl = new AbortController(); let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, 45000);
+  openModal(`<span class="ai-orb">${I.sparkles}</span><h2>${esc(heading)}</h2><p>${esc(detail)}</p><div class="actions"><button class="btn" data-m="cancel">Cancel</button></div>`, 'aiwait');
+  modalDone = () => ctrl.abort();
+  el.dialog.querySelector('[data-m]').focus();
+  try {
+    const res = await fetch(`${AI_URL}/v1/${task}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: ctrl.signal, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer' });
+    if (!res.ok) throw new AIError(res.status === 429 ? 'Bindery Assist is busy. Try again in a minute.'
+      : res.status === 413 || res.status === 400 ? 'That’s more than Bindery Assist can take at once. Try fewer bookmarks.'
+      : 'Bindery Assist couldn’t come up with an answer this time. Try again.');
+    return await res.json();
+  } catch (e) {
+    if (ctrl.signal.aborted && !timedOut) return null;
+    toast(e instanceof AIError ? e.message : timedOut ? 'Bindery Assist took too long to answer. Try again, or with fewer bookmarks.' : 'Couldn’t reach Bindery Assist. Check your connection and try again.', { error: true });
+    return null;
+  } finally {
+    clearTimeout(timer);
+    if (!el.modal.hidden && el.dialog.classList.contains('aiwait')) { modalDone = null; closeModal(); }
+  }
+}
+/* A checklist dialog for reviewing suggestions. Resolves with the ticked entries, or null. */
+function aiReview({ title, intro, rows, okLabel }) {
+  const on = rows.map(() => true);
+  return new Promise(res => {
+    openModal(`<h2>${esc(title)}</h2><p>${intro}</p><div class="ai-list">${rows.map((r, i) => `<label class="ai-row"><input type="checkbox" checked data-i="${i}">${r.html}</label>`).join('')}</div>
+      <p class="note">You can undo this with ${MOD}+Z.</p><div class="actions"><button class="btn" data-m="cancel">Cancel</button><button class="btn primary" data-m="ok"></button></div>`, 'wide');
+    const ok = el.dialog.querySelector('[data-m="ok"]');
+    const sync = () => { const picked = rows.filter((_, i) => on[i]); ok.textContent = okLabel(picked); ok.disabled = !picked.length; };
+    el.dialog.querySelector('.ai-list').addEventListener('change', e => { on[+e.target.dataset.i] = e.target.checked; sync(); });
+    sync();
+    modalDone = yes => res(yes ? rows.filter((_, i) => on[i]) : null);
+    ok.focus();
+  });
+}
+
+async function aiTidy(id) {
+  const f = node(id); if (!f) return;
+  const links = f.children.filter(c => c.type === 'link');
+  if (links.length < 4) { toast(`Tidying needs at least 4 bookmarks directly in “${folderTitle(f)}”.`); return; }
+  const sent = links.slice(0, AI_MAX.tidy), subs = f.children.filter(c => c.type === 'folder');
+  const data = await aiCall('tidy', { folder: folderTitle(f), existing: subs.map(folderTitle), items: sent.map(aiItem) },
+    `Finding folders for ${plural(sent.length, 'bookmark')}`,
+    `Sending their titles and addresses to Bindery Assist.${links.length > sent.length ? ` That’s the first ${fmt(sent.length)} of ${fmt(links.length)}.` : ''}`);
+  if (!data || !node(id)) return;
+  // Check the reply against the folder as it is: real bookmarks, each once, same-named folders merged.
+  const used = new Set(), plan = new Map();
+  for (const g of Array.isArray(data.folders) ? data.folders : []) {
+    const name = String(g?.name ?? '').trim().slice(0, 60); if (!name) continue;
+    const key = normName(name), into = subs.find(s => idx.has(s.id) && normName(folderTitle(s)) === key);
+    const p = plan.get(key) || { name: into ? folderTitle(into) : name, into: into?.id || null, ids: [] };
+    for (const i of Array.isArray(g.items) ? g.items : []) if (Number.isInteger(i) && sent[i] && !used.has(i) && parentOf(sent[i].id) === f) { used.add(i); p.ids.push(sent[i].id); }
+    if (p.ids.length) plan.set(key, p);
+  }
+  if (!plan.size) { toast('Bindery Assist didn’t find a useful way to group these. Nothing changed.'); return; }
+  const moving = [...plan.values()].reduce((n, p) => n + p.ids.length, 0);
+  const picked = await aiReview({
+    title: `Tidy “${folderTitle(f)}”`,
+    intro: `Bindery Assist suggests ${plural(plan.size, 'folder')} for ${fmt(moving)} of the ${plural(links.length, 'bookmark')} here. Untick any you don’t want. Everything else stays where it is.`,
+    rows: [...plan.values()].map(p => ({ ...p, html: `<span class="ico fold">${I.folder}</span><span class="nm"><b>${esc(p.name)}</b><small>${esc(p.ids.slice(0, 4).map(x => nameOf(node(x))).join(', '))}${p.ids.length > 4 ? ', …' : ''}</small></span><span class="tag">${p.into ? 'Existing · ' : ''}${fmt(p.ids.length)}</span>` })),
+    okLabel: ps => { const n = ps.reduce((s, p) => s + p.ids.length, 0); return n ? `Move ${plural(n, 'bookmark')}` : 'Nothing to move'; },
+  });
+  if (!picked?.length || !node(id)) return;
+  let moved = 0;
+  const ok = mutate(`Tidying of “${folderTitle(f)}”`, () => {
+    let at = f.children.findIndex(c => c.type === 'link'); if (at < 0) at = f.children.length;
+    for (const p of picked) {
+      let dest = p.into && f.children.find(c => c.id === p.into);
+      if (!dest) { dest = { id: nid(), type: 'folder', title: p.name, attrs: { ADD_DATE: nowS(), LAST_MODIFIED: nowS() }, children: [] }; f.children.splice(at++, 0, dest); }
+      for (const cid of p.ids) {
+        const i = f.children.findIndex(c => c.id === cid); if (i < 0) continue;
+        const [n] = f.children.splice(i, 1); if (i < at) at--;
+        dest.children.push(n); moved++;
+      }
+    }
+    if (!moved) return false;
+  });
+  if (!ok) return;
+  S.expanded.add(id);
+  if (S.view.kind === 'tree') { S.open.add(id); buildRows(); }
+  renderAll();
+  toast(`Moved ${plural(moved, 'bookmark')} into ${plural(picked.length, 'folder')}`, { undo: true });
+}
+
+async function aiName(id) {
+  const f = node(id); if (!f || f === S.root) return;
+  if (!f.children.length) { toast(`“${folderTitle(f)}” is empty. Add some bookmarks first, then ask for a name.`); return; }
+  const sent = f.children.slice(0, AI_MAX.name);
+  const data = await aiCall('name', { current: f.title, items: sent.map(aiItem) }, `Naming “${shortName(folderTitle(f), 40)}”`,
+    `Sending the titles and addresses of the ${plural(sent.length, 'item')} inside it to Bindery Assist.`);
+  if (!data || !node(id)) return;
+  const names = [...new Set((Array.isArray(data.names) ? data.names : []).map(n => String(n ?? '').trim().slice(0, 60)))].filter(n => n && n !== f.title).slice(0, 3);
+  if (!names.length) { toast('Bindery Assist didn’t have a better name this time.'); return; }
+  const pick = await new Promise(res => {
+    openModal(`<h2>Name “${esc(folderTitle(f))}”</h2><p>Suggestions based on what’s inside. Pick one, or keep the name it has.</p>
+      <div class="picks">${names.map((n, i) => `<button class="pick" data-pick="${i}">${I.tag}<span>${esc(n)}</span></button>`).join('')}</div>
+      <div class="actions"><button class="btn" data-m="cancel">Keep “${esc(shortName(folderTitle(f), 28))}”</button></div>`);
+    modalDone = res;
+    const box = el.dialog.querySelector('.picks');
+    box.addEventListener('click', e => { const b = e.target.closest('[data-pick]'); if (b) closeModal(names[+b.dataset.pick]); });
+    box.addEventListener('keydown', e => {
+      const bs = [...box.children], i = bs.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); bs[(i + (e.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length].focus(); }
+    });
+    box.querySelector('.pick').focus();
+  });
+  if (typeof pick !== 'string' || !node(id)) return;
+  renameNode(id, pick);
+  toast(`Renamed to “${pick}”`, { undo: true });
+}
+
+async function aiTitles(ids) {
+  const links = ids.map(node).filter(n => n?.type === 'link' && !/^javascript:/i.test(n.url));
+  if (!links.length) { toast('There are no bookmarks here to clean up.'); return; }
+  const sent = links.slice(0, AI_MAX.titles);
+  const data = await aiCall('titles', { items: sent.map(aiItem) }, `Cleaning up ${plural(sent.length, 'title')}`,
+    `Sending ${sent.length === 1 ? 'this bookmark’s' : 'these bookmarks’'} titles and addresses to Bindery Assist.${links.length > sent.length ? ` That’s the first ${fmt(sent.length)} of ${fmt(links.length)}.` : ''}`);
+  if (!data) return;
+  const seen = new Set(), changes = [];
+  for (const t of Array.isArray(data.titles) ? data.titles : []) {
+    const n = sent[t?.item], title = String(t?.title ?? '').trim().slice(0, 200);
+    if (!n || !idx.has(n.id) || seen.has(n.id) || !title || title === n.title) continue;
+    seen.add(n.id); changes.push({ n, title });
+  }
+  if (!changes.length) { toast(sent.length === 1 ? 'That title already looks clean.' : 'These titles already look clean. Nothing changed.'); return; }
+  const picked = await aiReview({
+    title: changes.length === 1 ? 'Clean up this title?' : `Clean up ${fmt(changes.length)} titles?`,
+    intro: `Bindery Assist suggests ${changes.length === 1 ? 'a shorter title' : 'these shorter titles'}${sent.length > changes.length ? `. The other ${plural(sent.length - changes.length, 'title')} already looked fine` : ''}. Untick any you want to keep as they are.`,
+    rows: changes.map(c => ({ ...c, html: `${iconHTML(c.n)}<span class="nm"><span class="new">${esc(c.title)}</span><span class="old">${esc(c.n.title)}</span></span>` })),
+    okLabel: ps => ps.length ? `Rename ${plural(ps.length, 'bookmark')}` : 'Nothing to rename',
+  });
+  if (!picked?.length) return;
+  const live = picked.filter(c => idx.has(c.n.id));
+  if (!mutate(`Title cleanup of ${plural(live.length, 'bookmark')}`, () => { for (const c of live) c.n.title = c.title; })) return;
+  toast(`Renamed ${plural(live.length, 'bookmark')}`, { undo: true });
+}
+
 /* ---------- toasts ---------- */
-function toast(msg, { undo: withUndo = false, error = false, ms } = {}) {
+function toast(msg, { undo: withUndo = false, error = false, ms, action } = {}) {
   const t = document.createElement('div');
   t.className = 'toast' + (error ? ' err' : '');
   t.setAttribute('role', 'status');
-  t.innerHTML = `<span>${esc(msg)}</span>${withUndo ? '<button type="button">Undo</button>' : ''}`;
-  if (withUndo) t.querySelector('button').onclick = () => { t.remove(); undo(); };
+  t.innerHTML = `<span>${esc(msg)}</span>${action ? `<button type="button" data-t="act">${esc(action.label)}</button>` : ''}${withUndo ? '<button type="button" data-t="undo">Undo</button>' : ''}`;
+  if (withUndo) t.querySelector('[data-t="undo"]').onclick = () => { t.remove(); undo(); };
+  if (action) t.querySelector('[data-t="act"]').onclick = () => { t.remove(); action.run(); };
   el.toasts.appendChild(t);
   while (el.toasts.children.length > 2) el.toasts.firstChild.remove();
-  setTimeout(() => t.remove(), ms || (withUndo ? 6500 : error ? 7000 : 3800));
+  setTimeout(() => t.remove(), ms || (withUndo || action ? 6500 : error ? 7000 : 3800));
 }
 
 /* ---------- import / export ---------- */
@@ -1774,7 +2067,7 @@ function persist(now) {
   };
   now ? run() : (persistT = setTimeout(run, 600));
 }
-function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ dupeMode: S.dupeMode, layout: S.layout, remember: S.remember, autoSort: S.autoSort })); } catch {} }
+function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ dupeMode: S.dupeMode, layout: S.layout, remember: S.remember, autoSort: S.autoSort, ai: S.ai })); } catch {} }
 function setRemember(on) {
   if (S.editing) commitEdit();
   S.remember = on; saveUI(); persist(true);
@@ -1798,7 +2091,7 @@ async function requestForget() {
   toast('Forgot your bookmarks on this device.');
 }
 function restore() {
-  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; S.autoSort = ui.autoSort === true; } catch {}
+  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; S.autoSort = ui.autoSort === true; S.ai = ui.ai === 'on' || ui.ai === 'off' ? ui.ai : null; } catch {}
   if (!S.remember) { dropStored(); return false; }
   try {
     const raw = localStorage.getItem(LS_SESSION); if (!raw) return false;
@@ -2065,6 +2358,7 @@ $('exportBtn').addEventListener('click', doExport);
 el.undo.addEventListener('click', undo);
 el.redo.addEventListener('click', redo);
 $('keysBtn').addEventListener('click', openKeys);
+$('aiBtn').addEventListener('click', () => withAI(() => { const r = $('aiBtn').getBoundingClientRect(); assistMenu(r.right - 280, r.bottom + 6); }));
 $('rememberBtn').addEventListener('click', () => setRemember(!S.remember));
 $('forgetBtn').addEventListener('click', requestForget);
 $('navBtn').addEventListener('click', () => el.app.classList.toggle('nav-open'));
@@ -2141,6 +2435,7 @@ $('tfIco').innerHTML = I.filter;
 $('tfClose').innerHTML = I.x;
 renderTreeTools();
 $('navBtn').innerHTML = I.side;
+$('aiBtn').innerHTML = I.sparkles;
 el.undo.innerHTML = I.undo; el.redo.innerHTML = I.redo;
 $('importBtn').innerHTML = `${I.import}<span class="lbl-wide">Import</span>`;
 $('exportBtn').innerHTML = `${I.export}<span>Export</span>`;
