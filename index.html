@@ -29,7 +29,8 @@
   --rule:#E1E5E1; --rule-2:#CFD5D0;
   --cloth:#2F4E9E; --cloth-ink:#253F80; --cloth-soft:#E7ECF8; --on-cloth:#FFFFFF;
   --hover:#EEF0EC; --select:#E2E8F7; --focus:#2F4E9E;
-  --manila:#A97E2F; --manila-fill:#F5E9CF; --leaf:#2F7D52; --violet:#6B48C6;
+  --manila:#A97E2F; --manila-fill:#F5E9CF; --leaf:#2F7D52; --violet:#6B48C6; --teal:#1C7C88;
+  --think-a:#8B5CF6; --think-b:#3B82F6; --think-a-soft:rgba(139,92,246,.18); --think-b-soft:rgba(59,130,246,.18);
   --danger:#B13A2E; --danger-soft:#FAE9E6; --on-danger:#FFFFFF;
   --tray:#1D2422; --tray-ink:#F1F3F0; --tray-dim:#9AA49F; --tray-hover:#2C3532; --tray-danger:#F2907F;
   --scrim:rgba(18,24,22,.38);
@@ -45,7 +46,8 @@
   --rule:#252B29; --rule-2:#343B38;
   --cloth:#93A8F0; --cloth-ink:#B8C6F6; --cloth-soft:#1E2640; --on-cloth:#0F1630;
   --hover:#1F2523; --select:#1F2944; --focus:#93A8F0;
-  --manila:#D4AD62; --manila-fill:#3A3020; --leaf:#73C99B; --violet:#B39EF5;
+  --manila:#D4AD62; --manila-fill:#3A3020; --leaf:#73C99B; --violet:#B39EF5; --teal:#6CC6D1;
+  --think-a:#A98BFA; --think-b:#6FA2FF; --think-a-soft:rgba(169,139,250,.22); --think-b-soft:rgba(111,162,255,.22);
   --danger:#EC7A6E; --danger-soft:#3A1F1C; --on-danger:#24100D;
   --tray:#E7EBE8; --tray-ink:#151A18; --tray-dim:#5E6763; --tray-hover:#D3D9D5; --tray-danger:#A9322A;
   --scrim:rgba(0,0,0,.55);
@@ -58,7 +60,8 @@
   --rule:#252B29; --rule-2:#343B38;
   --cloth:#93A8F0; --cloth-ink:#B8C6F6; --cloth-soft:#1E2640; --on-cloth:#0F1630;
   --hover:#1F2523; --select:#1F2944; --focus:#93A8F0;
-  --manila:#D4AD62; --manila-fill:#3A3020; --leaf:#73C99B; --violet:#B39EF5;
+  --manila:#D4AD62; --manila-fill:#3A3020; --leaf:#73C99B; --violet:#B39EF5; --teal:#6CC6D1;
+  --think-a:#A98BFA; --think-b:#6FA2FF; --think-a-soft:rgba(169,139,250,.22); --think-b-soft:rgba(111,162,255,.22);
   --danger:#EC7A6E; --danger-soft:#3A1F1C; --on-danger:#24100D;
   --tray:#E7EBE8; --tray-ink:#151A18; --tray-dim:#5E6763; --tray-hover:#D3D9D5; --tray-danger:#A9322A;
   --scrim:rgba(0,0,0,.55);
@@ -349,6 +352,44 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .keys .h{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-top:8px}
 @keyframes fade{from{opacity:0}}
 
+/* ---------- new bookmark ---------- */
+.dialog.newbm{width:min(520px,100%)}
+.nb-top{display:flex;align-items:flex-end;gap:12px}
+.nb-top .field{flex:1;min-width:0}
+.nb-ico{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--paper);border:1px solid var(--rule)}
+.nb-ico .ico{width:26px;height:26px;font-size:13px}
+.nb-ico .ico img{width:20px;height:20px}
+.nb-ico .ico.blank{color:var(--ink-3)}
+.field{display:grid;gap:5px;margin-top:14px;min-width:0}
+.field>label,.field .flabel{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.field>input{height:38px;min-width:0;border-radius:9px;border:1px solid var(--rule-2);background:var(--sheet);padding:0 11px;outline:none;color:var(--ink)}
+.field>input:focus{border-color:var(--cloth);box-shadow:0 0 0 3px var(--cloth-soft)}
+.field>input.url{font:13px var(--f-mono)}
+.dialog p.nb-status{margin:8px 0 0;min-height:18px;font-size:12.5px;color:var(--ink-3)}
+.dialog p.nb-status.warn{color:var(--manila)}
+.dialog p.nb-status:empty{min-height:0;margin:0}
+.nb-status .chip{height:24px;font-size:12px}
+.fpick{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:4px 10px;border-radius:9px;border:1px solid var(--rule-2);background:var(--sheet);text-align:left}
+.fpick:hover{background:var(--hover)}
+.fpick[aria-expanded="true"]{border-color:var(--cloth)}
+.fpick .nm{flex:1;min-width:0;display:flex;flex-direction:column;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fpick .nm small{font-weight:400;font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis}
+.fpick>svg{transform:rotate(90deg);color:var(--ink-3)}
+.fpick[aria-expanded="true"]>svg{transform:rotate(-90deg)}
+.fp-panel{margin-top:6px;padding:8px;border:1px solid var(--rule);border-radius:10px;background:var(--paper)}
+.fp-panel .mp-list{margin-top:8px;max-height:min(34vh,260px);background:var(--sheet)}
+.mp-row.cur .tag{color:var(--cloth)}
+.mp-row .tag svg{width:14px;height:14px}
+.place-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.place-chips .chip{box-shadow:none}
+.place-chips .chip svg{width:13px;height:13px}
+.place-chips .chip:not(.ask):not(.busy):not(.quiet) svg{color:var(--manila)}
+.chip.on{border-color:var(--cloth);background:var(--cloth-soft);color:var(--cloth-ink)}
+.linkish{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;padding:0;color:var(--cloth-ink);font-weight:500;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.linkish svg{width:13px;height:13px;color:var(--violet)}
+.dialog p.nb-assist{margin:14px 0 0;padding:10px 12px;border-radius:10px;background:var(--paper);font-size:12.5px}
+.newbm .actions .btn.primary svg{color:currentColor}
+
 /* ---------- bindery assist ---------- */
 .vrow[data-view="tidy"] .ficon{color:var(--violet)}
 .grp.tgrp{align-items:center;padding:0 4px 0 8px;font-weight:400;border-radius:0}
@@ -380,20 +421,24 @@ button.tg-name:hover{background:var(--hover)}
 .chip:hover,.chip:focus-visible{border-color:var(--cloth);background:var(--cloth-soft)}
 .chip svg{width:14px;height:14px;color:var(--violet)}
 .chip.ask{color:var(--violet)}
-.chip.busy{color:var(--ink-3);cursor:default;animation:chipPulse 1.2s ease-in-out infinite}
+.chip.busy,.chip.busy:hover{color:var(--ink);cursor:default;background:var(--sheet);border-width:2px;padding:0 12px;border-color:var(--think-a);animation:chipThink 1.6s ease-in-out infinite}
+.chip.busy svg{animation:chipThinkInk 1.6s ease-in-out infinite}
 .chip.quiet{color:var(--ink-3);cursor:default;animation:none}
 .chip.quiet:hover{border-color:var(--rule-2);background:var(--sheet)}
-@keyframes chipPulse{50%{opacity:.55}}
-.ai-btn.on{color:var(--violet)}
+@keyframes chipThink{0%,100%{border-color:var(--think-a);box-shadow:0 0 0 3px var(--think-a-soft)}50%{border-color:var(--think-b);box-shadow:0 0 0 3px var(--think-b-soft)}}
+@keyframes chipThinkInk{0%,100%{color:var(--think-a)}50%{color:var(--think-b)}}
+.ai-btn.on,.ai-btn.on:hover:not(:disabled){background:linear-gradient(145deg,#4A68E0,#8A4CE2);color:#fff;box-shadow:0 2px 10px rgba(124,80,216,.38)}
+.ai-btn.on:hover:not(:disabled){filter:brightness(1.1)}
+.ai-btn.on svg{stroke-width:1.7}
 .mi.ai svg{color:var(--violet)}
 .mnote{padding:8px 10px;max-width:260px;font-size:12.5px;line-height:1.4;color:var(--ink-3)}
 .dialog.wide{width:min(560px,100%)}
-.dialog.onboard{width:min(440px,100%);padding:36px 30px 18px;border-radius:22px;text-align:center}
-.onboard .ob-mark{width:68px;height:68px;margin:0 auto 18px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#3E5FC6,#7C50D8);box-shadow:0 10px 24px rgba(92,72,200,.32)}
+.dialog.onboard{width:min(440px,100%);padding:30px 30px 0;border-radius:22px;text-align:center}
+.onboard .ob-mark{width:64px;height:64px;margin:0 auto 16px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#3E5FC6,#7C50D8);box-shadow:0 10px 24px rgba(92,72,200,.32)}
 .onboard .ob-mark svg{width:36px;height:36px;stroke-width:1.25;color:#fff}
 .onboard h2{font-size:30px;line-height:1.1;margin:0 0 8px}
-.onboard .ob-sub{margin:0 auto 26px;max-width:30ch;font-size:15px}
-.ob-list{list-style:none;margin:0 0 22px;padding:0 4px;display:grid;gap:20px;text-align:left}
+.onboard .ob-sub{margin:0 auto 22px;max-width:30ch;font-size:15px}
+.ob-list{list-style:none;margin:0 0 20px;padding:0 4px;display:grid;gap:16px;text-align:left}
 .ob-list li{display:flex;gap:16px;align-items:flex-start;animation:obIn .45s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(.12s + var(--i) * .07s)}
 .ob-ic{flex:none;width:38px;display:grid;place-items:center;color:var(--c);padding-top:1px}
 .ob-ic svg{width:30px;height:30px;stroke-width:1.3}
@@ -401,6 +446,7 @@ button.tg-name:hover{background:var(--hover)}
 .ob-list .ob-d{display:block;color:var(--ink-2);font-size:13.5px;line-height:1.45}
 .onboard .ob-fine{display:flex;gap:9px;align-items:flex-start;text-align:left;margin:0 0 16px;padding:10px 12px;border-radius:10px;background:var(--paper);font-size:12px;line-height:1.45;color:var(--ink-3)}
 .ob-fine svg{width:14px;height:14px;margin-top:1px}
+.ob-actions{position:sticky;bottom:0;margin:0 -30px;padding:12px 30px 14px;background:var(--sheet);box-shadow:0 -1px 0 var(--rule)}
 .ob-go{width:100%;height:46px;justify-content:center;font-size:15px;border-radius:12px}
 .ob-alt{display:block;margin:6px auto 0;border:0;background:transparent;color:var(--cloth-ink);font-weight:500;padding:9px 14px;border-radius:8px}
 .ob-alt:hover{background:var(--hover)}
@@ -469,7 +515,7 @@ body.dragging .row.sel:hover{background:var(--select)}
   .onboard .ob-mark{width:60px;height:60px;margin-bottom:14px}
   .onboard .ob-sub{margin-bottom:20px}
   .ob-list{gap:16px}
-  .ob-actions{position:sticky;bottom:0;margin:0 -22px;padding:12px 22px calc(10px + env(safe-area-inset-bottom,0px));background:var(--sheet);box-shadow:0 -1px 0 var(--rule)}
+  .ob-actions{margin:0 -22px;padding:12px 22px calc(10px + env(safe-area-inset-bottom,0px))}
 }
 @keyframes sheetUp{from{transform:translateY(48px);opacity:0}}
 @media (hover:none){
@@ -577,6 +623,7 @@ const I = {
   filter: sv('<path d="M2.25 3.25h11.5l-4.5 5.5v4.25l-2.5 1.25V8.75z"/>'),
   az: sv('<path d="M2 12.5 4.75 4l2.75 8.5M3 9.75h3.5"/><path d="M9.5 4h4.25L9.5 12.5h4.5"/>'),
   dash: sv('<path d="M4 8h8"/>'),
+  bmplus: sv('<path d="M4.25 2.25h7.5v11.5L8 11.1l-3.75 2.65z"/><path d="M8 4.75v4M6 6.75h4"/>'),
   sparkles: sv('<path d="M7 2.5 8.15 6.35 12 7.5 8.15 8.65 7 12.5 5.85 8.65 2 7.5 5.85 6.35z"/><path d="M12.25 9.75v3.5M10.5 11.5H14"/>'),
   tidy: sv('<path d="M1.75 6.4c0-.55.45-1 1-1h2.6l1.25 1.25h4.65c.55 0 1 .45 1 1v4.6c0 .55-.45 1-1 1h-8.5c-.55 0-1-.45-1-1z"/><path d="M4.25 3.5c0-.55.45-1 1-1h2.1l1.15 1.15h4.25c.55 0 1 .45 1 1v4.6"/>'),
   tag: sv('<path d="M2.25 3.25c0-.55.45-1 1-1h4.1c.27 0 .52.1.71.29l5.4 5.4a1 1 0 0 1 0 1.42l-4.1 4.1a1 1 0 0 1-1.42 0l-5.4-5.4a1 1 0 0 1-.29-.71z"/><circle cx="5.5" cy="5.5" r="1"/>'),
@@ -1441,14 +1488,14 @@ function renderHead() {
     if (n === S.root) meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· items here sit at the top level of the file</span>`;
     meta += azNote;
     acts = (S.clip ? `<button class="btn primary" data-h="paste">${I.paste}Paste ${S.clip.ids.length} here</button>` : '') +
-      `<button class="btn" data-h="newfolder">${I.plus}New folder</button>` + sortBtn + layoutSeg;
+      `<button class="btn" data-h="newfolder">${I.plus}New folder</button><button class="btn" data-h="newbookmark">${I.plus}New bookmark</button>` + sortBtn + layoutSeg;
   } else if (v.kind === 'tree') {
     crumbs = '<span>Everything, as an outline</span>';
     title = `<h1 class="ptitle">${esc(folderTitle(S.root))}</h1>`;
     const openCount = [...S.open].filter(id => idx.has(id) && id !== S.root.id).length;
     meta = `${plural(stats.links, 'bookmark')} in ${plural(stats.folders, 'folder')} <span class="dim">· ${openCount ? `${plural(openCount, 'folder')} open` : 'all folders closed'}</span>${azNote}`;
     acts = (S.clip ? `<button class="btn primary" data-h="paste">${I.paste}Paste ${S.clip.ids.length}</button>` : '') +
-      `<button class="btn" data-h="newfolder">${I.plus}New folder</button>` + sortBtn +
+      `<button class="btn" data-h="newfolder">${I.plus}New folder</button><button class="btn" data-h="newbookmark">${I.plus}New bookmark</button>` + sortBtn +
       `<button class="icon-btn" data-h="expandall" aria-label="Expand all folders" title="Expand all folders">${I.expand}</button>` +
       `<button class="icon-btn" data-h="collapseall" aria-label="Collapse all folders" title="Collapse all folders">${I.collapse}</button>` + layoutSeg;
   } else if (v.kind === 'search') {
@@ -1676,6 +1723,7 @@ function treeMenu(id, x, y) {
   const n = node(id), isRoot = n === S.root, items = [];
   if (!isRoot) items.push({ label: 'Rename', icon: 'pencil', run: () => startEdit(id, 'tree') });
   items.push({ label: 'New folder inside', icon: 'plus', run: () => newFolder(id, 0) });
+  items.push({ label: 'New bookmark here…', icon: 'bmplus', run: () => openNewBookmark(null, { folder: id }) });
   if (S.clip) items.push({ label: `Paste ${S.clip.ids.length} here`, icon: 'paste', run: () => { openFolder(id); paste(); } });
   if (AI_URL) {
     items.push('sep', { label: 'Tidy into folders…', icon: 'tidy', ai: true, run: () => withAI(() => aiTidy(id)) });
@@ -1815,6 +1863,7 @@ function openKeys() {
     <div class="h">Editing</div>
     <dt>${k('Enter')} ${k('F2')}</dt><dd>Rename. Press Tab to edit a bookmark’s address too.</dd>
     <dt>${k('N')}</dt><dd>New folder in the open folder</dd>
+    <dt>${k('B')}</dt><dd>New bookmark: paste an address and choose a folder</dd>
     <dt>${k('M')}</dt><dd>Move the selection to another folder</dd>
     <dt>${k('G')}</dt><dd>Group the selection into a new folder</dd>
     <dt>${k(MOD + '+X')} ${k(MOD + '+V')}</dt><dd>Cut, then paste into the open folder</dd>
@@ -1837,6 +1886,192 @@ function openKeys() {
     <dt>Right-click</dt><dd>Every action for an item or folder</dd>
   </dl><div class="actions"><button class="btn primary" data-m="ok">Done</button></div>`);
   el.dialog.querySelector('[data-m="ok"]').focus();
+}
+
+/* ---------- new bookmark ----------
+   A dialog for one bookmark: address, editable name, folder. With Bindery Assist on, the helper reads the page's name
+   and icon (the page itself can't: its CSP allows no other connections), and can suggest a folder. */
+function defaultFolder() {
+  if (S.view.kind === 'folder' && idx.has(S.view.id)) return S.view.id;
+  if (S.view.kind === 'tree') { const f = treeFolderOfCursor(); if (f) return f; }
+  return S.root.children.find(isBar)?.id || S.root.id;
+}
+function folderList() { const out = []; const walk = (n, d) => { out.push({ id: n.id, d }); for (const c of n.children) if (c.type === 'folder') walk(c, d + 1); }; walk(S.root, 0); return out; }
+const folderPath = id => node(id) === S.root ? folderTitle(S.root) : [...ancestors(id).slice(1), node(id)].map(folderTitle).join(' / ');
+/* "example.com/x" becomes "https://example.com/x". Returns null for anything that isn't an address. */
+function normalizeAddress(raw) {
+  let s = String(raw ?? '').trim(); if (!s || /\s/.test(s)) return null;
+  if (!/^[a-z][\w+.-]*:/i.test(s) || /^[^/:]+\.[^/:]+:\d+/.test(s)) { if (!/^[^/]+\.[^/.]+/.test(s)) return null; s = 'https://' + s; }
+  try {
+    const u = new URL(s);
+    if (/^https?:$/.test(u.protocol) && !u.hostname.includes('.') && u.hostname !== 'localhost') return null;
+    return u.href;
+  } catch { return null; }
+}
+function savedCopy(href) {
+  const k = normUrl(href); if (!k || /^javascript:/i.test(href)) return null;
+  for (const [id, r] of idx) if (r.node.type === 'link' && normUrl(r.node.url) === k) return id;
+  return null;
+}
+function openNewBookmark(prev, { fetchNow = false, folder } = {}) {
+  if (S.noFile) { toast('Import a bookmarks file first, then add bookmarks to it.'); return; }
+  if (S.editing) commitEdit();
+  const st = prev || { url: '', title: '', icon: '', folder: folder && idx.has(folder) ? folder : defaultFolder(), touched: false, picks: null };
+  if (!idx.has(st.folder)) st.folder = S.root.id;
+  const assist = !AI_URL ? 'none' : S.ai === 'on' ? 'on' : 'ask';
+  openModal(`<h2>New bookmark</h2>
+    <div class="nb-top"><span class="nb-ico" id="nbIco" aria-hidden="true"></span>
+      <div class="field"><label for="nbUrl">Address</label><input id="nbUrl" class="url" type="text" inputmode="url" placeholder="https://example.com" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(st.url)}"></div></div>
+    <div class="field"><label for="nbName">Name</label><input id="nbName" placeholder="${assist === 'on' ? 'Filled in from the page, or type your own' : 'Name'}" autocomplete="off" spellcheck="false" value="${esc(st.title)}"></div>
+    <p class="nb-status" id="nbStatus" aria-live="polite"></p>
+    <div class="field"><span class="flabel" id="nbFolderLbl">Folder</span>
+      <button type="button" class="fpick" id="nbFolder" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="nbFolderLbl nbFolder"></button>
+      <div class="fp-panel" id="nbPanel" hidden>
+        <label class="search"><span>${I.search}</span><input id="nbFq" placeholder="Find a folder" autocomplete="off" spellcheck="false" aria-label="Find a folder"></label>
+        <div class="mp-list" id="nbFl" role="listbox" aria-labelledby="nbFolderLbl"></div>
+      </div>
+      ${assist === 'on' ? '<div class="place-chips" id="nbPlace" role="group" aria-label="Folder suggestions"></div>' : ''}
+    </div>
+    ${assist === 'ask' ? `<p class="nb-assist"><button type="button" class="linkish" data-nb="assist">${I.sparkles}Turn on Bindery Assist</button> to fill in the name and icon from the page, and get a folder suggestion.</p>` : ''}
+    <div class="actions"><button class="btn" data-m="cancel">Cancel</button><button class="btn primary" data-nb="add">${I.plus}Add bookmark</button></div>`, 'newbm');
+  const $d = id => el.dialog.querySelector('#' + id);
+  const urlIn = $d('nbUrl'), nameIn = $d('nbName'), status = $d('nbStatus'), pickBtn = $d('nbFolder'), panel = $d('nbPanel'), fq = $d('nbFq'), fl = $d('nbFl'), place = $d('nbPlace');
+  let ctrl = null, timer = 0, fetched = '', placeCtrl = null, active = -1, shown = [];
+  modalDone = () => { ctrl?.abort(); placeCtrl?.abort(); clearTimeout(timer); };
+  const live = () => el.dialog.contains(urlIn);
+  const href = () => normalizeAddress(urlIn.value);
+  const setStatus = (html, cls = '') => { status.className = 'nb-status' + (cls ? ' ' + cls : ''); status.innerHTML = html; };
+  const drawIcon = () => {
+    const h = href();
+    $d('nbIco').innerHTML = h ? iconHTML({ type: 'link', url: h, title: nameIn.value, attrs: st.icon ? { ICON: st.icon } : {} }) : `<span class="ico blank">${I.link}</span>`;
+    const img = $d('nbIco').querySelector('img');
+    if (img) img.onerror = () => { st.icon = ''; drawIcon(); };
+  };
+  const drawFolder = () => {
+    const f = node(st.folder), parent = f === S.root ? '' : parentOf(f.id) === S.root ? '' : folderPath(parentOf(f.id).id);
+    pickBtn.innerHTML = `${iconHTML(f)}<span class="nm">${esc(folderTitle(f))}${parent ? `<small>${esc(parent)}</small>` : ''}</span>${I.chev}`;
+    pickBtn.title = folderPath(f.id);
+    place?.querySelectorAll('[data-pf]').forEach(b => b.classList.toggle('on', b.dataset.pf === st.folder));
+  };
+  const drawDupe = () => {
+    const h = href(), id = h && savedCopy(h);
+    if (id) setStatus(`You already have this address in “${esc(folderPath(parentOf(id).id))}”, as “${esc(nameOf(node(id)))}”. You can still add it again.`, 'warn');
+    else if (status.classList.contains('warn')) setStatus('');
+  };
+  const drawPlace = () => {
+    if (!place) return;
+    if (placeCtrl) { place.innerHTML = `<span class="chip busy">${I.sparkles}Thinking…</span>`; return; }
+    const picks = (st.picks || []).filter(id => idx.has(id));
+    place.innerHTML = picks.length
+      ? picks.map(id => `<button type="button" class="chip${id === st.folder ? ' on' : ''}" data-pf="${id}" title="${esc(folderPath(id))}">${I.folder}${esc(folderTitle(node(id)))}</button>`).join('')
+      : st.picks ? `<span class="chip quiet">No good match. Pick a folder above.</span><button type="button" class="chip ask" data-nb="place">${I.sparkles}Try again</button>`
+      : `<button type="button" class="chip ask" data-nb="place">${I.sparkles}Suggest a folder</button>`;
+  };
+  // The page's name and icon, read by the helper.
+  const readPage = async () => {
+    const h = href();
+    if (assist !== 'on' || !h || !/^https?:/i.test(h) || h === fetched) return;
+    fetched = h; ctrl?.abort(); const my = ctrl = new AbortController();
+    setStatus(`<span class="chip busy small">${I.sparkles}Reading the page…</span>`);
+    try {
+      const d = await aiFetch('page', { url: h }, my.signal);
+      if (my.signal.aborted || !live() || href() !== h) return;
+      st.icon = typeof d?.icon === 'string' && /^data:image\/[\w.+-]+;base64,/.test(d.icon) && d.icon.length < 70000 ? d.icon : '';
+      const t = String(d?.title ?? '').trim().slice(0, 200);
+      if (t && !st.touched) { nameIn.value = t; st.title = t; }
+      drawIcon();
+      if (!t) setStatus('Couldn’t read a name from that page, so type one above.');
+      else if (st.touched && t !== nameIn.value.trim()) { st.pageTitle = t; setStatus(`The page calls itself <button type="button" class="linkish" data-nb="usetitle">“${esc(t)}”</button>. Click to use that name.`); }
+      else setStatus('');
+      drawDupe();
+    } catch (e) {
+      if (my.signal.aborted || !live()) return;
+      fetched = '';
+      setStatus(`${esc(e instanceof AIError ? e.message : 'Couldn’t read that page.')} You can type a name instead.`);
+    } finally { if (ctrl === my) ctrl = null; }
+  };
+  const suggestPlace = async () => {
+    const h = href();
+    if (!h) { setStatus('Add an address first, then ask for a folder.', 'warn'); urlIn.focus(); return; }
+    const all = folderList().filter(x => x.id !== S.root.id).slice(0, 400);
+    if (all.length < 2) { setStatus('There’s only one folder to choose from.'); return; }
+    placeCtrl?.abort(); const my = placeCtrl = new AbortController();
+    drawPlace();
+    try {
+      const d = await aiFetch('place', { items: [{ title: nameIn.value.trim(), url: sendableUrl(h) || h.slice(0, 300) }], folders: all.map(x => folderPath(x.id)) }, my.signal);
+      if (my.signal.aborted || !live()) return;
+      st.picks = (Array.isArray(d?.folders) ? d.folders : []).filter(i => Number.isInteger(i) && all[i]).map(i => all[i].id).slice(0, 3);
+      if (st.picks.length) { st.folder = st.picks[0]; drawFolder(); }
+    } catch (e) {
+      if (my.signal.aborted || !live()) return;
+      toast(e instanceof AIError ? e.message : 'Bindery Assist couldn’t come up with an answer this time. Try again.', { error: true });
+    } finally { if (placeCtrl === my) placeCtrl = null; if (live()) drawPlace(); }
+  };
+  // Folder picker: a searchable list under the button.
+  const drawList = () => {
+    const t = fq.value.trim().toLowerCase();
+    shown = t ? folderList().filter(x => folderTitle(node(x.id)).toLowerCase().includes(t)) : folderList();
+    if (active >= shown.length) active = shown.length - 1;
+    fl.innerHTML = shown.length ? shown.map((x, i) => `<div class="mp-row${i === active ? ' act' : ''}${x.id === st.folder ? ' cur' : ''}" data-k="${i}" role="option" aria-selected="${x.id === st.folder}" style="--d:${t ? 0 : x.d}">${iconHTML(node(x.id))}<span class="nm"><b>${esc(folderTitle(node(x.id)))}</b>${t && x.id !== S.root.id ? `<small>${esc(folderPath(x.id))}</small>` : ''}</span>${x.id === st.folder ? `<span class="tag">${I.check}</span>` : ''}</div>`).join('')
+      : '<div class="mp-label">No folders match</div>';
+  };
+  const togglePanel = open => {
+    panel.hidden = !open; pickBtn.setAttribute('aria-expanded', String(open));
+    if (open) { fq.value = ''; active = folderList().findIndex(x => x.id === st.folder); drawList(); fl.querySelector('.cur')?.scrollIntoView({ block: 'nearest' }); fq.focus(); }
+  };
+  const choose = i => { const x = shown[i]; if (!x) return; st.folder = x.id; drawFolder(); drawPlace(); togglePanel(false); pickBtn.focus(); };
+  const add = () => {
+    const h = href();
+    if (!h) { setStatus('Enter a web address, like example.com.', 'warn'); urlIn.focus(); return; }
+    st.url = h; st.title = nameIn.value.trim();
+    modalDone = null; ctrl?.abort(); placeCtrl?.abort(); clearTimeout(timer);
+    closeModal();
+    addBookmark(st);
+  };
+
+  urlIn.addEventListener('input', () => {
+    st.url = urlIn.value; drawIcon(); drawDupe();
+    if (st.picks) { st.picks = null; drawPlace(); }
+    clearTimeout(timer); timer = setTimeout(readPage, 550);
+  });
+  urlIn.addEventListener('blur', () => { clearTimeout(timer); readPage(); });
+  nameIn.addEventListener('input', () => { st.title = nameIn.value; st.touched = !!nameIn.value.trim(); });
+  for (const inp of [urlIn, nameIn]) inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+  pickBtn.addEventListener('click', () => togglePanel(panel.hidden));
+  fq.addEventListener('input', () => { active = 0; drawList(); });
+  fq.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, Math.min(shown.length - 1, active + (e.key === 'ArrowDown' ? 1 : -1))); drawList(); fl.querySelector('.act')?.scrollIntoView({ block: 'nearest' }); }
+    else if (e.key === 'Enter') { e.preventDefault(); choose(active); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); togglePanel(false); pickBtn.focus(); }
+  });
+  fl.addEventListener('click', e => { const r = e.target.closest('[data-k]'); if (r) choose(+r.dataset.k); });
+  const onClick = e => {
+    const b = e.target.closest('[data-nb], [data-pf]'); if (!b) return;
+    if (b.dataset.pf) { st.folder = b.dataset.pf; drawFolder(); return; }
+    const a = b.dataset.nb;
+    if (a === 'add') add();
+    else if (a === 'place') suggestPlace();
+    else if (a === 'usetitle' && st.pageTitle) { nameIn.value = st.title = st.pageTitle; st.touched = false; setStatus(''); drawIcon(); }
+    else if (a === 'assist') {
+      st.url = urlIn.value; st.title = nameIn.value;
+      modalDone = null; ctrl?.abort(); closeModal();
+      aiOnboarding().then(on => openNewBookmark(st, { fetchNow: on }));
+    }
+  };
+  for (const box of el.dialog.children) box.addEventListener('click', onClick);
+  drawIcon(); drawFolder(); drawPlace(); drawDupe();
+  (st.url ? nameIn : urlIn).focus();
+  if (fetchNow) readPage();
+}
+function addBookmark(st) {
+  const f = node(st.folder) || S.root; let n;
+  const title = st.title || displayUrl(st.url) || st.url;
+  const attrs = { ADD_DATE: nowS() }; if (st.icon) attrs.ICON = st.icon;
+  if (!mutate('New bookmark', () => { n = { id: nid(), type: 'link', title, url: st.url, attrs }; f.children.push(n); })) return;
+  S.expanded.add(f.id);
+  if (S.view.kind === 'folder' && S.view.id === f.id) { selectOnly(n.id); ensureVisible(S.rowPos.get(n.id)); renderList(); renderSelbar(); }
+  else openFolder(f.id, n.id);
+  toast(`Added “${shortName(title, 40)}” to “${shortName(folderTitle(f), 30)}”`, { undo: true });
 }
 
 /* ---------- bindery assist (optional AI) ----------
@@ -1862,9 +2097,10 @@ function onboardHTML(on) {
       ${feat(0, 'tidy', '--cloth', 'Tidy into folders', 'Turns a cluttered folder into a few clearly named ones. You review every bookmark, and nothing moves until you apply.')}
       ${feat(1, 'tag', '--manila', 'Name folders for you', 'Tap a suggestion under the name field to name a folder by what’s inside it.')}
       ${feat(2, 'retitle', '--leaf', 'Clean up titles', 'Trims site names, “(3)” counts and SEO clutter from bookmark names. Pick which to keep.')}
-      ${feat(3, 'shield', '--violet', 'You stay in charge', 'Nothing is sent until you choose an action, and only the bookmarks it’s for. Every change can be undone.')}
+      ${feat(3, 'bmplus', '--teal', 'Fill in new bookmarks', 'Paste an address to get the page’s name and icon, plus a suggestion for which folder it belongs in.')}
+      ${feat(4, 'shield', '--violet', 'You stay in charge', 'Nothing is sent until you choose an action or add a bookmark, and only what that needs. Every change can be undone.')}
     </ul>
-    <p class="ob-fine">${I.lock}<span>When you use an action, those bookmarks’ titles and web addresses, without anything after “?”, go to Bindery’s helper on Cloudflare Workers AI to get an answer. The helper doesn’t store them.</span></p>
+    <p class="ob-fine">${I.lock}<span>An action sends the titles and web addresses (without anything after “?”) of the bookmarks it’s for to Bindery’s helper on Cloudflare Workers AI. A new bookmark sends its full address so the helper can read the page, and suggesting a folder sends your folder names. The helper stores none of it.</span></p>
     <div class="ob-actions">${on ? `<button class="btn primary ob-go" data-m="ok">Done</button><button class="ob-alt danger" data-m="off">Turn off Bindery Assist</button>`
          : `<button class="btn primary ob-go" data-m="ok">Turn on Bindery Assist</button><button class="ob-alt" data-m="cancel">Not now</button>`}</div>`;
 }
@@ -1875,7 +2111,8 @@ async function aiOnboarding() {
     openModal(onboardHTML(on), 'onboard', true);
     el.dialog.setAttribute('aria-labelledby', 'obTitle');
     modalDone = res;
-    el.dialog.querySelector('.ob-go').focus();
+    el.dialog.querySelector('.ob-go').focus({ preventScroll: true });
+    el.dialog.scrollTop = 0;
   });
   el.dialog.removeAttribute('aria-labelledby');
   if (r === 'off') { aiOff(); return false; }
@@ -2673,6 +2910,7 @@ el.phead.addEventListener('click', e => {
   else if (h === 'collapseall') setAllOpen(false);
   else if (h === 'sort') { const r = e.target.closest('button').getBoundingClientRect(); sortMenu(r.left, r.bottom + 6); }
   else if (h === 'paste') paste();
+  else if (h === 'newbookmark') openNewBookmark();
   else if (h === 'tapply') tidyApply();
   else if (h === 'tdiscard') tidyDiscard();
   else if (h === 'selectall') selectAll();
@@ -2769,6 +3007,7 @@ document.addEventListener('keydown', e => {
     case 'm': if (S.sel.size) { e.preventDefault(); openMovePicker(selIds()); } break;
     case 'g': if (S.sel.size) { e.preventDefault(); group(selIds()); } break;
     case 'k': case 'd': if (S.view.kind === 'dupes') { const ids = S.sel.size ? selIds() : S.cursor ? [S.cursor] : []; if (ids.length) { e.preventDefault(); setMarks(ids, lk === 'd'); } } break;
+    case 'b': e.preventDefault(); openNewBookmark(); break;
     case 'n': if (S.view.kind === 'folder') { e.preventDefault(); newFolder(S.view.id, 0); }
       else if (S.view.kind === 'tree') { e.preventDefault(); const t = treeInsertPoint(); newFolder(t.folder, t.at); } break;
     case '/': e.preventDefault(); el.q.focus(); el.q.select(); break;

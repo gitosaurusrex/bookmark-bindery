@@ -82,3 +82,87 @@ test('readJSON accepts objects and strings', () => {
   assert.deepEqual(readJSON('```json\n{"a":2}\n```'), { a: 2 })
   assert.throws(() => readJSON(''))
 })
+
+/* ---------- page: name and icon for a new bookmark ---------- */
+import { pageUrl, pageTitle, iconLinks, decodeEntities } from '../src/index.js'
+
+const PNG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3])
+function fakeWeb(routes) {
+  const seen = []
+  const real = globalThis.fetch
+  globalThis.fetch = async (url, opts) => {
+    seen.push(String(url))
+    const r = routes[String(url)]
+    if (!r) return new Response('nope', { status: 404 })
+    if (r instanceof Error) throw r
+    const res = new Response(r.body, { status: r.status || 200, headers: { 'Content-Type': r.type || 'text/html' } })
+    Object.defineProperty(res, 'url', { value: r.finalUrl || String(url) })
+    return res
+  }
+  return { seen, restore: () => { globalThis.fetch = real } }
+}
+const postPage = url => post('page', { url })
+
+test('page reads og:title and the best icon link, resolved against the final address', async () => {
+  const web = fakeWeb({
+    'https://example.com/a?x=1': { finalUrl: 'https://www.example.com/a/', body: `<html><head><title>Fallback | Site</title>
+      <meta property="og:title" content="Tom &amp; Jerry&#8217;s page">
+      <link rel="apple-touch-icon" href="/apple.png"><link rel="icon" type="image/png" sizes="32x32" href="icons/fav-32.png"></head></html>` },
+    'https://www.example.com/a/icons/fav-32.png': { body: PNG, type: 'image/png' },
+  })
+  try {
+    const res = await handle(postPage('https://example.com/a?x=1'), fakeEnv({}))
+    assert.equal(res.status, 200)
+    const out = await res.json()
+    assert.equal(out.title, 'Tom & Jerry’s page')
+    assert.equal(out.icon, 'data:image/png;base64,' + Buffer.from(PNG).toString('base64'))
+    assert.deepEqual(web.seen, ['https://example.com/a?x=1', 'https://www.example.com/a/icons/fav-32.png'])
+  } finally { web.restore() }
+})
+
+test('page falls back to <title> and /favicon.ico, and skips icons that are too big or not images', async () => {
+  const web = fakeWeb({
+    'https://site.test/': { body: '<title>\n  Plain   title </title><link rel="icon" href="/big.png"><link rel="shortcut icon" href="/page.html">' },
+    'https://site.test/big.png': { body: new Uint8Array(60 * 1024), type: 'image/png' },
+    'https://site.test/page.html': { body: '<html>', type: 'text/html' },
+    'https://site.test/favicon.ico': { body: PNG, type: 'application/octet-stream' },
+  })
+  try {
+    const out = await (await handle(postPage('https://site.test/'), fakeEnv({}))).json()
+    assert.equal(out.title, 'Plain title')
+    assert.match(out.icon, /^data:image\/x-icon;base64,/)
+  } finally { web.restore() }
+})
+
+test('page answers with nothing, not an error, when the site is down or not HTML', async () => {
+  const web = fakeWeb({ 'https://down.test/': new Error('connect failed'), 'https://pdf.test/x.pdf': { body: '%PDF', type: 'application/pdf' } })
+  try {
+    assert.deepEqual(await (await handle(postPage('https://down.test/'), fakeEnv({}))).json(), { title: '', icon: '' })
+    assert.deepEqual(await (await handle(postPage('https://pdf.test/x.pdf'), fakeEnv({}))).json(), { title: '', icon: '' })
+  } finally { web.restore() }
+})
+
+test('page refuses local, private and odd addresses', async () => {
+  for (const u of ['http://localhost/', 'http://192.168.1.1/', 'http://[::1]/', 'http://printer.local/', 'ftp://example.com/', 'https://user:pw@example.com/', 'https://example.com:22/', 'nonsense', 42])
+    assert.equal((await handle(post('page', { url: u }), fakeEnv({}))).status, 400, String(u))
+  assert.ok(pageUrl('https://example.com:8443/x'))
+})
+
+test('helpers: entities, titles, icon ranking', () => {
+  assert.equal(decodeEntities('a &lt;b&gt; &#x1F600; &unknown;'), 'a <b> 😀 &unknown;')
+  assert.equal(pageTitle('<meta name="twitter:title" content="Tw"><title>T</title>'), 'Tw')
+  assert.deepEqual(iconLinks('<link rel="icon" href="a.svg"><link rel="icon" sizes="16x16" href="b.png"><link rel="mask-icon" href="m.svg"><link rel="icon" href="javascript:x">', 'https://e.com/'), ['https://e.com/b.png', 'https://e.com/a.svg'])
+})
+
+/* ---------- place: suggest a folder ---------- */
+test('place returns up to three valid, unique folder numbers', async () => {
+  const env = fakeEnv({ folders: [3, 3, 9, -1, 0, 1, 2] })
+  const res = await handle(post('place', { items: [{ title: 'Kyoto guide', url: 'wikivoyage.org/wiki/Kyoto' }], folders: ['Bar', 'Bar / Travel', 'Bar / Travel / Japan', 'Other / Recipes'] }), env)
+  assert.deepEqual(await res.json(), { folders: [3, 0, 1] })
+  assert.match(env.calls[0].opts.messages[1].content, /2\. Bar \/ Travel \/ Japan/)
+})
+
+test('place needs exactly one bookmark and at least two folders', async () => {
+  assert.equal((await handle(post('place', { items: items(2), folders: ['a', 'b'] }), fakeEnv({}))).status, 400)
+  assert.deepEqual(await (await handle(post('place', { items: items(1), folders: ['only'] }), fakeEnv({ folders: [0] }))).json(), { folders: [] })
+})
