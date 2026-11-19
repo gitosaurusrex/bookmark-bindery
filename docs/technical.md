@@ -110,6 +110,13 @@ into a flat array of rows, which is all the list renders:
 
 The tree and folder layouts are the two ways to browse. **T** switches between them, and the choice is remembered.
 
+The sidebar's folder list has its own open folders (`S.expanded`), separate from the tree layout's (`S.open`). Its
+header holds three tools that appear when the pointer is over the sidebar (always, on touch screens): **Filter**,
+**Expand all** and **Collapse all**. The filter (also **F**) slides open a box above the list. While it holds text,
+`renderTree()` shows every folder whose name contains all the words, plus the folders they sit in (dimmed) so each
+match keeps its place, all open and with matches highlighted. Enter opens the first match, Esc clears the box and then
+closes it, and it closes by itself when it loses focus empty. Expand all and Collapse all close the filter first.
+
 ## Editing and undo
 
 Every change goes through `mutate(label, fn)`:
@@ -125,7 +132,15 @@ items" come for free. Snapshots copy only structure and strings, which is cheap 
 bookmarks.
 
 Operations: rename (title, and address with Tab), new folder, move (drag and drop, cut and paste, or **Move to…**),
-group into a new folder, sort a folder (name, newest, oldest, domain, with folders first), and delete. Deleting more than
+group into a new folder, sort a folder (name, newest, oldest, domain, with folders first), and delete.
+
+**Keep everything A to Z** (`S.autoSort`, in the Sort menu) rewrites the tree itself, so the export is sorted too.
+`azOrder` puts the bookmarks bar first, then folders, then bookmarks, each compared by name with an `Intl.Collator`
+(case-insensitive, numbers in numeric order). While it's on, `mutate()` runs `sortAll()` after every change, inside
+the same undo step, so new, renamed, grouped and moved items land in place. `moveItems()` sorts the affected folders
+before its "did anything change?" check, so a by-hand reorder is a no-op with a toast explaining why. Turning it on is
+itself an undo step flagged `autoSortOn`. Undoing that step turns the setting off and redoing it turns it back on, so
+whenever the setting is on, the tree is sorted. A file opened while it's on is sorted as its first undo step. Deleting more than
 one item, counting everything inside folders, asks first and lists what goes.
 
 ## Duplicate review
@@ -157,7 +172,7 @@ instead. A successful export clears the "unsaved edits" state.
 - `bindery.session.v1` holds `{ v: 1, root, fileName, dirty }`, written 600 ms after the last change. If the JSON is
   over about 4.5 million characters, or the browser refuses (quota, private mode), nothing is saved and the sidebar
   says so.
-- `bindery.ui.v1` holds settings: duplicate mode, layout, and **Remember my file**.
+- `bindery.ui.v1` holds settings: duplicate mode, layout, **Remember my file** and **Keep everything A to Z**.
 - With **Remember my file** off, the session key is deleted and never written. **Forget on this device** deletes it,
   closes the file and clears undo history.
 - On load, `restore()` reopens the saved library with fresh ids and says so in a toast.
@@ -186,7 +201,7 @@ actions give way to the ⋯ menu). Animations stop for anyone who prefers reduce
 Press **?** or open **Keyboard shortcuts** in the sidebar for the full list. Highlights:
 
 - **↑ ↓** move, with Shift to extend the selection. **→ ←** open and close folders.
-- **/** searches. **T** switches layout.
+- **/** searches. **F** filters the sidebar's folder list. **T** switches layout.
 - **Enter** or **F2** renames. **N** makes a folder, **M** moves, **G** groups.
 - Ctrl/⌘ + **X** and **V** cut and paste. **Del** deletes. Ctrl/⌘ + **Z** undoes, with Shift to redo.
 - **K** and **D** keep or mark copies in duplicate review.
@@ -221,7 +236,7 @@ rows                  buildRows for each view
 mutations & history   mutate, undo, redo, move, rename, group, sort, delete, cut and paste
 views & selection     setView, tree layout, search, selection
 duplicate review      modes, keeper rules, marks
-rendering             rows, sidebar tree, header, empty states, selection tray
+rendering             rows, sidebar tree, folder filter and tools, header, empty states, selection tray
 inline editing        rename in place
 menus, dialogs        context menus, confirm, Move to…, shortcuts
 toasts
