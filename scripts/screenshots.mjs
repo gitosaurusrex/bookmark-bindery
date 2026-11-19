@@ -2,7 +2,8 @@
  * Takes the README screenshots in docs/screenshots/, light and dark, as WebP.
  *
  * Opens index.html in Chromium, imports the made-up library in
- * scripts/demo-bookmarks.html and captures the main views, the details panel, and the Bindery
+ * scripts/demo-bookmarks.html and captures the main views, the details panel, the Tags view (after
+ * tagging a few bookmarks through the app), the export dialog, and the Bindery
  * Assist welcome sheet (which needs index.html to point at a Worker; nothing
  * is sent, since the sheet only asks). Needs Node and
  * Playwright with Chromium installed:
@@ -47,6 +48,35 @@ async function openLibrary(page) {
   await page.waitForTimeout(200)
 }
 
+/** Tags a few bookmarks through the app (search, select, details panel), including some look-alike tags. */
+async function addDemoTags(page) {
+  const tag = async (query, tags) => {
+    await page.fill('#q', query)
+    await page.waitForTimeout(150)
+    const rows = page.locator('#rows .row.is-link')
+    const n = await rows.count()
+    await rows.first().click()
+    if (n > 1) await rows.nth(n - 1).click({ modifiers: ['Shift'] })
+    await page.keyboard.press('e')
+    const more = await page.$('#insp [data-more="tags"]')
+    if (more) await more.click()
+    await page.fill('#insp [data-f="tag"]', tags)
+    await page.keyboard.press('Enter')
+  }
+  await tag('bbcgoodfood', 'recipes,dinner')
+  await tag('kimchi', 'Recipes')
+  await tag('sourdough', 'recipe,baking')
+  await tag('wikivoyage', 'travel')
+  await tag('japanrailpass', 'Travel,japan')
+  await tag('compost', 'garden')
+  await tag('mdn', 'web dev,docs')
+  await tag('regex101', 'web-dev,tools')
+  await tag('caniuse', 'web dev,tools')
+  await page.fill('#q', '')
+  await page.keyboard.press('Escape')
+  if (await page.isVisible('#insp')) await page.click('#insp [data-x="close"]')
+}
+
 const SHOTS = [
   {
     name: 'library',
@@ -85,6 +115,31 @@ const SHOTS = [
       await page.click('#insp [data-more="note"]')
       await page.keyboard.type('Neighbourhoods, temples and day trips. Check the Arashiyama section before going.')
       await page.locator('#list').focus()
+    },
+  },
+  {
+    name: 'tags',
+    width: 1280,
+    height: 900,
+    prepare: async (page) => {
+      await openLibrary(page)
+      await addDemoTags(page)
+      await page.click('[data-view="tags"]')
+      await page.waitForSelector('#rows .simrow')
+    },
+  },
+  {
+    name: 'export',
+    width: 1280,
+    height: 900,
+    prepare: async (page) => {
+      await openLibrary(page)
+      await addDemoTags(page)
+      // A library with tags asks which browser the export is for.
+      await page.click('#exportBtn')
+      await page.waitForSelector('.targets')
+      await page.click('[data-target="other"]')
+      await page.click('[data-tagsas="titles"]')
     },
   },
   {

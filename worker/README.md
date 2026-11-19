@@ -1,18 +1,18 @@
 # Bindery Assist Worker
 
 The Cloudflare Worker behind Bookmark Bindery's optional AI features: **Tidy into folders**, **Suggest a name**, **Clean
-up titles**, reading a page's name and icon and suggesting a folder for **New bookmark**, and writing a bookmark's
-note. Bindery works fully
-without it. Until a site is pointed at a Worker, the AI features don't appear.
+up titles**, reading a page's name and icon and suggesting a folder for **New bookmark**, writing a bookmark's note, and
+finding tags that mean the same thing. Bindery works fully without it. Until a site is pointed at a Worker, the AI
+features don't appear.
 
 ## What it does with bookmarks
 
 For each action, the page sends only the bookmarks that action is for: their titles, and their addresses cut down to
 site and path (no query string or fragment, nothing for bookmarklets or local files). Reading a page (`page`,
-`describe`) sends that one bookmark's full address, and `place` also sends folder names. The Worker builds a prompt, asks
-a [Workers AI](https://developers.cloudflare.com/workers-ai/) model for JSON, checks the reply against what was sent
-(real bookmark numbers, each used once, short names), and returns it. It doesn't store requests and doesn't log
-bookmark content.
+`describe`) sends that one bookmark's full address, `place` also sends folder names, and `tagsim` sends tag names and
+nothing else. The Worker builds a prompt, asks a [Workers AI](https://developers.cloudflare.com/workers-ai/) model for
+JSON, checks the reply against what was sent (real bookmark numbers, each used once, short names), and returns it. It
+doesn't store requests and doesn't log bookmark content.
 
 It only answers pages listed in `ALLOWED_ORIGINS`, accepts at most 150 items and 96 KB per request, and, with the rate
 limit binding in `wrangler.toml`, allows 20 requests a minute per visitor.
@@ -25,6 +25,7 @@ limit binding in `wrangler.toml`, allows 20 requests a minute per visitor.
 | `POST /v1/place` | `{ items: [one bookmark], folders: [folder paths] }` (up to 400) | `{ folders: [up to 3 indexes] }` |
 | `POST /v1/page` | `{ url }` | `{ title, icon }`. Not AI: see below |
 | `POST /v1/describe` | `{ url, title }` | `{ description }`, one or two sentences, up to 300 characters |
+| `POST /v1/tagsim` | `{ tags: [names] }` (2 to 600) | `{ groups: [[index, …]] }`, tags that mean the same, each in at most one group |
 
 `page` fetches the address server-side (8-second limit, the first 400 KB of HTML) and returns its `og:title`,
 `twitter:title` or `<title>`, and its best small icon as a `data:` URL (at most 48 KB, falling back to `/favicon.ico`).
@@ -72,5 +73,6 @@ If you host Bindery somewhere other than `https://bookmark-bindery.onrender.com`
 node --test worker/test/*.mjs
 ```
 
-The tests run the Worker in Node with a fake model: origin checks, limits, rate limiting, reply validation, and the
-fallback when JSON mode fails.
+The tests run the Worker in Node with a fake model and fake websites: origin checks, limits, rate limiting, reply
+validation for every endpoint, the fallback when JSON mode fails, and reading pages (titles, entities, icon choice,
+size and type limits, blocked addresses, page text and descriptions).
