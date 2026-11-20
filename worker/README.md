@@ -30,7 +30,9 @@ limit binding in `wrangler.toml`, allows 20 requests a minute per visitor.
 `page` fetches the address server-side (8-second limit, the first 400 KB of HTML) and returns its `og:title`,
 `twitter:title` or `<title>`, and its best small icon as a `data:` URL (at most 48 KB, falling back to `/favicon.ico`).
 It only fetches public `http`/`https` addresses: no local names, private networks, raw IP addresses, unusual ports or
-addresses with a username. A site that's down or refuses gets an empty answer, not an error. `describe` reads a page
+addresses with a username. It follows redirects itself, at most 5, and checks every one the same way, as it does each
+icon address the page links to, so a public page can't send it on to a private one. A site that's down or refuses, or a
+redirect it won't follow, gets an empty answer, not an error. `describe` reads a page
 the same way, then gives the model the page's own description (`og:description`, `description` or
 `twitter:description`) and the first 2,500 characters of its text (from `<main>`, `<article>` or `<body>`, without
 scripts, styles, navigation, headers, footers or forms). If the model fails, it returns the page's own description;
@@ -75,4 +77,4 @@ node --test worker/test/*.mjs
 
 The tests run the Worker in Node with a fake model and fake websites: origin checks, limits, rate limiting, reply
 validation for every endpoint, the fallback when JSON mode fails, and reading pages (titles, entities, icon choice,
-size and type limits, blocked addresses, page text and descriptions).
+size and type limits, blocked addresses and redirects, page text and descriptions).

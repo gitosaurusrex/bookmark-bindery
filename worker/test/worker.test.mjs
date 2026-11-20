@@ -90,14 +90,15 @@ const PNG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3])
 function fakeWeb(routes) {
   const seen = []
   const real = globalThis.fetch
+  // Like Workers' fetch with redirect: 'manual', a redirect comes back as a 3xx response with a Location header.
   globalThis.fetch = async (url, opts) => {
+    assert.equal(opts?.redirect, 'manual', 'every fetch follows redirects itself')
     seen.push(String(url))
     const r = routes[String(url)]
     if (!r) return new Response('nope', { status: 404 })
     if (r instanceof Error) throw r
-    const res = new Response(r.body, { status: r.status || 200, headers: { 'Content-Type': r.type || 'text/html' } })
-    Object.defineProperty(res, 'url', { value: r.finalUrl || String(url) })
-    return res
+    if (r.to) return new Response(null, { status: r.status || 302, headers: { Location: r.to } })
+    return new Response(r.body, { status: r.status || 200, headers: { 'Content-Type': r.type || 'text/html' } })
   }
   return { seen, restore: () => { globalThis.fetch = real } }
 }
@@ -105,7 +106,8 @@ const postPage = url => post('page', { url })
 
 test('page reads og:title and the best icon link, resolved against the final address', async () => {
   const web = fakeWeb({
-    'https://example.com/a?x=1': { finalUrl: 'https://www.example.com/a/', body: `<html><head><title>Fallback | Site</title>
+    'https://example.com/a?x=1': { status: 301, to: 'https://www.example.com/a/' },
+    'https://www.example.com/a/': { body: `<html><head><title>Fallback | Site</title>
       <meta property="og:title" content="Tom &amp; Jerry&#8217;s page">
       <link rel="apple-touch-icon" href="/apple.png"><link rel="icon" type="image/png" sizes="32x32" href="icons/fav-32.png"></head></html>` },
     'https://www.example.com/a/icons/fav-32.png': { body: PNG, type: 'image/png' },
@@ -116,7 +118,43 @@ test('page reads og:title and the best icon link, resolved against the final add
     const out = await res.json()
     assert.equal(out.title, 'Tom & Jerry’s page')
     assert.equal(out.icon, 'data:image/png;base64,' + Buffer.from(PNG).toString('base64'))
-    assert.deepEqual(web.seen, ['https://example.com/a?x=1', 'https://www.example.com/a/icons/fav-32.png'])
+    assert.deepEqual(web.seen, ['https://example.com/a?x=1', 'https://www.example.com/a/', 'https://www.example.com/a/icons/fav-32.png'])
+  } finally { web.restore() }
+})
+
+test('page checks every redirect, and stops at blocked addresses and long chains', async () => {
+  const web = fakeWeb({
+    'https://short.test/x': { to: 'http://192.168.1.1/admin' },
+    'https://sneaky.test/': { status: 307, to: 'http://localhost:8080/' },
+    'https://hop.test/1': { status: 308, to: '/2' },
+    'https://hop.test/2': { status: 303, to: 'https://landing.test/' },
+    'https://landing.test/': { body: '<title>Landed</title>' },
+    'https://loop.test/0': { to: '/1' }, 'https://loop.test/1': { to: '/2' }, 'https://loop.test/2': { to: '/3' },
+    'https://loop.test/3': { to: '/4' }, 'https://loop.test/4': { to: '/5' }, 'https://loop.test/5': { to: '/6' },
+    'https://loop.test/6': { body: '<title>Too far</title>' },
+  })
+  try {
+    for (const u of ['https://short.test/x', 'https://sneaky.test/'])
+      assert.deepEqual(await (await handle(postPage(u), fakeEnv({}))).json(), { title: '', icon: '' }, u)
+    assert.ok(!web.seen.some(u => /192\.168|localhost/.test(u)), 'blocked redirect targets are never fetched')
+    assert.equal((await (await handle(postPage('https://hop.test/1'), fakeEnv({}))).json()).title, 'Landed')
+    assert.equal((await (await handle(postPage('https://loop.test/0'), fakeEnv({}))).json()).title, '')
+    assert.ok(!web.seen.includes('https://loop.test/6'), 'stops after 5 redirects')
+    const d = await (await handle(post('describe', { url: 'https://short.test/x' }), fakeEnv({ description: 'x' }))).json()
+    assert.deepEqual(d, { description: '' })
+  } finally { web.restore() }
+})
+
+test('page skips icon links and icon redirects that point at private addresses', async () => {
+  const web = fakeWeb({
+    'https://icons.test/': { body: '<title>T</title><link rel="icon" sizes="32x32" href="http://10.0.0.1/i.png"><link rel="icon" href="/moved.png">' },
+    'https://icons.test/moved.png': { to: 'http://127.0.0.1/i.png' },
+    'https://icons.test/favicon.ico': { body: PNG, type: 'image/x-icon' },
+  })
+  try {
+    const out = await (await handle(postPage('https://icons.test/'), fakeEnv({}))).json()
+    assert.match(out.icon, /^data:image\/x-icon;base64,/)
+    assert.ok(!web.seen.some(u => /10\.0\.0\.1|127\.0\.0\.1/.test(u)), web.seen.join(' '))
   } finally { web.restore() }
 })
 

@@ -272,12 +272,30 @@ function attrs(tag) {
   for (const m of tag.matchAll(/([\w:-]+)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g)) out[m[1].toLowerCase()] = decodeEntities(m[3] ?? m[4] ?? m[5] ?? '');
   return out;
 }
+const MAX_REDIRECTS = 5;
+/* Fetches a public address, following redirects itself so that every hop passes pageUrl(): a public page can't send
+   the Worker on to a local or private one. The timeout covers the whole chain. Returns { res, final }, or null when
+   the address or a redirect is refused, there are too many redirects, or the fetch fails. */
+async function fetchPublic(raw, accept, ms) {
+  let u = pageUrl(String(raw));
+  const signal = AbortSignal.timeout(ms);
+  for (let hop = 0; u && hop <= MAX_REDIRECTS; hop++) {
+    let res;
+    try { res = await fetch(u.href, { headers: { 'User-Agent': UA, Accept: accept }, redirect: 'manual', signal }); }
+    catch { return null; }
+    const loc = [301, 302, 303, 307, 308].includes(res.status) && res.headers.get('Location');
+    if (!loc) return { res, final: u };
+    res.body?.cancel?.();
+    let next; try { next = new URL(loc, u); } catch { return null; }
+    u = pageUrl(next.href);
+  }
+  return null;
+}
 /* Fetches a public page and returns up to 400 KB of its HTML ('' when it isn't HTML or can't be fetched). */
 async function fetchPage(u) {
-  let res;
-  try { res = await fetch(u.href, { headers: { 'User-Agent': UA, Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5' }, redirect: 'follow', signal: AbortSignal.timeout(8000) }); }
-  catch { return { html: '', final: u }; }
-  const final = safeUrl(res.url) || u, type = res.headers.get('Content-Type') || '';
+  const got = await fetchPublic(u.href, 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5', 8000);
+  if (!got) return { html: '', final: u };
+  const { res, final } = got, type = res.headers.get('Content-Type') || '';
   const html = res.ok && /html|xml/i.test(type) ? await readText(res, 400_000, type) : '';
   if (!html) res.body?.cancel?.();
   return { html, final };
@@ -328,7 +346,10 @@ async function findIcon(links, base) {
   const tries = [...new Set([...links, new URL('/favicon.ico', base).href])].slice(0, 4);
   for (const url of tries) {
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'image/*' }, redirect: 'follow', signal: AbortSignal.timeout(5000) });
+      // Icon links come from the page, so they get the same public-address checks as the page itself.
+      const got = await fetchPublic(url, 'image/*', 5000);
+      if (!got) continue;
+      const { res } = got;
       if (!res.ok) { res.body?.cancel?.(); continue; }
       let type = (res.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
       if (!type.startsWith('image/')) { if (/\.ico($|\?)/i.test(url) && /octet-stream|^$/.test(type)) type = 'image/x-icon'; else { res.body?.cancel?.(); continue; } }
