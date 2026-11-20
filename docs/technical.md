@@ -471,7 +471,7 @@ opens every action for a row.
 | Suggest names | up to 60 items sent, 3 names back |
 | Clean up titles | up to 100 bookmarks |
 | Suggest a folder | up to 400 folder paths, 3 folders back |
-| Reading a page | 8 s, first 400 KB of HTML; icons up to 48 KB |
+| Reading a page | 8 s, first 400 KB of HTML; icons up to 48 KB, 5 s each; at most 5 redirects, each checked |
 | Writing a note | the page's own description and its first 2,500 characters of text; notes up to 300 characters |
 | Details panel | docked above 1180 px wide, a drawer below that, a bottom sheet under 600 px |
 | Pane widths | folders 220–520 px (276 default, 58 px as a rail); details 300–760 px (372 default); list at least 380 px |
@@ -525,6 +525,26 @@ and icon without AI; and `describe` reads a page and asks the model for a short 
 description. It only answers origins in `ALLOWED_ORIGINS`, caps request size, is rate limited, and stores nothing. See
 [worker/README.md](../worker/README.md) for endpoints, limits, deployment and pointing a copy of Bindery at it. The
 official site's Worker runs at `https://bookmark-bindery-ai.azureus.workers.dev`.
+
+**Which addresses it reads.** `page` and `describe` fetch whatever address the person typed or bookmarked, so the
+Worker refuses to be pointed at anything but the public web. `pageUrl()` accepts only `http` and `https` addresses
+with a dotted host name: no `localhost` or `.local`, `.internal`, `.lan`, `.home` or `.arpa` names, no raw IPv4 or IPv6
+addresses, no username or password, and no ports other than 80, 443, 8080 and 8443. The request is refused with a 400
+if the address fails.
+
+Every fetch goes through `fetchPublic()`, which never lets `fetch` follow redirects by itself (`redirect: 'manual'`):
+
+- A `301`, `302`, `303`, `307` or `308` with a `Location` header is resolved against the current address and checked
+  with `pageUrl()` again before it's fetched, so a public page can't send the Worker on to a private one.
+- After 5 redirects it gives up. A refused hop, too many hops or a failed fetch all give the same empty answer as a
+  site that's down, not an error.
+- The timeout (8 s for a page, 5 s for each icon) covers the whole chain, not each hop.
+- Icon addresses come from the page's own `<link rel="icon">` tags, so each one, plus `/favicon.ico`, goes through
+  `fetchPublic()` too. Up to four are tried.
+
+The checks look at host names, not at the IP addresses they resolve to, so a public name that resolves to a private
+address isn't caught here. The tests cover redirects to private and local addresses, relative redirects, chains
+longer than 5, and private icon links and icon redirects.
 
 ## Screenshots
 
