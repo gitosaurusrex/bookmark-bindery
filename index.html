@@ -1790,10 +1790,12 @@ function renderDevice() {
   r.setAttribute('aria-checked', String(S.remember));
   f.disabled = S.noFile;
   f.title = S.noFile ? 'Nothing to forget. No file is open.' : 'Remove your bookmarks from this browser and close them here';
+  /* "Nothing is uploaded" only holds while Bindery Assist is off: with it on, AI actions send what they need. */
+  const sent = AI_URL && S.ai === 'on' ? ' Bindery Assist sends only what each AI action needs.' : ' Nothing is uploaded.';
   $('deviceNote').textContent = S.noFile
-    ? (S.remember ? 'Files you open are saved in this browser only. Nothing is uploaded.' : 'Files you open stay in this tab only. Closing it clears them.')
+    ? (S.remember ? 'Files you open are saved in this browser only.' + sent : 'Files you open stay in this tab only. Closing it clears them.')
     : !S.remember ? 'Not saved. Closing this tab clears your bookmarks from Bindery.'
-    : S.persisted ? 'Saved in this browser only. Nothing is uploaded.' : 'This browser didn’t save your file. Export to keep your edits.';
+    : S.persisted ? 'Saved in this browser only.' + sent : 'This browser didn’t save your file. Export to keep your edits.';
 }
 function renderAll() { renderTop(); renderDevice(); renderTree(); renderViews(); renderHead(); renderList(); renderSelbar(); renderMarkbar(); }
 function refresh() { buildRows(); renderAll(); }
@@ -2639,11 +2641,11 @@ async function aiOnboarding() {
   if (r === 'off') { aiOff(); return false; }
   if (on) return true;
   if (r !== true) return false;
-  S.ai = 'on'; saveUI(); renderTop();
+  S.ai = 'on'; saveUI(); renderTop(); renderDevice();
   toast('Bindery Assist is on. Find it under ✦ at the top, and in right-click menus.', { ms: 6000 });
   return true;
 }
-function aiOff() { S.ai = 'off'; saveUI(); renderTop(); toast('Bindery Assist is off. Nothing is sent unless you turn it on again.'); }
+function aiOff() { S.ai = 'off'; saveUI(); renderTop(); renderDevice(); toast('Bindery Assist is off. Nothing is sent unless you turn it on again.'); }
 /* Every AI action goes through here: it asks first, then runs. */
 async function withAI(run) {
   if (!AI_URL || isBlank()) return;
