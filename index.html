@@ -39,7 +39,7 @@
   --f-display:"Newsreader",Georgia,"Times New Roman",serif;
   --f-ui:"Hanken Grotesk",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
-  --side-w:276px; --ind-w:22px;
+  --side-w:276px; --rail-w:58px; --ind-w:22px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --paper:#121615; --sheet:#181D1B; --ink:#E5E9E6; --ink-2:#A4ADA8; --ink-3:#727B77;
@@ -80,11 +80,11 @@ svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px solid var(--rule-2);background:var(--paper);color:var(--ink-2)}
 
-.app{height:100%;display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+.app{--side-cur:var(--side-w);height:100%;display:grid;grid-template-columns:var(--side-cur) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
 
 /* ---------- top bar ---------- */
 .top{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--rule);background:var(--paper);min-width:0}
-.brand{display:flex;align-items:center;gap:8px;flex:none;width:calc(var(--side-w) - 28px);min-width:0}
+.brand{display:flex;align-items:center;gap:8px;flex:none;width:calc(var(--side-cur) - 72px);min-width:0;overflow:hidden}
 .brand .mark{width:26px;height:26px;border-radius:7px;background:var(--cloth);color:var(--on-cloth);display:grid;place-items:center}
 .brand .mark svg{width:15px;height:15px;stroke-width:1.7}
 .brand .word{font:italic 500 21px/1 var(--f-display);letter-spacing:-.01em}
@@ -113,7 +113,7 @@ kbd{font:500 11px/1 var(--f-mono);padding:3px 5px;border-radius:4px;border:1px s
 .only-narrow{display:none}
 
 /* ---------- sidebar ---------- */
-.side{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--rule);background:var(--paper)}
+.side{position:relative;display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--rule);background:var(--paper)}
 .side-h{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:16px 18px 6px}
 .tree{position:relative;flex:1;min-height:80px;overflow:auto;padding:0 8px 8px}
 .trow{position:relative;display:flex;align-items:center;gap:6px;height:30px;padding:0 8px 0 calc(4px + var(--d) * 14px);border-radius:7px;color:var(--ink-2);cursor:pointer;user-select:none}
@@ -403,8 +403,8 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 
 /* ---------- bookmark editor ---------- */
 :root{--insp-w:372px}
-.app.insp-open{grid-template-columns:var(--side-w) minmax(0,1fr) var(--insp-w)}
-.insp{grid-column:3;grid-row:2;min-height:0;display:flex;flex-direction:column;background:var(--sheet);border-left:1px solid var(--rule)}
+.app.insp-open{grid-template-columns:var(--side-cur) minmax(0,1fr) var(--insp-w)}
+.insp{position:relative;grid-column:3;grid-row:2;min-height:0;display:flex;flex-direction:column;background:var(--sheet);border-left:1px solid var(--rule)}
 .insp-h{display:flex;align-items:center;gap:10px;padding:14px 12px 12px 18px;border-bottom:1px solid var(--rule)}
 .insp-ico{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--paper);border:1px solid var(--rule);color:var(--ink-3)}
 .insp-ico .ico{width:26px;height:26px;font-size:13px}
@@ -446,11 +446,12 @@ mark{background:var(--manila-fill);color:inherit;border-radius:2px;box-shadow:0 
 .btn .caret{display:inline-grid;margin-left:-2px}
 .btn .caret svg{width:11px;height:11px;stroke-width:1.9;transform:rotate(90deg)}
 @media (max-width:1180px){
-  .app.insp-open{grid-template-columns:var(--side-w) minmax(0,1fr)}
-  .insp{position:fixed;z-index:38;top:0;right:0;bottom:0;width:min(384px,94vw);box-shadow:var(--shadow);animation:inspIn .2s ease-out}
+  .app.insp-open{grid-template-columns:var(--side-cur) minmax(0,1fr)}
+  .insp{position:fixed;z-index:38;top:0;right:0;bottom:0;width:min(var(--insp-w),94vw);box-shadow:var(--shadow);animation:inspIn .2s ease-out}
 }
 @media (max-width:820px){ .app.insp-open{grid-template-columns:minmax(0,1fr)} }
 @media (max-width:600px){
+  .insp>.resizer{display:none}
   .insp{top:auto;left:0;width:auto;max-height:88vh;border-left:0;border-radius:18px 18px 0 0;animation:sheetUp .28s cubic-bezier(.2,.7,.2,1)}
   .insp-f{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 }
@@ -577,12 +578,40 @@ body.dragging .row:hover{background:transparent}
 body.dragging .row.sel:hover{background:var(--select)}
 .navscrim{display:none}
 
+/* ---------- pane sizes and the rail ----------
+   The folders pane and the details pane can be dragged wider or narrower by a handle on their inner edge. The folders
+   pane can also collapse into a rail of large icons (the top bar's first button, Ctrl/⌘+B, or dragging it narrow). */
+.resizer{position:absolute;top:0;bottom:0;width:10px;z-index:30;cursor:col-resize;touch-action:none}
+.resizer::after{content:"";position:absolute;top:0;bottom:0;left:4px;width:2px;transition:background .12s .15s}
+.resizer:hover::after,.resizer.active::after,.resizer:focus-visible::after{background:var(--cloth);transition-delay:0s}
+.resizer:focus-visible{outline:none}
+.side>.resizer{right:-5px}
+.insp>.resizer{left:-5px}
+body.resizing,body.resizing *{cursor:col-resize!important;user-select:none!important}
+.rail{display:none;flex:1;min-height:0;flex-direction:column;align-items:center;gap:4px;padding:12px 0;overflow:auto}
+.rbtn{position:relative;flex:none;width:42px;height:42px;display:grid;place-items:center;border:0;border-radius:10px;background:transparent;color:var(--ink-2)}
+.rbtn svg{width:22px;height:22px;stroke-width:1.35}
+.rbtn:hover{background:var(--hover);color:var(--ink)}
+.rbtn.on{background:var(--select);color:var(--cloth-ink)}
+.rbtn.on::before{content:"";position:absolute;left:-8px;top:11px;bottom:11px;width:3px;border-radius:2px;background:var(--cloth)}
+.rbadge{position:absolute;top:2px;right:0;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--manila);color:var(--sheet);font:600 10px/17px var(--f-ui);text-align:center;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2px var(--paper)}
+.rsep{flex:none;width:26px;height:1px;background:var(--rule-2);margin:6px 0}
+.rspace{flex:1}
+.app.blank .rail .rlib{display:none}
+@media (min-width:821px){
+  .app.side-rail{--side-cur:var(--rail-w)}
+  .app.side-rail .side>:not(.rail):not(.resizer){display:none!important}
+  .app.side-rail .rail{display:flex}
+  .app.side-rail .brand{width:auto}
+}
+
 /* ---------- narrow ---------- */
 @media (max-width:1000px){ .where{display:none} }
 @media (max-width:820px){
   .app{grid-template-columns:minmax(0,1fr)}
   .only-narrow{display:grid}
   .brand{width:auto}
+  .side>.resizer{display:none}
   .file{display:none}
   .top{flex-wrap:wrap;gap:8px}
   .search{order:5;flex:1 0 100%;max-width:none}
@@ -624,7 +653,7 @@ body.dragging .row.sel:hover{background:var(--select)}
 
 <div class="app" id="app">
   <header class="top">
-    <button class="icon-btn only-narrow" id="navBtn" aria-label="Show folders"></button>
+    <button class="icon-btn" id="navBtn" aria-label="Collapse the sidebar" aria-controls="side"></button>
     <div class="brand"><span class="mark" id="brandMark"></span><span class="word">Bindery</span></div>
     <div class="file" id="fileChip"></div>
     <label class="search" id="searchBox"><span id="searchIco"></span><input id="q" type="search" placeholder="Search titles, addresses and #tags" autocomplete="off" spellcheck="false" aria-label="Search bookmarks"><kbd>/</kbd></label>
@@ -650,6 +679,8 @@ body.dragging .row.sel:hover{background:var(--select)}
       <p class="dev-note" id="deviceNote"></p>
       <button class="vrow" id="keysBtn"></button>
     </div>
+    <nav class="rail" id="rail" aria-label="Sidebar, collapsed"></nav>
+    <div class="resizer" id="sideRes" role="separator" aria-orientation="vertical" aria-controls="side" aria-label="Resize the folders pane" tabindex="0" title="Drag to resize. Double-click to reset."></div>
   </aside>
   <div class="navscrim" id="navScrim"></div>
   <main class="pane" id="pane">
@@ -738,7 +769,7 @@ const S = {
   drag: null, drop: null, recent: [],
   dupeMode: 'url', marks: new Set(),
   layout: 'tree', open: new Set(), remember: true,
-  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null, insp: null, tagSort: 'count', tagIgnore: new Set(), tagAI: [],
+  autoSort: false, tfilter: '', tfOpen: false, tfFirst: null, ai: null, tidy: null, insp: null, tagSort: 'count', tagIgnore: new Set(), tagAI: [], sideW: 276, inspW: 372, rail: false,
   source: 'other', exportPrefs: { target: 'other', tagsAs: 'none', dropPlace: true, ask: true },
 };
 let idx = new Map(), dupeMaps = { url: new Map(), name: new Map(), both: new Map() }, stats = {};
@@ -753,7 +784,7 @@ const el = {
   spacer: $('spacer'), empty: $('empty'), listLine: $('listLine'), selbar: $('selbar'), exportBtn: $('exportBtn'),
   markbar: $('markbar'), toasts: $('toasts'), menu: $('menu'), modal: $('modal'), dialog: $('dialog'), q: $('q'), fileChip: $('fileChip'),
   ghost: $('ghost'), filedrop: $('filedrop'), fileIn: $('fileIn'), undo: $('undoBtn'), redo: $('redoBtn'),
-  insp: $('insp'), treeTools: $('treeTools'), tfilter: $('tfilter'), tq: $('tq'), tfn: $('tfn'),
+  insp: $('insp'), rail: $('rail'), sideRes: $('sideRes'), treeTools: $('treeTools'), tfilter: $('tfilter'), tq: $('tq'), tfn: $('tfn'),
 };
 
 /* ---------- small helpers ---------- */
@@ -1600,6 +1631,7 @@ function renderTreeTools() {
 }
 function setTreeFilterOpen(open) {
   if (open && isBlank()) return;
+  if (open && S.rail && wideLayout()) setRail(false);
   S.tfOpen = open;
   el.tfilter.classList.toggle('open', open); el.tfilter.inert = !open;
   if (open) { el.app.classList.add('nav-open'); el.tq.focus(); el.tq.select(); }
@@ -1620,6 +1652,7 @@ function setAllExpanded(open) {
 function renderViews() {
   const v = S.view.kind;
   const item = (k, icon, label, n) => `<button class="vrow${v === k || (k === 'tags' && v === 'tag') ? ' on' : ''}" data-view="${k}"><span class="ficon plain" style="color:inherit">${icon}</span><span class="tname">${label}</span><span class="tcount">${n ? fmt(n) : ''}</span></button>`;
+  renderRail();
   el.views.innerHTML = item('all', I.list, 'All bookmarks', stats.links) + item('dupes', I.dupes, 'Duplicates', stats.dupes) + item('empty', I.emptyf, 'Empty folders', stats.empty) + item('tags', I.tag, 'Tags', stats.tags)
     + (S.tidy ? item('tidy', I.tidy, 'Tidy plan', tidyStats().move) : '');
 }
@@ -2037,6 +2070,7 @@ function openKeys() {
     <dt>${k('→')}</dt><dd>Open the folder under the cursor. In the tree: expand it, then step inside.</dd>
     <dt>${k('←')}</dt><dd>Go up to the parent folder. In the tree: collapse, then jump to the parent.</dd>
     <dt>${k('T')}</dt><dd>Switch between the tree and one folder at a time</dd>
+    <dt>${k(MOD + '+B')}</dt><dd>Collapse the folders pane into a rail of icons, or open it again</dd>
     <dt>${k('/')}</dt><dd>Search titles, addresses and tags. Start a word with # to match tags only, like #travel.</dd>
     <dt>${k('F')}</dt><dd>Filter the folder list in the sidebar by name</dd>
     <div class="h">Editing</div>
@@ -2066,6 +2100,7 @@ function openKeys() {
     <div class="h">With the mouse</div>
     <dt>Drag</dt><dd>Drop onto a folder to move into it, or between items to reorder. Hover over a closed folder in the tree to open it.</dd>
     <dt>Alt-click ›</dt><dd>Expand or collapse a folder and every folder inside it</dd>
+    <dt>Drag an edge</dt><dd>Resize the folders pane or the details pane. Double-click the edge to reset it. Dragging the folders pane very narrow collapses it.</dd>
     <dt>Shift-click</dt><dd>Select a range. ${isMac ? '⌘' : 'Ctrl'}-click adds single items.</dd>
     <dt>Right-click</dt><dd>Every action for an item or folder</dd>
   </dl><div class="actions"><button class="btn primary" data-m="ok">Done</button></div>`);
@@ -2157,7 +2192,8 @@ function inspShown(f) {
 function renderInspector() {
   const I_ = S.insp, box = el.insp, open = !!I_ && !isBlank();
   if (!open && I_) { abortInsp(); S.insp = null; }
-  el.app.classList.toggle('insp-open', open); box.hidden = !open;
+  if (el.app.classList.contains('insp-open') !== open) { el.app.classList.toggle('insp-open', open); applyPanes(); }
+  box.hidden = !open;
   if (!open) { box.dataset.key = ''; box.innerHTML = ''; return; }
   let key;
   if (I_.mode === 'new') key = 'new|' + ['tags', 'keyword', 'note'].filter(inspShown).join();
@@ -2172,7 +2208,7 @@ function renderInspector() {
   }
   if (box.dataset.key !== key) {
     const act = box.contains(document.activeElement) ? document.activeElement.dataset.f : null;
-    box.innerHTML = inspHTML(); box.dataset.key = key;
+    box.innerHTML = inspHTML(); box.dataset.key = key; box.prepend(inspRes);
     if (act) box.querySelector(`[data-f="${act}"]`)?.focus({ preventScroll: true });
   }
   fillInspector();
@@ -3422,6 +3458,116 @@ function exportChoice() {
   });
 }
 
+/* ---------- pane sizes and the rail ----------
+   Widths are kept in S.sideW and S.inspW (saved with the settings) and applied as CSS variables. What's shown is
+   clamped so the bookmark list always keeps MAIN_MIN pixels, without changing the saved width. Above 820 px the
+   folders pane can collapse into the rail; below that it stays a drawer. */
+const SIDE_DEF = 276, SIDE_MIN = 220, SIDE_MAX = 520, SIDE_SNAP = 150, RAIL_W = 58;
+const INSP_DEF = 372, INSP_MIN = 300, INSP_MAX = 760, MAIN_MIN = 380;
+const wideLayout = () => innerWidth > 820;
+const inspDocked = () => innerWidth > 1180 && el.app.classList.contains('insp-open');
+function sideFit() { return Math.max(SIDE_MIN, Math.min(SIDE_MAX, innerWidth - MAIN_MIN - (inspDocked() ? Math.min(S.inspW, INSP_MAX) : 0))); }
+function inspFit() {
+  const room = innerWidth > 1180 ? innerWidth - MAIN_MIN - (S.rail ? RAIL_W : Math.min(S.sideW, SIDE_MAX)) : Math.floor(innerWidth * 0.94);
+  return Math.max(INSP_MIN, Math.min(INSP_MAX, room));
+}
+function applyPanes() {
+  const sw = Math.min(S.sideW, sideFit()), iw = Math.min(S.inspW, inspFit());
+  el.app.style.setProperty('--side-w', sw + 'px');
+  el.app.style.setProperty('--insp-w', iw + 'px');
+  el.app.classList.toggle('side-rail', S.rail);
+  const b = $('navBtn'), narrow = !wideLayout(), open = narrow ? el.app.classList.contains('nav-open') : !S.rail;
+  const label = narrow ? (open ? 'Hide folders' : 'Show folders') : S.rail ? 'Expand the folders pane' : 'Collapse the folders pane';
+  b.setAttribute('aria-label', label); b.title = narrow ? label : `${label} (${MOD}+B)`;
+  b.setAttribute('aria-expanded', String(open));
+  const sr = el.sideRes;
+  sr.setAttribute('aria-valuemin', RAIL_W); sr.setAttribute('aria-valuemax', SIDE_MAX); sr.setAttribute('aria-valuenow', S.rail ? RAIL_W : sw);
+  sr.setAttribute('aria-valuetext', S.rail ? 'Collapsed' : `${sw} pixels`);
+  inspRes.setAttribute('aria-valuemin', INSP_MIN); inspRes.setAttribute('aria-valuemax', INSP_MAX); inspRes.setAttribute('aria-valuenow', iw);
+}
+function setRail(on) {
+  if (S.rail === on) return;
+  S.rail = on; applyPanes(); saveUI(); renderList();
+}
+function toggleSidebar() {
+  if (!wideLayout()) { el.app.classList.toggle('nav-open'); applyPanes(); return; }
+  setRail(!S.rail);
+  if (!S.rail) el.tree.querySelector('.trow.on, .trow')?.scrollIntoView({ block: 'nearest' });
+}
+/* The rail: large icons for what the folders pane holds. Views open directly; the folder tree and This device open
+   the pane, since they need its room. Forget on this device stays out of the rail on purpose. */
+function renderRail() {
+  const v = S.view.kind;
+  const b = (k, icon, label, { on = false, badge = 0, cls = '' } = {}) =>
+    `<button class="rbtn${on ? ' on' : ''}${cls}" data-rail="${k}" aria-label="${esc(label)}" title="${esc(label)}"${on ? ' aria-current="page"' : ''}>${icon}${badge ? `<span class="rbadge" aria-hidden="true">${badge > 99 ? '99+' : fmt(badge)}</span>` : ''}</button>`;
+  el.rail.innerHTML =
+    b('folders', I.folder, 'Folders: open the pane', { on: v === 'folder' || v === 'tree', cls: ' rlib' })
+    + b('filter', I.filter, 'Filter folders (F)', { cls: ' rlib' })
+    + '<span class="rsep rlib"></span>'
+    + b('all', I.list, `All bookmarks · ${fmt(stats.links || 0)}`, { on: v === 'all', cls: ' rlib' })
+    + b('dupes', I.dupes, stats.dupes ? `Duplicates · ${fmt(stats.dupes)} extra ${stats.dupes === 1 ? 'copy' : 'copies'}` : 'Duplicates · none', { on: v === 'dupes', badge: stats.dupes, cls: ' rlib' })
+    + b('empty', I.emptyf, stats.empty ? `Empty folders · ${fmt(stats.empty)}` : 'Empty folders · none', { on: v === 'empty', badge: stats.empty, cls: ' rlib' })
+    + b('tags', I.tag, stats.tags ? `Tags · ${fmt(stats.tags)}` : 'Tags', { on: v === 'tags' || v === 'tag', cls: ' rlib' })
+    + (S.tidy ? b('tidy', I.tidy, `Tidy plan · ${fmt(tidyStats().move)} to move`, { on: v === 'tidy', cls: ' rlib' }) : '')
+    + '<span class="rspace"></span>'
+    + b('device', I.device, S.noFile ? 'This device' : S.remember ? 'This device: saved in this browser' : 'This device: not saved')
+    + b('keys', I.keyboard, 'Keyboard shortcuts (?)');
+}
+el.rail.addEventListener('click', e => {
+  const k = e.target.closest('[data-rail]')?.dataset.rail; if (!k) return;
+  if (k === 'folders') { setRail(false); el.tree.querySelector('.trow.on, .trow')?.scrollIntoView({ block: 'nearest' }); }
+  else if (k === 'filter') setTreeFilterOpen(true);
+  else if (k === 'device') { setRail(false); $('rememberBtn').scrollIntoView({ block: 'nearest' }); $('rememberBtn').focus(); }
+  else if (k === 'keys') openKeys();
+  else { clearSearchBox(); setView({ kind: k }); }
+});
+/* A drag handle on a pane's inner edge. dir is +1 when dragging right makes the pane wider. */
+function resizer(handle, { width, resize, reset, dir }) {
+  handle.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const x0 = e.clientX, w0 = width();
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add('active'); document.body.classList.add('resizing');
+    const move = ev => resize(w0 + (ev.clientX - x0) * dir);
+    const end = () => {
+      handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', end); handle.removeEventListener('pointercancel', end);
+      handle.classList.remove('active'); document.body.classList.remove('resizing');
+      saveUI(); renderList();
+    };
+    handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', end); handle.addEventListener('pointercancel', end);
+  });
+  handle.addEventListener('dblclick', () => { reset(); saveUI(); renderList(); });
+  handle.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 48 : 16;
+    const w = e.key === 'ArrowRight' ? width() + step * dir : e.key === 'ArrowLeft' ? width() - step * dir : null;
+    if (w == null) return;
+    e.preventDefault(); e.stopPropagation();
+    resize(w, true); saveUI(); renderList();
+  });
+}
+resizer(el.sideRes, {
+  dir: 1,
+  width: () => S.rail ? RAIL_W : Math.min(S.sideW, sideFit()),
+  // Dragged narrower than SIDE_SNAP, the pane collapses into the rail; dragged out again, it comes back.
+  resize: (w, keys) => {
+    if (w < SIDE_SNAP && !keys) { if (!S.rail) { S.rail = true; applyPanes(); } return; }
+    if (S.rail && keys && w < SIDE_SNAP) return;
+    S.rail = false; S.sideW = Math.round(Math.max(SIDE_MIN, Math.min(sideFit(), w))); applyPanes();
+  },
+  reset: () => { S.rail = false; S.sideW = SIDE_DEF; applyPanes(); },
+});
+const inspRes = document.createElement('div');
+inspRes.className = 'resizer'; inspRes.setAttribute('role', 'separator'); inspRes.setAttribute('aria-orientation', 'vertical');
+inspRes.setAttribute('aria-controls', 'insp'); inspRes.setAttribute('aria-label', 'Resize the details pane'); inspRes.tabIndex = 0;
+inspRes.title = 'Drag to resize. Double-click to reset.';
+resizer(inspRes, {
+  dir: -1,
+  width: () => Math.min(S.inspW, inspFit()),
+  resize: w => { S.inspW = Math.round(Math.max(INSP_MIN, Math.min(inspFit(), w))); applyPanes(); },
+  reset: () => { S.inspW = INSP_DEF; applyPanes(); },
+});
+
 /* ---------- toasts ---------- */
 function toast(msg, { undo: withUndo = false, error = false, ms, action } = {}) {
   const t = document.createElement('div');
@@ -3529,7 +3675,7 @@ function persist(now) {
   };
   now ? run() : (persistT = setTimeout(run, 600));
 }
-function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ dupeMode: S.dupeMode, layout: S.layout, remember: S.remember, autoSort: S.autoSort, ai: S.ai })); } catch {} }
+function saveUI() { try { localStorage.setItem(LS_UI, JSON.stringify({ dupeMode: S.dupeMode, layout: S.layout, remember: S.remember, autoSort: S.autoSort, ai: S.ai, sideW: S.sideW, inspW: S.inspW, rail: S.rail })); } catch {} }
 function setRemember(on) {
   if (S.editing) commitEdit();
   S.remember = on; saveUI(); persist(true);
@@ -3553,7 +3699,11 @@ async function requestForget() {
   toast('Forgot your bookmarks on this device.');
 }
 function restore() {
-  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; S.autoSort = ui.autoSort === true; S.ai = ui.ai === 'on' || ui.ai === 'off' ? ui.ai : null; } catch {}
+  try { const ui = JSON.parse(localStorage.getItem(LS_UI) || '{}'); if (DUPE_MODES[ui.dupeMode]) S.dupeMode = ui.dupeMode; if (ui.layout === 'folder' || ui.layout === 'tree') S.layout = ui.layout; S.remember = ui.remember !== false; S.autoSort = ui.autoSort === true; S.ai = ui.ai === 'on' || ui.ai === 'off' ? ui.ai : null;
+    if (Number.isFinite(ui.sideW)) S.sideW = Math.max(SIDE_MIN, Math.min(SIDE_MAX, ui.sideW));
+    if (Number.isFinite(ui.inspW)) S.inspW = Math.max(INSP_MIN, Math.min(INSP_MAX, ui.inspW));
+    S.rail = ui.rail === true; } catch {}
+  applyPanes();
   if (!S.remember) { dropStored(); return false; }
   try {
     const raw = localStorage.getItem(LS_SESSION); if (!raw) return false;
@@ -3773,7 +3923,7 @@ el.list.addEventListener('click', e => {
 });
 let scrollRaf = 0;
 el.list.addEventListener('scroll', () => { if (!el.menu.hidden) closeMenu(); renderList(); });
-addEventListener('resize', () => { cancelAnimationFrame(scrollRaf); scrollRaf = requestAnimationFrame(renderList); });
+addEventListener('resize', () => { cancelAnimationFrame(scrollRaf); scrollRaf = requestAnimationFrame(() => { applyPanes(); renderList(); }); });
 
 el.tree.addEventListener('click', e => {
   const tr = e.target.closest('.trow'); if (!tr || S.editing?.where === 'tree' && S.editing.id === tr.dataset.id) return;
@@ -3857,8 +4007,8 @@ $('keysBtn').addEventListener('click', openKeys);
 $('aiBtn').addEventListener('click', () => withAI(() => { const r = $('aiBtn').getBoundingClientRect(); assistMenu(r.right - 280, r.bottom + 6); }));
 $('rememberBtn').addEventListener('click', () => setRemember(!S.remember));
 $('forgetBtn').addEventListener('click', requestForget);
-$('navBtn').addEventListener('click', () => el.app.classList.toggle('nav-open'));
-$('navScrim').addEventListener('click', () => el.app.classList.remove('nav-open'));
+$('navBtn').addEventListener('click', toggleSidebar);
+$('navScrim').addEventListener('click', () => { el.app.classList.remove('nav-open'); applyPanes(); });
 let qT = 0;
 el.q.addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(applySearch, 90); });
 el.q.addEventListener('keydown', e => {
@@ -3873,6 +4023,7 @@ document.addEventListener('keydown', e => {
   if (!el.menu.hidden) { if (k === 'Escape') { closeMenu(); } return; }
   const field = e.target.closest?.('input,textarea,select,[contenteditable="true"]');
   if (mod && lk === 'k') { e.preventDefault(); el.q.focus(); el.q.select(); return; }
+  if (mod && lk === 'b' && !e.shiftKey && !e.altKey) { e.preventDefault(); toggleSidebar(); return; }
   if (field) return;
   if (mod && lk === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && lk === 'y') { e.preventDefault(); redo(); return; }

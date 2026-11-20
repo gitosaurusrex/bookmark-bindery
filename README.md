@@ -112,6 +112,10 @@ in your browser, then import Bindery's file.
   `#trav` finds bookmarks tagged `travel`.
 - Filter the sidebar's folder list by name (**F**), and expand or collapse all its folders at once
 - **All bookmarks**, **Empty folders** and **Tags** views under **Inspect**
+- Drag the edge of the folders pane or the details panel to make it wider or narrower; double-click the edge to put it
+  back. The button at the far left of the top bar (or Ctrl/⌘+**B**) folds the folders pane into a slim rail of large
+  icons, like the sidebar in VS Code, and opens it again. Dragging the pane very narrow folds it too. Sizes and the
+  rail are remembered in this browser.
 
 **Organizing**
 
@@ -188,6 +192,8 @@ in your browser, then import Bindery's file.
 | T | Switch between the tree and one folder at a time |
 | / or Ctrl/⌘+K | Search (start a word with # for tags) |
 | F | Filter the sidebar's folder list |
+| Ctrl/⌘+B | Fold the folders pane into a rail of icons, or open it again |
+| Drag a pane's edge | Resize the folders pane or the details panel (double-click to reset) |
 | E | Edit details in the side panel |
 | Enter or F2 | Rename in place (Tab moves to the address) |
 | N | New folder |
@@ -341,6 +347,10 @@ delete the site's data in your browser settings.
 - The details panel saves each change when you leave the field or press Enter (Ctrl/⌘+Enter for a note), with no Save
   button. Esc in a field puts back what was there. With several items selected, only tags can be edited together;
   names, addresses, keywords and notes are edited one item at a time.
+- Pane sizes are kept within limits: the folders pane between 220 and 520 px, the details panel between 300 and 760 px,
+  and never so wide that the list gets narrower than 380 px. On screens 820 px wide or less the folders pane is a
+  drawer with no rail, and on phones the details panel is a bottom sheet that can't be resized. In Firefox, Ctrl+B
+  normally opens Firefox's own bookmarks sidebar; on Bindery's page it folds Bindery's pane instead.
 - Keywords can't contain spaces, and Firefox only keeps one bookmark per keyword.
 - Separators can't be renamed, and they never count as bookmarks.
 - The order you see in the folder and tree views is exactly the order exported. Search, Duplicates, Tags and the Tidy
