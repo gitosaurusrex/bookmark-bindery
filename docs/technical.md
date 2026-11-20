@@ -386,8 +386,8 @@ export clears the "unsaved edits" state.
   change. If the JSON is
   over about 4.5 million characters, or the browser refuses (quota, private mode), nothing is saved and the sidebar
   says so.
-- `bindery.ui.v1` holds settings: duplicate mode, layout, **Remember my file**, **Keep everything A to Z** and
-  whether Bindery Assist is on. **Forget on this device** leaves these alone.
+- `bindery.ui.v1` holds settings: duplicate mode, layout, **Remember my file**, **Keep everything A to Z**,
+  whether Bindery Assist is on, the two pane widths and whether the folders pane is a rail. **Forget on this device** leaves these alone.
 - Undo history, Tidy plans, dismissed look-alike tags and Assist's similar-tag groups are never saved. They last as long
   as the tab.
 - With **Remember my file** off, the session key is deleted and never written. **Forget on this device** deletes it,
@@ -410,8 +410,28 @@ search with thousands of results stays smooth. A row being edited is kept in pla
 interrupted.
 
 Colors are CSS variables, with a dark palette under `prefers-color-scheme: dark` and overrides for `data-theme`. Layout
-steps down at 1000 px (the folder path column goes), 820 px (the sidebar becomes a drawer) and 600 px (dates and inline
+steps down at 1000 px (the folder path column goes), 820 px (the sidebar becomes a drawer, and the rail and its resize handle go) and 600 px (dates and inline
 actions give way to the ⋯ menu). Animations stop for anyone who prefers reduced motion.
+
+## Pane sizes and the rail
+
+The folders pane and the details panel can each be resized by dragging a 10 px handle on their inner edge
+(`resizer()`, a `role="separator"` element using pointer capture). Arrow keys move a focused handle 16 px (48 px with
+Shift) and double-click resets it. Widths live in `S.sideW` and `S.inspW` and reach the layout as the CSS variables
+`--side-w` and `--insp-w` on `.app`, set by `applyPanes()`. The grid uses `--side-cur`, which is `--side-w` normally
+and `--rail-w` (58 px) when folded, so the top bar's file name and the list stay aligned.
+
+- Folders pane: 220 to 520 px (276 by default). Dragging below 150 px folds it into the rail, and dragging back out
+  unfolds it.
+- Details panel: 300 to 760 px (372 by default). The handle is one node moved into the panel each time it renders, so
+  it survives switching bookmarks.
+- Both are clamped so the list keeps at least 380 px (`sideFit()`, `inspFit()`), and re-clamped when the window
+  resizes. The stored width is kept, so a pane grows back when the window does.
+- The rail (`S.rail`, `.app.side-rail`, wide screens only) hides the pane's contents and shows `renderRail()`'s
+  buttons: expand the pane, filter folders (which expands it), All bookmarks, Duplicates and Empty folders with count
+  badges, Tags, the Tidy review while one is open, This device (expands it) and Keyboard shortcuts. The top bar's first
+  button and Ctrl/⌘+**B** (`toggleSidebar()`) fold and unfold it; at 820 px or less the same button opens the drawer.
+- The widths and the rail are saved with the other settings in `bindery.ui.v1`.
 
 ## Keyboard and pointer
 
@@ -419,7 +439,7 @@ Press **?** or open **Keyboard shortcuts** in the sidebar for the full list. Hig
 
 - **↑ ↓** move, with Shift to extend the selection. **→ ←** open and close folders.
 - **/** or Ctrl/⌘ + **K** searches (a word starting with `#` matches tags). **F** filters the sidebar's folder list.
-  **T** switches layout. Alt + **↑** goes up a folder.
+  **T** switches layout. Alt + **↑** goes up a folder. Ctrl/⌘ + **B** folds the folders pane into a rail, or opens it.
 - **E** opens the details panel. **Enter** or **F2** renames in place. **N** makes a folder, **B** a bookmark. **M**
   moves, **G** groups.
 - Ctrl/⌘ + **X** and **V** cut and paste. **Del** deletes. Ctrl/⌘ + **Z** undoes, with Shift (or Ctrl + **Y**) to redo.
@@ -453,7 +473,8 @@ opens every action for a row.
 | Suggest a folder | up to 400 folder paths, 3 folders back |
 | Reading a page | 8 s, first 400 KB of HTML; icons up to 48 KB |
 | Writing a note | the page's own description and its first 2,500 characters of text; notes up to 300 characters |
-| Details panel | docked above 1180 px wide (372 px), a drawer below that, a bottom sheet under 600 px |
+| Details panel | docked above 1180 px wide, a drawer below that, a bottom sheet under 600 px |
+| Pane widths | folders 220–520 px (276 default, 58 px as a rail); details 300–760 px (372 default); list at least 380 px |
 | Typing pause before reading a page | 550 ms |
 | Find similar tags | up to 600 tag names sent, up to 60 groups back |
 | Look-alike typo check | tags of 5+ letters without digits, in libraries of up to 3,000 tags |
@@ -486,6 +507,7 @@ tidy review                aiTidy, the plan, its rows, menus, drop targets, Appl
 tags                       retag, rename and merge, look-alike groups, Find similar, the Tags rows and menus
 moving tags                folder picker dialog, tag ↔ folder conversions, tags in titles, Convert menu
 browsers                   Firefox-only content, source detection, import notice, export choice, exportRootFor
+pane sizes and the rail    resize handles, widths and limits, the folded rail, Ctrl/⌘+B
 toasts
 import / export            importFile, showProblem, loadRoot, doExport
 persistence                localStorage, Remember my file, Forget on this device
