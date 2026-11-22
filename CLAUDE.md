@@ -50,7 +50,6 @@ Open work lives in GitHub issues (label `enhancement` or `documentation`); this 
 - **Tests:** fill the app-test gaps: file checks, escaping, undo cap, duplicates (#15); run both suites on every PR (#28).
 - **Checks against reality:** resolved-IP checks in the Worker (#16), an end-to-end check of the live AI features
   (#17), importing exports into each browser (#18).
-- **Docs:** refresh the README screenshots for the sidebar button and rail (#29).
 - **Code health** (the app tests now guard these): escape-by-default templates (#20), undo that records changes
   instead of copying the library (#21), a small reactive core so displays stay in step (#22), one definition per view,
   menu and dialog (#23), and splitting `index.html` into ES modules with no build (#24).

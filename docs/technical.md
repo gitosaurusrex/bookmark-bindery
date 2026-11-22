@@ -578,7 +578,7 @@ real browser imports (#18); and the live Worker and model (#17).
 ## Screenshots
 
 `node scripts/screenshots.mjs` regenerates `docs/screenshots/`. It serves the repo locally, opens the made-up library in
-`scripts/demo-bookmarks.html`, and captures the library, duplicate review, the details panel, the Tags view and the
+`scripts/demo-bookmarks.html`, and captures the library, the folded rail, duplicate review, the details panel, the Tags view and the
 export dialog (after tagging a few bookmarks through the app, with some look-alike tags), the Bindery Assist welcome
 sheet and a phone view in light and dark with Playwright, saving WebP. The welcome sheet only appears when `index.html`
 points at a Worker; nothing is sent to take it. It needs Node and Playwright with Chromium, and nothing else.
