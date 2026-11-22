@@ -546,6 +546,35 @@ The checks look at host names, not at the IP addresses they resolve to, so a pub
 address isn't caught here. The tests cover redirects to private and local addresses, relative redirects, chains
 longer than 5, and private icon links and icon redirects.
 
+## Tests
+
+`node --test test/*.test.mjs` runs the app tests: about 70 checks in 9 files, in under a minute. Each file serves the
+repo locally (as the static host does), opens `index.html` in headless Chromium with Playwright, and drives it like a
+person would: opening files through the file input, clicking, typing, dragging, and reading exports from the download.
+`test/harness.mjs` holds the shared setup and helpers.
+
+| File | Covers |
+| --- | --- |
+| `folders.test.mjs` | the sidebar tree, expand/collapse all, the folder filter, A to Z order in the export |
+| `a-to-z.test.mjs` | Keep everything A to Z: edits, refused reordering, reloads, undo/redo never unsorted |
+| `separators.test.mjs` | parsing, sorting by section, adding, deleting, dragging, a stable round trip |
+| `assist.test.mjs` | the consent sheet, Tidy, Clean up titles, Suggest a name, what's sent, turning off, errors |
+| `tidy.test.mjs` | the Tidy review on 400 bookmarks: batches, renames and merges, Send to, dragging, Apply and undo, name chips |
+| `editor.test.mjs` | the details panel, an Assist-written note, the New bookmark form, folders, the export |
+| `tags.test.mjs` | `#tag` search, the Tags view, look-alikes, Find similar, rename/remove/convert, bulk tags |
+| `export.test.mjs` | the Firefox notice, the export choice for each browser, the library staying unchanged |
+| `panes.test.mjs` | resizing both panes, the rail, Ctrl/⌘+B, what's remembered, medium and phone layouts |
+
+Bindery Assist tests never leave the machine. The page is pointed at a made-up origin (`https://assist.test`), and
+Playwright answers its requests by running the real Worker code (`worker/src/index.js`) with a fake model and fake web
+pages. So the page, the Worker's checks and the request format are tested together.
+
+Each file shares one page across its tests, in order, so a failure early in a file can make later tests in it fail
+too. Every file also fails on any script or console error. Fixtures are the demo library in `scripts/`, the small files
+in `test/fixtures/` (separators, tags, a Firefox file) and a generated 400-bookmark library. Not covered yet: the file
+checks that refuse damaged files, the undo cap, duplicate rules in detail, and escaping of odd titles (see issue #15);
+real browser imports (#18); and the live Worker and model (#17).
+
 ## Screenshots
 
 `node scripts/screenshots.mjs` regenerates `docs/screenshots/`. It serves the repo locally, opens the made-up library in

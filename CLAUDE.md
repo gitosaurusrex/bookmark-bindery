@@ -6,7 +6,9 @@ dependencies, no build), plus the optional Bindery Assist AI helper, a Cloudflar
 
 ## Commands
 
-- Worker tests: `node --test worker/test/*.mjs` (no install needed). The app itself has no tests yet (#15).
+- Worker tests: `node --test worker/test/*.mjs` (no install needed).
+- App tests: `node --test test/*.test.mjs` (Playwright with Chromium; about a minute). They drive `index.html` in a
+  browser and assert exact text, so update them in the same PR when wording or behaviour changes. Gaps are in #15.
 - README screenshots: `node scripts/screenshots.mjs` (Playwright with Chromium; uses `scripts/demo-bookmarks.html`).
 - Point the page at a Worker, or turn Assist off: `node scripts/set-ai-endpoint.mjs <https://origin> | off`. Never
   edit the `bindery-ai` meta tag or the CSP `connect-src` by hand; the script keeps them in step.
