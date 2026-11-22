@@ -26,6 +26,7 @@ sends what each action needs.
 - [Privacy and storage](#privacy-and-storage)
 - [Limitations and caveats](#limitations-and-caveats)
 - [Hosting your own](#hosting-your-own)
+- [Running the tests](#running-the-tests)
 - [Under the hood (TL;DR)](#under-the-hood-tldr)
 
 ## Why Bookmark Bindery
@@ -419,6 +420,22 @@ node scripts/set-ai-endpoint.mjs off
 
 or deploy your own helper and point your copy at it, as described in [worker/README.md](worker/README.md). With
 Assist off, no AI features appear and the page can't connect anywhere except Google Fonts.
+
+## Running the tests
+
+With Node and Playwright (Chromium) installed:
+
+```bash
+node --test test/*.test.mjs
+```
+
+```bash
+node --test worker/test/*.mjs
+```
+
+The first runs the app in a headless browser and checks what it does, Bindery Assist included (with a stand-in for the
+AI model, so nothing is sent anywhere). The second tests the Worker on its own. See
+[docs/technical.md](docs/technical.md#tests) for what's covered.
 
 ## Under the hood (TL;DR)
 
