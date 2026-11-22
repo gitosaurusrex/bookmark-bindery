@@ -45,7 +45,7 @@ dependencies, no build), plus the optional Bindery Assist AI helper, a Cloudflar
 
 ## Backlog
 
-Open work lives in GitHub issues (`gh issue list` or the Issues tab); this is the map:
+Open work lives in GitHub issues (label `enhancement` or `documentation`); this is the map:
 
 - **Tests:** fill the app-test gaps: file checks, escaping, undo cap, duplicates (#15); run both suites on every PR (#28).
 - **Checks against reality:** resolved-IP checks in the Worker (#16), an end-to-end check of the live AI features
