@@ -118,6 +118,11 @@ in your browser, then import Bindery's file.
   icons, like the sidebar in VS Code, and opens it again. Dragging the pane very narrow folds it too. Sizes and the
   rail are remembered in this browser.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/rail-dark.webp">
+  <img src="docs/screenshots/rail-light.webp" alt="The folders pane folded into a slim rail of icons on the left, for folders, filter, All bookmarks, Duplicates and Empty folders with counts, Tags, This device and shortcuts, with the bookmark list using the full width">
+</picture>
+
 **Organizing**
 
 - **Details panel** (**E**, double-click a bookmark, or the pencil on a row): name, address, folder, tags, keyword and

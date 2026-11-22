@@ -91,6 +91,17 @@ const SHOTS = [
     },
   },
   {
+    name: 'rail',
+    width: 1280,
+    height: 800,
+    prepare: async (page) => {
+      await openLibrary(page)
+      // The folders pane folded into the rail of icons, leaving the list the whole width.
+      await page.click('#navBtn')
+      await page.locator('#list').focus()
+    },
+  },
+  {
     name: 'duplicates',
     width: 1280,
     height: 1260,
